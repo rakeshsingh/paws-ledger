@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Microchip Lookup | PawsLedger</title>
-    <style>
+<style>
         :root {
             --primary-color: #2563eb;
             --secondary-color: #f8fafc;
@@ -56,7 +56,7 @@
         .search-card {
             background: white;
             width: 100%;
-            max-width: 600px;
+            max-width: 700px;
             padding: 3rem;
             border-radius: 1.5rem;
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
@@ -77,7 +77,7 @@
         }
 
         .input-group {
-            margin-bottom: 2rem;
+            margin-bottom: 1rem;
             text-align: left;
         }
 
@@ -91,10 +91,21 @@
             margin-bottom: 0.5rem;
         }
 
+        /* Inline Search Form Container */
+        .search-form-inline {
+            display: flex;
+            gap: 0.5rem;
+            align-items: stretch;
+        }
+
+        .input-wrapper {
+            flex: 1;
+        }
+
         input[type="text"] {
             width: 100%;
-            padding: 1rem;
-            font-size: 1.25rem;
+            padding: 0.875rem 1rem;
+            font-size: 1.15rem;
             border: 2px solid var(--border-color);
             border-radius: 0.75rem;
             box-sizing: border-box;
@@ -110,18 +121,25 @@
         .btn-lookup {
             background: var(--primary-color);
             color: white;
-            width: 100%;
-            padding: 1rem;
+            padding: 0 2rem;
             border-radius: 0.75rem;
-            font-size: 1.125rem;
+            font-size: 1rem;
             font-weight: 600;
             border: none;
             cursor: pointer;
             transition: background 0.2s;
+            white-space: nowrap;
         }
 
         .btn-lookup:hover {
             background: #1d4ed8;
+        }
+
+        .instruction-text {
+            font-size: 0.75rem; 
+            color: var(--text-light); 
+            margin-top: 0.75rem;
+            text-align: left;
         }
 
         .footer-info {
@@ -168,6 +186,15 @@
             border-top: 1px solid var(--border-color);
             background: white;
         }
+
+        @media (max-width: 600px) {
+            .search-form-inline {
+                flex-direction: column;
+            }
+            .btn-lookup {
+                padding: 1rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -182,19 +209,21 @@
     <main>
         <div class="search-card">
             <h1>Pet Microchip Lookup</h1>
-            <p class="subtitle">Search the PawsLedger database and the nationwide AAHA network to identify found pets and their owners.</p>
             
             <form id="lookup-form">
                 <div class="input-group">
-                    <label for="microchip">Insert Microchip Number</label>
-                    <input type="text" id="microchip" placeholder="e.g. 985112012016385" required>
-                    <p style="font-size: 0.75rem; color: var(--text-light); margin-top: 0.5rem;">
-                        Enter a 9, 10, or 15-digit numeric ID without spaces or punctuation.
+                    <div class="search-form-inline">
+                        <div class="input-wrapper">
+                            <input type="text" id="microchip" placeholder="Enter Microchip Number" required>
+                        </div>
+                        <button type="submit" class="btn-lookup" id="submit-btn">Search</button>
+                    </div>
+                    <p class="instruction-text">
+                        Enter a 9, 10, or 15-digit numeric Microchip ID e.g. 985112012016385 without spaces or punctuation to lookup a pet registered with PawsLedger or the nationwide AAHA network.
                     </p>
                 </div>
-                
-                <button type="submit" class="btn-lookup" id="submit-btn">Lookup Identity</button>
             </form>
+
 
             <div id="results" style="margin-top: 2rem; display: none; text-align: left; padding: 1.5rem; border-radius: 1rem; border: 1px solid var(--border-color); background: var(--secondary-color);">
                 <div id="status-badge" style="display: inline-block; padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-bottom: 1rem;"></div>
@@ -270,23 +299,8 @@
         });
     </script>
 
-    <div class="info-grid">
-        <div class="info-item">
-            <h3>Verified Registry</h3>
-            <p>Direct integration with the AAHA nationwide network ensures your search is comprehensive.</p>
-        </div>
-        <div class="info-item">
-            <h3>Secure Data</h3>
-            <p>Your PII is protected by enterprise-grade encryption and Zero-Trust principles.</p>
-        </div>
-        <div class="info-item">
-            <h3>Instant Alerts</h3>
-            <p>Verified scans trigger immediate notifications to owners and care networks.</p>
-        </div>
-    </div>
-
     <footer>
-        &copy; 2026 PawsLedger &bull; A Trusted Identity Initiative &bull; ISO 11784 Compliant
+        &copy; 2026 PawsLedger &bull; A Trusted Pet Identity Store &bull; ISO 11784 Compliant
     </footer>
 </body>
 </html>
