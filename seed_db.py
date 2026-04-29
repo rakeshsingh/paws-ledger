@@ -12,7 +12,11 @@ def seed():
             print("Database already seeded.")
             return
 
-        user = User(name="John Doe", email="john@example.com")
+        user = User(
+            sub="manual|seed_user_john", 
+            name="John Doe", 
+            email="john@example.com"
+        )
         session.add(user)
         session.commit()
         session.refresh(user)

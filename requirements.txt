@@ -4,3 +4,6 @@ sqlmodel
 httpx
 uvicorn
 python-multipart
+python-dotenv
+authlib
+itsdangerous

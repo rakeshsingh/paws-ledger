@@ -3,6 +3,10 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# environment secrets
+.env*
+.nicegui/
+
 # C extensions
 *.so
 

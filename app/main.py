@@ -5,6 +5,11 @@ from .database import create_db_and_tables
 from .api.v1.routes import router as api_router
 from .ui.pages import init_pages
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
+env = os.getenv("APP_ENV", "beta")
+load_dotenv(f".env.{env}")
 
 # Create FastAPI app
 fastapi_app = FastAPI(title="PawsLedger API", version="1.0.0")

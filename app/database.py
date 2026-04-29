@@ -1,10 +1,10 @@
+import os
 from sqlmodel import SQLModel, create_engine, Session
 from .models import * # Ensure all models are loaded for table creation
 
-sqlite_file_name = "pawsledger.db"
-sqlite_url = f"sqlite:///{sqlite_file_name}"
+database_url = os.getenv("DATABASE_URL", "sqlite:///./pawsledger.db")
 
-engine = create_engine(sqlite_url, echo=False, connect_args={"check_same_thread": False})
+engine = create_engine(database_url, echo=False, connect_args={"check_same_thread": False} if database_url.startswith("sqlite") else {})
 
 def create_db_and_tables():
     SQLModel.metadata.create_all(engine)

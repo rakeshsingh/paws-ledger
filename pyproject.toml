@@ -1,0 +1,17 @@
+[project]
+name = "paws-ledger"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "authlib>=1.7.0",
+    "fastapi>=0.136.1",
+    "httpx>=0.28.1",
+    "itsdangerous>=2.2.0",
+    "nicegui>=3.11.1",
+    "python-dotenv>=1.2.2",
+    "python-multipart>=0.0.27",
+    "sqlmodel>=0.0.38",
+    "uvicorn>=0.46.0",
+]

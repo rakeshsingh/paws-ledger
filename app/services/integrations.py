@@ -1,5 +1,11 @@
 import httpx
+import os
 from typing import Optional, List, Dict
+from dotenv import load_dotenv
+
+load_dotenv()  # Load default .env if it exists
+env = os.getenv("APP_ENV", "beta")
+load_dotenv(f".env.{env}")
 
 MANUFACTURER_MAP = {
     "900": "Shared/Unassigned",
@@ -55,3 +61,47 @@ class AAHAClient:
                 "message": "This chip is registered in the AAHA network but not yet claimed on PawsLedger."
             }
         return None
+
+from authlib.integrations.starlette_client import OAuth
+from starlette.requests import Request
+from nicegui import app as nicegui_app
+
+oauth = OAuth()
+
+class GoogleAuthService:
+    def __init__(self):
+        self.client_id = os.getenv("GOOGLE_CLIENT_ID")
+        self.client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
+        self.redirect_uri = os.getenv("GOOGLE_CALLBACK_URL")
+        
+        if all([self.client_id, self.client_secret]):
+            oauth.register(
+                name='google',
+                client_id=self.client_id,
+                client_secret=self.client_secret,
+                server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+                client_kwargs={
+                    'scope': 'openid profile email',
+                },
+            )
+
+    async def get_authorize_url(self, request: Request) -> str:
+        if not self.client_id:
+            return "/login"
+        
+        # If redirect_uri is not set in .env, build it from the current request
+        redirect_uri = self.redirect_uri
+        if not redirect_uri:
+            redirect_uri = str(request.url_for('auth_callback'))
+            # If running behind a proxy (like ngrok/prod), ensure we use https
+            if request.headers.get('x-forwarded-proto') == 'https':
+                redirect_uri = redirect_uri.replace('http://', 'https://')
+        
+        response = await oauth.google.authorize_redirect(request, redirect_uri)
+        return response.headers.get('location', '/login')
+
+    async def authorize_access_token(self, request: Request):
+        return await oauth.google.authorize_access_token(request)
+
+    async def get_user_info(self, token: Dict) -> Dict:
+        return token.get('userinfo')

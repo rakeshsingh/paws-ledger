@@ -5,6 +5,7 @@ from sqlmodel import Field, SQLModel, Relationship
 
 class User(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
+    sub: str = Field(index=True, unique=True) # Subject ID from IdP
     email: str = Field(index=True, unique=True)
     name: str
     role: str = "Guardian"  # Guardian, Caregiver, Vet

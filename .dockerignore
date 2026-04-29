@@ -1,0 +1,13 @@
+**/*.pyc
+**/__pycache__
+.venv
+venv
+.git
+.gitignore
+.env
+.env.*
+pawsledger.db
+.nicegui
+README.md
+run_instructions.md
+spec/
