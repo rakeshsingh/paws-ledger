@@ -15,8 +15,6 @@ class User(SQLModel, table=True):
 class Pet(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     chip_id: str = Field(index=True, unique=True, max_length=15)
-    name: str = Field(index=True)
-    gender: str = "Unknown" # Male, Female, Unknown
     manufacturer: Optional[str] = None
     identity_status: str = "UNVERIFIED"  # VERIFIED, UNVERIFIED
     owner_id: Optional[UUID] = Field(default=None, foreign_key="user.id")
@@ -68,3 +66,4 @@ class SharedAccess(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     
     pet: Pet = Relationship(back_populates="shared_accesses")
+# Test

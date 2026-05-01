@@ -45,14 +45,9 @@ async def auth_callback(request: Request, session: Session = Depends(get_session
             session.commit()
             session.refresh(user)
             
-        return {
-            "message": "Authentication successful",
-            "user": {
-                "id": str(user.id),
-                "email": user.email,
-                "name": user.name
-            }
-        }
+        response = RedirectResponse(url="/dashboard")
+        response.set_cookie("paws_user_id", str(user.id), httponly=True, samesite="lax")
+        return response
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -230,3 +225,41 @@ async def get_shared_access(token: str, session: Session = Depends(get_session))
         },
         "vaccinations": pet.vaccinations
     }
+
+@router.get("/me")
+async def get_me(request: Request, session: Session = Depends(get_session)):
+    # This is a simplified way to get the user from cookies if NiceGUI storage is used
+    user_id = request.cookies.get("paws_user_id") # We will need to set this in login
+    if not user_id:
+        return {"authenticated": False}
+    
+    user = session.get(User, UUID(user_id))
+    if not user:
+        return {"authenticated": False}
+        
+    return {
+        "authenticated": True,
+        "user": {
+            "id": str(user.id),
+            "email": user.email,
+            "name": user.name
+        }
+    }
+
+@router.post("/nudge/{chip_id}")
+async def nudge_owner(chip_id: str, session: Session = Depends(get_session)):
+    statement = select(Pet).where(Pet.chip_id == chip_id)
+    pet = session.exec(statement).first()
+    if not pet:
+        raise HTTPException(status_code=404, detail="Pet not found")
+    
+    if not pet.owner or not pet.owner.email:
+        raise HTTPException(status_code=400, detail="Owner info not available for this pet")
+    
+    await email_service.send_email(
+        pet.owner.email,
+        f"Nudge: Someone found your pet {pet.name or ""}!",
+        f"Hello,\n\nA registered PawsLedger user has found a pet with microchip {chip_id} and is nudging you to get in touch.\n\nPlease check your PawsLedger dashboard."
+    )
+    
+    return {"message": "Nudge sent to owner successfully."}

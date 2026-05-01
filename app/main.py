@@ -17,10 +17,7 @@ fastapi_app = FastAPI(title="PawsLedger API", version="1.0.0")
 # Include API routes
 fastapi_app.include_router(api_router)
 
-@fastapi_app.get("/")
-async def landing_page():
-    static_file = os.path.join(os.path.dirname(__file__), "ui/static/index.html")
-    return FileResponse(static_file)
+
 
 @fastapi_app.on_event("startup")
 def on_startup():

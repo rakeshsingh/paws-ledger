@@ -55,6 +55,76 @@ COMMON_STYLE = """
 
 def init_pages():
     ui.add_head_html(COMMON_STYLE)
+    @ui.page("/")
+    async def index_page():
+        nav_header()
+        with ui.column().classes("w-full items-center p-12"):
+            with ui.card().classes("w-full max-w-2xl p-8 text-center"):
+                ui.label("Pet Microchip Lookup").classes("text-4xl font-bold mb-4")
+                ui.label("Search the PawsLedger registry or the nationwide AAHA network.").classes("text-gray-500 mb-8")
+                
+                with ui.row().classes("w-full gap-2 mb-4"):
+                    chip_input = ui.input("Enter Microchip Number").classes("flex-grow").props("outlined")
+                    search_btn = ui.button("Search", on_click=lambda: do_lookup()).classes("h-14")
+                
+                results_card = ui.card().classes("w-full mt-8 text-left p-6").style("display: none")
+                status_badge = ui.label("").classes("px-3 py-1 rounded-full text-xs font-bold uppercase mb-2")
+                result_title = ui.label("").classes("text-xl font-bold")
+                result_desc = ui.label("").classes("text-gray-500 text-sm")
+                result_details = ui.html("").classes("mt-4 pt-4 border-t text-sm")
+                
+                async def do_lookup():
+                    chip_id = chip_input.value
+                    if not chip_id:
+                        ui.notify("Please enter a Chip ID", type="warning")
+                        return
+                    
+                    search_btn.disable()
+                    search_btn.text = "Searching..."
+                    
+                    try:
+                        # We use the API logic here
+                        with Session(engine) as session:
+                            pet = session.exec(select(Pet).where(Pet.chip_id == chip_id)).first()
+                            if pet:
+                                results_card.style("display: block")
+                                status_badge.text = "Verified Local Registry"
+                                status_badge.style("background-color: #dcfce7; color: #166534")
+                                result_title.text = f"{pet.name} ({pet.pet_species})"
+                                result_desc.text = f"Status: {pet.identity_status}"
+                                result_details.content = f"<b>Breed:</b> {pet.breed}<br><b>Manufacturer:</b> {pet.manufacturer}"
+                                
+                                # Add Nudge button if user is logged in
+                                if app.storage.user.get("email"):
+                                    with result_details:
+                                        ui.button("Nudge Owner", icon="notifications", on_click=lambda: nudge(chip_id)).classes("mt-4 w-full")
+                            else:
+                                from ..api.v1.routes import aaha_client
+                                aaha_data = await aaha_client.lookup(chip_id)
+                                if aaha_data:
+                                    results_card.style("display: block")
+                                    status_badge.text = "AAHA Nationwide Network"
+                                    status_badge.style("background-color: #fef9c3; color: #854d0e")
+                                    result_title.text = "Microchip Found Externally"
+                                    result_desc.text = aaha_data["message"]
+                                    result_details.content = f"<b>Manufacturer:</b> {aaha_data["manufacturer"]}<br><b>Status:</b> {aaha_data["status"]}"
+                                    
+                                    with result_details:
+                                        ui.label("Not on PawsLedger yet?").classes("mt-4 text-xs italic")
+                                        ui.button("Claim this Pet / Register", on_click=lambda: ui.navigate.to("/register")).classes("w-full")
+                                else:
+                                    ui.notify("Microchip not found in any registry.", type="negative")
+                                    results_card.style("display: none")
+                    finally:
+                        search_btn.enable()
+                        search_btn.text = "Search"
+
+                async def nudge(cid):
+                    # Call the API or logic
+                    ui.notify(f"Nudge sent to owner of {cid}", type="positive")
+
+        nav_footer()
+
 
     def nav_header():
         with ui.header().classes('bg-white text-primary border-b px-8 py-4 justify-between items-center').style('border-bottom: 1px solid var(--border-color)'):
@@ -290,11 +360,17 @@ def init_pages():
             breed_options = {b['name']: b['name'] for b in breeds}
 
             with ui.card().classes('w-full max-w-lg p-6'):
+                name = ui.input('Pet Name').classes('w-full mb-4')
                 chip_id = ui.input('Chip ID (15 digits)').classes('w-full mb-4')
-                breed = ui.select(breed_options, label='Breed', with_filter=True).classes('w-full mb-4')
                 species = ui.select(['DOG', 'CAT'], label='Species', value='DOG').classes('w-full mb-4')
+                breed = ui.select(breed_options, label='Breed', with_filter=True).classes('w-full mb-4')
+                gender = ui.select(['Male', 'Female', 'Unknown'], label='Gender', value='Unknown').classes('w-full mb-4')
+                dob = ui.input('Birth Date').classes('w-full mb-4').props('type=date')
                 
                 async def submit():
+                    if not name.value:
+                        ui.notify('Pet Name is required.', type='negative')
+                        return
                     if not chip_id.value or len(chip_id.value) != 15 or not chip_id.value.isdigit():
                         ui.notify('Invalid Chip ID. Must be exactly 15 numeric digits.', type='negative')
                         return
@@ -303,10 +379,17 @@ def init_pages():
                     
                     with Session(engine) as session:
                         user = session.exec(select(User).where(User.email == app.storage.user['email'])).first()
+                        if not user: return
+                        if len(user.pets) >= 5:
+                            ui.notify('Maximum of 5 pets reached per profile.', type='negative')
+                            return
                         new_pet = Pet(
+                            name=name.value,
                             chip_id=chip_id.value,
                             breed=breed.value,
                             pet_species=species.value,
+                            gender=gender.value,
+                            dob=datetime.fromisoformat(dob.value) if dob.value else None,
                             manufacturer=manufacturer,
                             identity_status="VERIFIED",
                             owner_id=user.id
