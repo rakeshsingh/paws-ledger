@@ -47,6 +47,7 @@ def test_user(session: Session):
 @pytest.fixture
 def test_pet(session: Session, test_user: User):
     pet = Pet(
+        name="Buddy",
         chip_id="985000000000001",
         manufacturer="Datamars / HomeAgain",
         breed="Labrador",

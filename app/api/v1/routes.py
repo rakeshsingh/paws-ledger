@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlmodel import Session, select
 from typing import List
+from nicegui import app
 from ...database import get_session
 from ...models import Pet, LedgerEvent, User, Vaccination, SharedAccess
 from ...services.integrations import AAHAClient, GoogleAuthService, EmailService, HashService, PDFService
@@ -44,6 +45,14 @@ async def auth_callback(request: Request, session: Session = Depends(get_session
                 session.add(user)
             session.commit()
             session.refresh(user)
+            
+        # Set NiceGUI session storage
+        app.storage.user.update({
+            'email': user.email,
+            'name': user.name,
+            'id': str(user.id),
+            'greet_user': True
+        })
             
         response = RedirectResponse(url="/dashboard")
         response.set_cookie("paws_user_id", str(user.id), httponly=True, samesite="lax")

@@ -300,10 +300,10 @@ def init_pages():
                 app.storage.user.update({
                     'email': user.email,
                     'name': user.name,
-                    'id': str(user.id)
+                    'id': str(user.id),
+                    'greet_user': True
                 })
             
-            ui.notify(f'Welcome, {user.name}!', type='positive')
             ui.navigate.to('/dashboard')
         except Exception as e:
             ui.notify(f'Authentication error: {str(e)}', type='negative')
@@ -314,6 +314,10 @@ def init_pages():
         if not app.storage.user.get('email'):
             ui.navigate.to('/login')
             return
+        
+        if app.storage.user.get('greet_user'):
+            ui.notify(f"Welcome back, {app.storage.user['name']}!", type='positive')
+            app.storage.user['greet_user'] = False
         
         nav_header()
         with ui.column().classes('w-full items-center p-8'):
