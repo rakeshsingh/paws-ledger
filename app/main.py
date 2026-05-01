@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
+from starlette.middleware.sessions import SessionMiddleware
 from nicegui import ui, app as nicegui_app
 from .database import create_db_and_tables
 from .api.v1.routes import router as api_router
@@ -13,6 +14,12 @@ load_dotenv(f".env.{env}")
 
 # Create FastAPI app
 fastapi_app = FastAPI(title="PawsLedger API", version="1.0.0")
+
+# Session Middleware is required for Authlib to store OAuth state
+fastapi_app.add_middleware(
+    SessionMiddleware, 
+    secret_key=os.getenv("STORAGE_SECRET", "paws_secret_key")
+)
 
 # Include API routes
 fastapi_app.include_router(api_router)
