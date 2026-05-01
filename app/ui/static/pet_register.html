@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Identity Onboarding | PawsLedger</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+        :root {
+            --primary: #d97706; --primary-hover: #b45309; --bg: #fffcf9; --card-bg: #ffffff;
+            --text-main: #451a03; --text-muted: #78350f; --border: #fde6d2;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Outfit', sans-serif; background-color: var(--bg); color: var(--text-main); line-height: 1.6; display: flex; flex-direction: column; min-height: 100vh; }
+        header { background: rgba(255, 252, 249, 0.8); backdrop-filter: blur(12px); padding: 1.5rem 2rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 1.75rem; font-weight: 800; color: var(--primary); text-decoration: none; }
+        .btn-primary { background: var(--primary); color: white; padding: 0.8rem 1.75rem; border-radius: 14px; text-decoration: none; font-weight: 700; transition: all 0.3s; border: none; cursor: pointer; }
+        main { flex: 1; padding: 6rem 2rem; max-width: 650px; margin: 0 auto; width: 100%; }
+        h1 { font-size: 3.5rem; font-weight: 800; letter-spacing: -0.04em; margin-bottom: 1rem; text-align: center; }
+        .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 3rem; }
+        .form-card { background: white; padding: 3.5rem; border-radius: 32px; border: 1px solid var(--border); box-shadow: 0 20px 40px rgba(69, 26, 3, 0.05); }
+        .form-group { margin-bottom: 1.5rem; }
+        label { display: block; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; color: var(--primary); margin-bottom: 0.5rem; letter-spacing: 0.05em; }
+        input, select { 
+            width: 100%; padding: 1.25rem; border-radius: 14px; border: 2px solid var(--border); 
+            font-family: inherit; font-size: 1rem; background: #fffbf7; transition: all 0.2s;
+        }
+        input:focus { outline: none; border-color: var(--primary); background: white; box-shadow: 0 0 0 4px rgba(217, 119, 6, 0.1); }
+        footer { padding: 4rem 2rem; text-align: center; font-size: 0.9rem; color: var(--text-muted); opacity: 0.6; }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="/" class="logo">Paws<span>Ledger</span></a>
+        <nav style="display:flex; gap:2.5rem; align-items:center;">
+            <a href="/owner_dashboard.html" style="text-decoration:none; color:var(--text-main); font-weight:600; opacity:0.7;">My Ledger</a>
+            <a href="/logout" class="btn-primary">Logout</a>
+        </nav>
+    </header>
+
+    <main>
+        <h1>Onboard New Pet</h1>
+        <p class="subtitle">Anchor your pet's physical identity to the digital ledger.</p>
+        <div class="form-card">
+            <form id="onboarding-form">
+                <div class="form-group">
+                    <label>Legal Pet Name</label>
+                    <input type="text" placeholder="e.g. Buddy" required>
+                </div>
+                <div class="form-group">
+                    <label>15-Digit Microchip ID</label>
+                    <input type="text" placeholder="ISO 11784/11785 Compliant" required maxlength="15">
+                </div>
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; margin-bottom:1.5rem;">
+                    <div class="form-group">
+                        <label>Species</label>
+                        <select><option>DOG</option><option>CAT</option><option>OTHER</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Gender</label>
+                        <select><option>Male</option><option>Female</option><option>Unknown</option></select>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary" style="width:100%; padding:1.25rem;">Create Immutable Identity</button>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        document.getElementById('onboarding-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            alert('Identity creation request sent to ledger.');
+        });
+    </script>
+    <footer>&copy; 2026 PawsLedger &bull; Cryptographically Verified Pet Records</footer>
+</body>
+</html>

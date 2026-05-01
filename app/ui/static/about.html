@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Mission | PawsLedger</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+        :root {
+            --primary: #d97706; --primary-hover: #b45309; --bg: #fffcf9; --card-bg: #ffffff;
+            --text-main: #451a03; --text-muted: #78350f; --border: #fde6d2;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Outfit', sans-serif; background-color: var(--bg); color: var(--text-main);
+            line-height: 1.6; display: flex; flex-direction: column; min-height: 100vh;
+        }
+        header {
+            background: rgba(255, 252, 249, 0.8); backdrop-filter: blur(12px); padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 100;
+        }
+        .logo { font-size: 1.75rem; font-weight: 800; color: var(--primary); text-decoration: none; letter-spacing: -0.05em; }
+        .logo span { color: var(--text-muted); font-weight: 400; }
+        nav { display: flex; gap: 2.5rem; align-items: center; }
+        nav a { text-decoration: none; color: var(--text-main); font-size: 0.95rem; font-weight: 600; opacity: 0.7; transition: all 0.2s; }
+        .btn-primary {
+            background: var(--primary); color: white; padding: 0.8rem 1.75rem; border-radius: 14px;
+            text-decoration: none; font-weight: 700; transition: all 0.3s; border: none; cursor: pointer;
+        }
+        main { flex: 1; padding: 6rem 2rem; max-width: 900px; margin: 0 auto; width: 100%; }
+        h1 { font-size: 4rem; font-weight: 800; letter-spacing: -0.04em; margin-bottom: 2rem; text-align: center; line-height: 1; }
+        .content-card { background: white; padding: 4rem; border-radius: 32px; border: 1px solid var(--border); box-shadow: 0 20px 40px rgba(69, 26, 3, 0.05); }
+        .content-card p { margin-bottom: 2rem; font-size: 1.2rem; color: var(--text-muted); }
+        .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem; margin-top: 4rem; }
+        .feature-item h3 { color: var(--primary); margin-bottom: 0.5rem; }
+        footer { padding: 4rem 2rem; text-align: center; font-size: 0.9rem; color: var(--text-muted); opacity: 0.6; }
+    </style>
+</head>
+<body>
+    <header>
+        <a href="/" class="logo">Paws<span>Ledger</span></a>
+        <nav>
+            <a href="/about.html">The Mission</a>
+            <a href="/contact.html">Support</a>
+            <a href="/owner_dashboard.html" id="nav-dashboard" style="display: none;">My Ledger</a>
+            <a href="/login" class="btn-primary" id="nav-auth">Sign In</a>
+        </nav>
+    </header>
+
+    <main>
+        <h1>Decentralized Pet Identity</h1>
+        <div class="content-card">
+            <p><strong>PawsLedger</strong> is built on the belief that a pet's identity should not be locked inside proprietary manufacturer databases. We provide a sovereign, cloud-based ledger that links physical microchips to a verifiable digital history.</p>
+            <p>Our platform empowers owners to manage their pet's records with cryptographic security, ensuring that medical history, ownership proofs, and emergency recovery data remain accessible and immutable for the life of the animal.</p>
+            
+            <div class="feature-grid">
+                <div class="feature-item">
+                    <h3>Sovereign</h3>
+                    <p style="font-size: 0.95rem;">You own the data. Transfer ownership with secure cryptographic handshakes.</p>
+                </div>
+                <div class="feature-item">
+                    <h3>Transparent</h3>
+                    <p style="font-size: 0.95rem;">Full audit trails for every medical event, vaccination, and ownership change.</p>
+                </div>
+                <div class="feature-item">
+                    <h3>Rapid</h3>
+                    <p style="font-size: 0.95rem;">Instant owner notifications upon QR scan or registry lookup during emergencies.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const checkAuth = async () => {
+            try {
+                const response = await fetch('/api/v1/me');
+                const data = await response.json();
+                const dashLink = document.getElementById('nav-dashboard');
+                const authLink = document.getElementById('nav-auth');
+                if (data.authenticated) {
+                    if (dashLink) dashLink.style.display = 'block';
+                    if (authLink) { authLink.textContent = 'Dashboard'; authLink.href = '/owner_dashboard.html'; }
+                }
+            } catch (e) { console.error('Auth check failed', e); }
+        };
+        window.addEventListener('DOMContentLoaded', checkAuth);
+    </script>
+
+    <footer>&copy; 2026 PawsLedger &bull; ISO 11784 Compliant Identity Store</footer>
+</body>
+</html>

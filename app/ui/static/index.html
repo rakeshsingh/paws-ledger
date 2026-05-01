@@ -3,232 +3,190 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Microchip Lookup | PawsLedger</title>
-<style>
+    <title>Global Microchip Registry | PawsLedger</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+
         :root {
-            --primary-color: #2563eb;
-            --secondary-color: #f8fafc;
-            --text-main: #1e293b;
-            --text-light: #64748b;
-            --border-color: #e2e8f0;
-            --accent-warm: #f59e0b;
+            --primary: #d97706;
+            --primary-hover: #b45309;
+            --bg: #fffcf9;
+            --card-bg: #ffffff;
+            --text-main: #451a03;
+            --text-muted: #78350f;
+            --border: #fde6d2;
+            --accent: #f59e0b;
         }
 
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: var(--secondary-color);
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg);
             color: var(--text-main);
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
+            line-height: 1.6;
+            display: flex; flex-direction: column; min-height: 100vh;
         }
 
         header {
-            background: white;
-            padding: 1rem 2rem;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            background: rgba(255, 252, 249, 0.8);
+            backdrop-filter: blur(12px);
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center;
+            position: sticky; top: 0; z-index: 100;
         }
 
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: var(--primary-color);
-            text-decoration: none;
+        .logo { 
+            font-size: 1.75rem; font-weight: 800; color: var(--primary); text-decoration: none; 
+            letter-spacing: -0.05em; display: flex; align-items: center; gap: 0.25rem;
+        }
+        .logo span { color: var(--text-muted); font-weight: 400; }
+
+        nav { display: flex; gap: 2.5rem; align-items: center; }
+        nav a { 
+            text-decoration: none; color: var(--text-main); font-size: 0.95rem; font-weight: 600; 
+            opacity: 0.7; transition: all 0.2s; 
+        }
+        nav a:hover { opacity: 1; color: var(--primary); }
+
+        .btn-primary {
+            background: var(--primary); color: white; padding: 0.8rem 1.75rem;
+            border-radius: 14px; text-decoration: none; font-weight: 700;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); border: none; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.2);
         }
 
-        .logo span {
-            color: var(--text-light);
+        .btn-primary:hover { 
+            background: var(--primary-hover); transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(217, 119, 6, 0.3);
         }
 
-        main {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 2rem;
+        main { 
+            flex: 1; display: flex; flex-direction: column; justify-content: center; 
+            align-items: center; padding: 6rem 2rem; 
         }
+
+        .hero-section { width: 100%; max-width: 800px; text-align: center; }
+        .hero-section h1 { 
+            font-size: 4.5rem; font-weight: 800; line-height: 1; margin-bottom: 1.5rem; 
+            letter-spacing: -0.04em; color: var(--text-main);
+        }
+        .hero-section p.subtitle { font-size: 1.25rem; color: var(--text-muted); margin-bottom: 4rem; max-width: 600px; margin-left: auto; margin-right: auto; }
 
         .search-card {
-            background: white;
-            width: 100%;
-            max-width: 700px;
-            padding: 3rem;
-            border-radius: 1.5rem;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
-            text-align: center;
-            border: 1px solid var(--border-color);
+            background: var(--card-bg); padding: 3rem; border-radius: 32px;
+            border: 1px solid var(--border);
+            box-shadow: 0 25px 50px -12px rgba(69, 26, 3, 0.08);
         }
 
-        h1 {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-            color: #0f172a;
-        }
-
-        p.subtitle {
-            color: var(--text-light);
-            margin-bottom: 2.5rem;
-            line-height: 1.6;
-        }
-
-        .input-group {
-            margin-bottom: 1rem;
-            text-align: left;
-        }
-
-        label {
-            display: block;
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-light);
-            margin-bottom: 0.5rem;
-        }
-
-        /* Inline Search Form Container */
-        .search-form-inline {
-            display: flex;
-            gap: 0.5rem;
-            align-items: stretch;
-        }
-
-        .input-wrapper {
-            flex: 1;
-        }
+        .search-form { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+        .input-wrapper { flex: 1; }
 
         input[type="text"] {
-            width: 100%;
-            padding: 0.875rem 1rem;
-            font-size: 1.15rem;
-            border: 2px solid var(--border-color);
-            border-radius: 0.75rem;
-            box-sizing: border-box;
-            font-family: monospace;
-            transition: border-color 0.2s;
+            width: 100%; padding: 1.25rem 1.5rem; font-size: 1.25rem;
+            border: 2px solid var(--border); border-radius: 18px;
+            transition: all 0.2s; font-family: 'Courier New', monospace;
+            background: #fffbf7; color: var(--text-main);
         }
 
-        input[type="text"]:focus {
-            outline: none;
-            border-color: var(--primary-color);
+        input[type="text"]:focus { 
+            outline: none; border-color: var(--primary); background: white;
+            box-shadow: 0 0 0 4px rgba(217, 119, 6, 0.1);
         }
 
-        .btn-lookup {
-            background: var(--primary-color);
-            color: white;
-            padding: 0 2rem;
-            border-radius: 0.75rem;
-            font-size: 1rem;
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
-            transition: background 0.2s;
-            white-space: nowrap;
+        #results {
+            margin-top: 2.5rem; text-align: left; border-radius: 24px;
+            border: 1px solid var(--border); overflow: hidden; display: none;
+            background: #fffcf9; animation: slideUp 0.4s ease-out;
         }
 
-        .btn-lookup:hover {
-            background: #1d4ed8;
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .instruction-text {
-            font-size: 0.75rem; 
-            color: var(--text-light); 
-            margin-top: 0.75rem;
-            text-align: left;
+        .results-inner { padding: 2rem; }
+        .badge { 
+            display: inline-block; padding: 0.4rem 1rem; border-radius: 99px; 
+            font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;
+            margin-bottom: 1rem; background: #fef3c7; color: #92400e;
         }
 
-        .footer-info {
-            margin-top: 2rem;
-            font-size: 0.875rem;
-            color: var(--text-light);
+        footer { 
+            padding: 4rem 2rem; text-align: center; font-size: 0.9rem; 
+            color: var(--text-muted); border-top: 1px solid var(--border); 
+            background: white; opacity: 0.6;
         }
 
-        .footer-info a {
-            color: var(--primary-color);
-            text-decoration: none;
-            font-weight: 500;
-        }
-
-        footer {
-            padding: 2rem;
-            text-align: center;
-            font-size: 0.875rem;
-            color: var(--text-light);
-            border-top: 1px solid var(--border-color);
-            background: white;
-        }
-
-        @media (max-width: 600px) {
-            .search-form-inline {
-                flex-direction: column;
-            }
-            .btn-lookup {
-                padding: 1rem;
-            }
+        @media (max-width: 768px) { 
+            .hero-section h1 { font-size: 3rem; }
+            .search-form { flex-direction: column; } 
+            nav { display: none; } 
         }
     </style>
 </head>
 <body>
     <header>
         <a href="/" class="logo">Paws<span>Ledger</span></a>
-        <div style="font-size: 0.9rem; color: var(--text-light); display: flex; gap: 1.5rem; align-items: center;">
-            <a href="/lost" style="text-decoration: none; color: inherit;">Public Safety</a>
-            <a href="/verify" style="text-decoration: none; color: inherit;">Verify Record</a>
-            <a href="/dashboard" style="text-decoration: none; color: inherit;">Dashboard</a>
-            <a href="/login" style="text-decoration: none; color: var(--primary-color); font-weight: 600;">Login / Register</a>
-        </div>
+        <nav>
+            <a href="/about.html">The Mission</a>
+            <a href="/contact.html">Support</a>
+            <a href="/owner_dashboard.html" id="nav-dashboard" style="display: none;">My Ledger</a>
+            <a href="/login" class="btn-primary" id="nav-auth">Sign In</a>
+        </nav>
     </header>
 
     <main>
-        <div class="search-card">
-            <h1>Pet Microchip Lookup</h1>
+        <div class="hero-section">
+            <h1>Secure Identity for Every Pet</h1>
+            <p class="subtitle">Link physical microchips to a trusted digital history. The single source of truth for responsible pet owners.</p>
             
-            <form id="lookup-form">
-                <div class="input-group">
-                    <div class="search-form-inline">
-                        <div class="input-wrapper">
-                            <input type="text" id="microchip" placeholder="Enter Microchip Number" required>
-                        </div>
-                        <button type="submit" class="btn-lookup" id="submit-btn">Search</button>
+            <div class="search-card">
+                <form id="lookup-form" class="search-form">
+                    <div class="input-wrapper">
+                        <input type="text" id="microchip" placeholder="Enter 15-digit ID" required maxlength="15">
                     </div>
-                    <p class="instruction-text">
-                        Enter a 9, 10, or 15-digit numeric Microchip ID e.g. 985112012016385 without spaces or punctuation to lookup a pet registered with PawsLedger or the nationwide AAHA network.
-                    </p>
+                    <button type="submit" class="btn-primary" id="submit-btn">Verify Identity</button>
+                </form>
+                <div id="results">
+                    <div class="results-inner">
+                        <span id="status-badge" class="badge">Verified Record</span>
+                        <h2 id="result-title" style="font-size: 2rem; margin-bottom: 0.5rem; letter-spacing: -0.03em;"></h2>
+                        <p id="result-desc" style="font-size: 1.1rem; opacity: 0.8; margin-bottom: 1.5rem;"></p>
+                        <div id="result-details" style="border-top: 1px solid var(--border); padding-top: 1.5rem;"></div>
+                    </div>
                 </div>
-            </form>
-
-
-            <div id="results" style="margin-top: 2rem; display: none; text-align: left; padding: 1.5rem; border-radius: 1rem; border: 1px solid var(--border-color); background: var(--secondary-color);">
-                <div id="status-badge" style="display: inline-block; padding: 0.25rem 0.75rem; border-radius: 1rem; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-bottom: 1rem;"></div>
-                <h2 id="result-title" style="margin: 0 0 0.5rem 0; font-size: 1.25rem;"></h2>
-                <p id="result-desc" style="margin: 0; color: var(--text-light); font-size: 0.9rem; line-height: 1.5;"></p>
-                <div id="result-details" style="margin-top: 1rem; font-size: 0.85rem; border-top: 1px solid var(--border-color); padding-top: 1rem;"></div>
-                <button id="view-profile-btn" class="btn-lookup" style="margin-top: 1.5rem; display: none;">View Full Ledger</button>
-            </div>
-
-            <div class="footer-info">
-                Already registered? <a href="/login">Login to your account</a>
             </div>
         </div>
     </main>
 
     <script>
+        const checkAuth = async () => {
+            try {
+                const response = await fetch('/api/v1/me');
+                const data = await response.json();
+                const dashLink = document.getElementById('nav-dashboard');
+                const authLink = document.getElementById('nav-auth');
+                if (data.authenticated) {
+                    if (dashLink) dashLink.style.display = 'block';
+                    if (authLink) {
+                        authLink.textContent = 'Dashboard';
+                        authLink.href = '/owner_dashboard.html';
+                    }
+                }
+            } catch (e) { console.error('Auth check failed', e); }
+        };
+
         const handleLookup = async (chipId) => {
             const submitBtn = document.getElementById('submit-btn');
             const resultsDiv = document.getElementById('results');
-            const statusBadge = document.getElementById('status-badge');
             const resultTitle = document.getElementById('result-title');
             const resultDesc = document.getElementById('result-desc');
             const resultDetails = document.getElementById('result-details');
-            const viewProfileBtn = document.getElementById('view-profile-btn');
 
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Searching Registry...';
+            submitBtn.textContent = 'Verifying...';
             resultsDiv.style.display = 'none';
 
             try {
@@ -237,40 +195,27 @@
 
                 if (response.ok) {
                     resultsDiv.style.display = 'block';
+                    resultTitle.textContent = result.source === 'local' ? result.data.name || 'Pet Found' : 'External Record';
+                    resultDesc.textContent = result.message;
                     if (result.source === 'local') {
-                        statusBadge.textContent = 'Verified Local Registry';
-                        statusBadge.style.backgroundColor = '#dcfce7';
-                        statusBadge.style.color = '#166534';
-                        resultTitle.textContent = `${result.data.pet_species} (${result.data.breed})`;
-                        resultDesc.textContent = `Status: ${result.data.identity_status}`;
-                        resultDetails.innerHTML = `
-                            <strong>Manufacturer:</strong> ${result.data.manufacturer || 'Unknown'}<br>
-                            <strong>PawsLedger ID:</strong> ${result.data.id}
-                        `;
-                        viewProfileBtn.style.display = 'block';
-                        viewProfileBtn.onclick = () => window.location.href = `/pet/${result.data.id}`;
-                    } else if (result.source === 'aaha') {
-                        statusBadge.textContent = 'AAHA Nationwide Network';
-                        statusBadge.style.backgroundColor = '#fef9c3';
-                        statusBadge.style.color = '#854d0e';
-                        resultTitle.textContent = 'Microchip Found Externally';
-                        resultDesc.textContent = result.message;
-                        resultDetails.innerHTML = `
-                            <strong>Manufacturer:</strong> ${result.data.manufacturer}<br>
-                            <strong>AAHA Status:</strong> ${result.data.status}<br>
-                            <strong>Last Seen:</strong> ${result.data.last_seen}
-                        `;
-                        viewProfileBtn.style.display = 'none';
+                        resultDetails.innerHTML = `<div style="display:grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div><label style="font-size:0.7rem; font-weight:800; text-transform:uppercase; color:var(--primary);">Species</label><div>${result.data.pet_species}</div></div>
+                            <div><label style="font-size:0.7rem; font-weight:800; text-transform:uppercase; color:var(--primary);">Breed</label><div>${result.data.breed}</div></div>
+                        </div>
+                        <a href="/pet_profile.html?id=${result.data.id}" class="btn-primary" style="display:block; text-align:center; margin-top:2rem;">View Full Ledger</a>`;
+                    } else {
+                        resultDetails.innerHTML = `<p style="margin-bottom:1.5rem;">Manufacturer: ${result.data.manufacturer}</p>
+                        <a href="/login" class="btn-primary" style="display:block; text-align:center;">Claim this Identity</a>`;
                     }
                 } else {
-                    alert('Microchip not found in any registry.');
+                    alert('No registration found for this ID.');
                 }
             } catch (error) {
-                console.error('Error looking up microchip:', error);
-                alert('An error occurred during lookup.');
+                console.error('Lookup failed', error);
+                alert('An error occurred. Please try again.');
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Search';
+                submitBtn.textContent = 'Verify Identity';
             }
         };
 
@@ -279,19 +224,15 @@
             handleLookup(document.getElementById('microchip').value);
         });
 
-        // Check for query parameters on load
         window.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
             const urlParams = new URLSearchParams(window.location.search);
-            const chip = urlParams.get('chip');
-            if (chip) {
-                document.getElementById('microchip').value = chip;
-                handleLookup(chip);
-            }
+            if (urlParams.has('chip')) handleLookup(urlParams.get('chip'));
         });
     </script>
 
     <footer>
-        &copy; 2026 PawsLedger &bull; A Trusted Pet Identity Store &bull; ISO 11784 Compliant
+        &copy; 2026 PawsLedger &bull; Identity as a Service for Pets &bull; ISO 11784 Compliant
     </footer>
 </body>
 </html>

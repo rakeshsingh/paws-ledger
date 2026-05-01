@@ -15,39 +15,63 @@ pdf_service = PDFService()
 
 COMMON_STYLE = """
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+
     :root {
-        --primary-color: #2563eb;
-        --secondary-color: #f8fafc;
-        --text-main: #1e293b;
-        --text-light: #64748b;
-        --border-color: #e2e8f0;
-        --accent-warm: #f59e0b;
+        --primary: #d97706;
+        --primary-hover: #b45309;
+        --bg: #fffcf9;
+        --card-bg: #ffffff;
+        --text-main: #451a03;
+        --text-muted: #78350f;
+        --border: #fde6d2;
+        --accent: #f59e0b;
     }
 
     body {
-        font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        background-color: var(--secondary-color);
+        font-family: 'Outfit', sans-serif;
+        background-color: var(--bg);
         color: var(--text-main);
     }
 
     .logo {
         font-size: 1.5rem;
         font-weight: 800;
-        color: var(--primary-color) !important;
+        color: var(--primary) !important;
         text-decoration: none;
+        letter-spacing: -0.05em;
     }
 
     .logo span {
-        color: var(--text-light) !important;
+        color: var(--text-muted) !important;
+        font-weight: 400;
+    }
+
+    .nicegui-header {
+        background-color: rgba(255, 252, 249, 0.8) !important;
+        backdrop-filter: blur(8px);
+        color: var(--text-main) !important;
+    }
+
+    .q-btn {
+        border-radius: 12px !important;
+        text-transform: none !important;
+        font-weight: 600 !important;
+    }
+
+    .q-card {
+        border-radius: 20px !important;
+        box-shadow: 0 10px 25px -5px rgba(217, 119, 6, 0.05) !important;
+        border: 1px solid var(--border) !important;
     }
 
     footer {
         padding: 2rem;
         text-align: center;
         font-size: 0.875rem;
-        color: var(--text-light);
-        border-top: 1px solid var(--border-color);
-        background: white;
+        color: var(--text-muted);
+        border-top: 1px solid var(--border);
+        background: #fffcf9;
         margin-top: auto;
     }
 </style>
@@ -58,91 +82,84 @@ def init_pages():
     @ui.page("/")
     async def index_page():
         nav_header()
-        with ui.column().classes("w-full items-center p-12"):
-            with ui.card().classes("w-full max-w-2xl p-8 text-center"):
-                ui.label("Pet Microchip Lookup").classes("text-4xl font-bold mb-4")
-                ui.label("Search the PawsLedger registry or the nationwide AAHA network.").classes("text-gray-500 mb-8")
+        with ui.column().classes("w-full items-center p-8 md:p-24"):
+            with ui.column().classes("w-full max-w-3xl items-center text-center"):
+                ui.label("Secure Pet Identity Ledger").classes("text-5xl md:text-7xl font-black mb-4").style("line-height: 1; letter-spacing: -0.02em;")
+                ui.label("Link your pet's physical microchip to a secure digital history.").classes("text-xl text-orange-900 opacity-70 mb-12")
                 
-                with ui.row().classes("w-full gap-2 mb-4"):
-                    chip_input = ui.input("Enter Microchip Number").classes("flex-grow").props("outlined")
-                    search_btn = ui.button("Search", on_click=lambda: do_lookup()).classes("h-14")
-                
-                results_card = ui.card().classes("w-full mt-8 text-left p-6").style("display: none")
-                status_badge = ui.label("").classes("px-3 py-1 rounded-full text-xs font-bold uppercase mb-2")
-                result_title = ui.label("").classes("text-xl font-bold")
-                result_desc = ui.label("").classes("text-gray-500 text-sm")
-                result_details = ui.html("").classes("mt-4 pt-4 border-t text-sm")
-                
-                async def do_lookup():
-                    chip_id = chip_input.value
-                    if not chip_id:
-                        ui.notify("Please enter a Chip ID", type="warning")
-                        return
+                with ui.card().classes("w-full p-8 bg-white"):
+                    with ui.row().classes("w-full gap-4"):
+                        chip_input = ui.input("15-digit Microchip ID").classes("flex-grow").props('outlined rounded color="amber-9" bg-color="orange-1"')
+                        search_btn = ui.button("Verify Identity", on_click=lambda: do_lookup()).classes("h-14 px-8 bg-amber-9 text-white shadow-lg")
                     
-                    search_btn.disable()
-                    search_btn.text = "Searching..."
+                    results_card = ui.column().classes("w-full mt-8 text-left").style("display: none")
+                    status_badge = ui.label("").classes("px-4 py-1 rounded-full text-xs font-bold uppercase mb-2 inline-block")
+                    result_title = ui.label("").classes("text-2xl font-bold")
+                    result_desc = ui.label("").classes("text-orange-900 opacity-70 mb-6")
+                    result_details = ui.column().classes("w-full pt-4 border-t border-orange-100")
                     
-                    try:
-                        # We use the API logic here
-                        with Session(engine) as session:
-                            pet = session.exec(select(Pet).where(Pet.chip_id == chip_id)).first()
-                            if pet:
+                    async def do_lookup():
+                        chip_id = chip_input.value
+                        if not chip_id:
+                            ui.notify("Please enter a Chip ID", type="warning", color="amber-9")
+                            return
+                        
+                        search_btn.disable()
+                        search_btn.text = "Verifying..."
+                        
+                        try:
+                            with Session(engine) as session:
+                                pet = session.exec(select(Pet).where(Pet.chip_id == chip_id)).first()
                                 results_card.style("display: block")
-                                status_badge.text = "Verified Local Registry"
-                                status_badge.style("background-color: #dcfce7; color: #166534")
-                                result_title.text = f"{pet.name} ({pet.pet_species})"
-                                result_desc.text = f"Status: {pet.identity_status}"
-                                result_details.content = f"<b>Breed:</b> {pet.breed}<br><b>Manufacturer:</b> {pet.manufacturer}"
-                                
-                                # Add Nudge button if user is logged in
-                                if app.storage.user.get("email"):
-                                    with result_details:
-                                        ui.button("Nudge Owner", icon="notifications", on_click=lambda: nudge(chip_id)).classes("mt-4 w-full")
-                            else:
-                                from ..api.v1.routes import aaha_client
-                                aaha_data = await aaha_client.lookup(chip_id)
-                                if aaha_data:
-                                    results_card.style("display: block")
-                                    status_badge.text = "AAHA Nationwide Network"
-                                    status_badge.style("background-color: #fef9c3; color: #854d0e")
-                                    result_title.text = "Microchip Found Externally"
-                                    result_desc.text = aaha_data["message"]
-                                    result_details.content = f"<b>Manufacturer:</b> {aaha_data["manufacturer"]}<br><b>Status:</b> {aaha_data["status"]}"
+                                if pet:
+                                    status_badge.text = "Verified PawsLedger Record"
+                                    status_badge.style("background-color: #fef3c7; color: #92400e")
+                                    result_title.text = f"{pet.name} • {pet.pet_species}"
+                                    result_desc.text = f"Breed: {pet.breed} | Status: {pet.identity_status}"
                                     
+                                    result_details.clear()
                                     with result_details:
-                                        ui.label("Not on PawsLedger yet?").classes("mt-4 text-xs italic")
-                                        ui.button("Claim this Pet / Register", on_click=lambda: ui.navigate.to("/register")).classes("w-full")
+                                        ui.button("View Full Ledger", on_click=lambda: ui.navigate.to(f"/pet/{pet.id}")).classes("w-full bg-amber-9 text-white mt-4")
                                 else:
-                                    ui.notify("Microchip not found in any registry.", type="negative")
-                                    results_card.style("display: none")
-                    finally:
-                        search_btn.enable()
-                        search_btn.text = "Search"
-
-                async def nudge(cid):
-                    # Call the API or logic
-                    ui.notify(f"Nudge sent to owner of {cid}", type="positive")
+                                    from ..api.v1.routes import aaha_client
+                                    aaha_data = await aaha_client.lookup(chip_id)
+                                    if aaha_data:
+                                        status_badge.text = "AAHA Nationwide Network"
+                                        status_badge.style("background-color: #fff7ed; color: #9a3412")
+                                        result_title.text = "Identity Found Externally"
+                                        result_desc.text = aaha_data["message"]
+                                        result_details.clear()
+                                        with result_details:
+                                            ui.label("Protect this pet with a PawsLedger Identity.").classes("text-sm italic mb-4")
+                                            ui.button("Claim Identity / Register", on_click=lambda: ui.navigate.to("/register")).classes("w-full bg-orange-9 text-white")
+                                    else:
+                                        ui.notify("No registration found for this ID.", type="negative", color="deep-orange-9")
+                                        results_card.style("display: none")
+                        finally:
+                            search_btn.enable()
+                            search_btn.text = "Verify Identity"
 
         nav_footer()
 
-
     def nav_header():
-        with ui.header().classes('bg-white text-primary border-b px-8 py-4 justify-between items-center').style('border-bottom: 1px solid var(--border-color)'):
+        with ui.header().classes('bg-white text-orange-9 px-8 py-6 justify-between items-center border-b border-orange-50'):
             with ui.link(target='/').classes('logo'):
                 ui.label('Paws').style('display: inline')
-                ui.label('Ledger').style('display: inline; color: var(--text-light)')
+                ui.label('Ledger').style('display: inline; color: var(--text-muted)')
             
-            with ui.row().classes('gap-6 items-center').style('font-size: 0.9rem; color: var(--text-light)'):
+            with ui.row().classes('gap-8 items-center'):
+                ui.link('About', '/about').classes('text-orange-900 font-medium opacity-70 hover:opacity-100 transition-opacity')
+                ui.link('Contact', '/contact').classes('text-orange-900 font-medium opacity-70 hover:opacity-100 transition-opacity')
                 if app.storage.user.get('email'):
-                    ui.link('Dashboard', '/dashboard').classes('text-inherit hover:text-primary')
-                    ui.link('Logout', '/').on('click', lambda: app.storage.user.clear()).classes('text-primary font-bold')
+                    ui.link('Dashboard', '/dashboard').classes('text-orange-900 font-medium')
+                    ui.button('Logout', on_click=lambda: (app.storage.user.clear(), ui.navigate.to('/'))).props('flat color="amber-9"')
                 else:
-                    ui.link('Dashboard', '/dashboard').classes('text-inherit hover:text-primary')
-                    ui.link('Login / Register', '/login').classes('text-primary font-bold')
+                    ui.button('Sign In', on_click=lambda: ui.navigate.to('/login')).classes('bg-amber-9 text-white px-6')
 
     def nav_footer():
-        with ui.footer().classes('bg-white'):
-             ui.html('&copy; 2026 PawsLedger &bull; A Trusted Pet Identity Store &bull; ISO 11784 Compliant')
+        with ui.footer().classes('bg-white border-t border-orange-50 p-12 text-center'):
+             ui.label('© 2026 PawsLedger • The Source of Truth for Pet Identity • ISO 11784 Compliant').classes('text-orange-900 opacity-50')
+
 
     @ui.page('/about')
     async def about_page():
