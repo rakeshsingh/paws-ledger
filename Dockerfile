@@ -7,6 +7,11 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 # Set working directory
 WORKDIR /app
 
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
 # Enable bytecode compilation for faster startup
 ENV UV_COMPILE_BYTECODE=1
 
@@ -19,8 +24,10 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Copy the application code
 COPY . .
 
-# Create a non-root user for security
-RUN useradd -m pawsuser && chown -R pawsuser:pawsuser /app
+# Create a non-root user and setup data directory
+RUN useradd -m pawsuser && \
+    mkdir -p /app/data && \
+    chown -R pawsuser:pawsuser /app /app/data
 USER pawsuser
 
 # Application configuration

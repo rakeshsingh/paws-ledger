@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    # Note: We no longer need to expose ports to the public internet
+    # cloudflared will communicate with this service over the internal docker network
+    expose:
+      - "8080"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - APP_ENV=prod
+      - DATABASE_URL=sqlite:////app/data/pawsledger.db
+      - STORAGE_SECRET=${STORAGE_SECRET:-paws_secret_key_change_me}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL}
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    restart: always
+    command: tunnel --no-autoupdate run --token ${TUNNEL_TOKEN}
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}

@@ -30,7 +30,8 @@ def on_startup():
 init_pages()
 
 # Integrate NiceGUI with FastAPI
-ui.run_with(fastapi_app, title="PawsLedger", storage_secret="paws_secret_key")
+storage_secret = os.getenv("STORAGE_SECRET", "paws_secret_key")
+ui.run_with(fastapi_app, title="PawsLedger", storage_secret=storage_secret)
 
 if __name__ == "__main__":
     import uvicorn

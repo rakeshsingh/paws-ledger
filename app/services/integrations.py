@@ -62,6 +62,80 @@ class AAHAClient:
             }
         return None
 
+from fpdf import FPDF
+
+class PDFService:
+    @staticmethod
+    def generate_vaccination_report(pet_name: str, vaccinations: list, record_hash: str) -> str:
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("helvetica", "B", 16)
+        pdf.cell(200, 10, txt="PawsLedger Vaccination Record", ln=True, align="C")
+        
+        pdf.set_font("helvetica", "", 12)
+        pdf.ln(10)
+        pdf.cell(200, 10, txt=f"Pet Name: {pet_name}", ln=True)
+        pdf.ln(5)
+        
+        pdf.set_font("helvetica", "B", 12)
+        pdf.cell(40, 10, txt="Date", border=1)
+        pdf.cell(60, 10, txt="Vaccine", border=1)
+        pdf.cell(50, 10, txt="Manufacturer", border=1)
+        pdf.cell(40, 10, txt="Expires", border=1)
+        pdf.ln()
+        
+        pdf.set_font("helvetica", "", 10)
+        for v in vaccinations:
+            pdf.cell(40, 10, txt=str(v.date_given.date()), border=1)
+            pdf.cell(60, 10, txt=v.vaccine_name, border=1)
+            pdf.cell(50, 10, txt=v.manufacturer, border=1)
+            pdf.cell(40, 10, txt=str(v.expiration_date.date()), border=1)
+            pdf.ln()
+            
+        pdf.ln(10)
+        pdf.set_font("helvetica", "I", 8)
+        pdf.multi_cell(0, 5, txt=f"Verification Hash (SHA-256): {record_hash}")
+        pdf.ln(5)
+        pdf.multi_cell(0, 5, txt="This document is a verified digital export from PawsLedger. Authenticity can be verified at https://pawsledger.com/verify")
+        
+        output_path = f"/tmp/vaccination_record_{pet_name}.pdf"
+        pdf.output(output_path)
+        return output_path
+
+import hashlib
+import json
+
+class HashService:
+    @staticmethod
+    def hash_record(record_data: dict) -> str:
+        # Create a stable JSON string to hash
+        encoded_data = json.dumps(record_data, sort_keys=True, default=str).encode()
+        return hashlib.sha256(encoded_data).hexdigest()
+
+class EmailService:
+    """
+    Mock Email Service. In production, this would use SendGrid, Mailgun, etc.
+    """
+    @staticmethod
+    async def send_email(to_email: str, subject: str, body: str):
+        print(f"DEBUG: Sending email to {to_email}")
+        print(f"DEBUG: Subject: {subject}")
+        print(f"DEBUG: Body: {body}")
+        # In a real app, this would be an async call to an email provider
+        return True
+
+    @staticmethod
+    async def notify_owner_of_scan(owner_email: str, pet_name: str):
+        subject = f"ALERT: Your pet {pet_name}'s tag was scanned!"
+        body = f"Hello,\n\nYour pet {pet_name}'s PawsLedger QR tag was recently scanned. If your pet is lost, this is a 'proof of life' event.\n\nPlease check your dashboard for more details."
+        await EmailService.send_email(owner_email, subject, body)
+
+    @staticmethod
+    async def notify_owner_of_access(owner_email: str, pet_name: str, accessor_info: str):
+        subject = f"Heartbeat Audit: {pet_name}'s record was accessed"
+        body = f"Hello,\n\nYour pet {pet_name}'s medical records were accessed via a shared link.\n\nAccessor: {accessor_info}\n\nThis heartbeat notification is part of PawsLedger's managed access service."
+        await EmailService.send_email(owner_email, subject, body)
+
 from authlib.integrations.starlette_client import OAuth
 from starlette.requests import Request
 from nicegui import app as nicegui_app

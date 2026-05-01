@@ -24,12 +24,45 @@ class Pet(SQLModel, table=True):
     
     owner: Optional[User] = Relationship(back_populates="pets")
     ledger_events: List["LedgerEvent"] = Relationship(back_populates="pet")
+    vaccinations: List["Vaccination"] = Relationship(back_populates="pet")
+    shared_accesses: List["SharedAccess"] = Relationship(back_populates="pet")
 
 class LedgerEvent(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     pet_id: UUID = Field(foreign_key="pet.id")
-    event_type: str  # VACCINATION, WEIGHT_CHECK, OWNERSHIP_CHANGE, EMERGENCY_SCAN
+    event_type: str  # VACCINATION, WEIGHT_CHECK, OWNERSHIP_CHANGE, EMERGENCY_SCAN, HEARTBEAT_ACCESS
     description: str
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
     pet: Pet = Relationship(back_populates="ledger_events")
+
+class Vaccination(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    pet_id: UUID = Field(foreign_key="pet.id")
+    
+    vaccine_name: str
+    manufacturer: str
+    serial_number: str
+    lot_number: Optional[str] = None
+    date_given: datetime
+    expiration_date: datetime
+    
+    administering_vet: str
+    vet_license: Optional[str] = None
+    clinic_name: str
+    clinic_address: Optional[str] = None
+    clinic_phone: Optional[str] = None
+    
+    # Cryptographic verification
+    record_hash: Optional[str] = None # SHA-256 of the record
+    
+    pet: Pet = Relationship(back_populates="vaccinations")
+
+class SharedAccess(SQLModel, table=True):
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    pet_id: UUID = Field(foreign_key="pet.id")
+    token: str = Field(default_factory=lambda: str(uuid4()), index=True, unique=True)
+    expires_at: datetime
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    pet: Pet = Relationship(back_populates="shared_accesses")

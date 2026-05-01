@@ -2,12 +2,16 @@ from nicegui import ui, app
 from starlette.requests import Request
 from sqlmodel import Session, select
 from ..database import engine
-from ..models import Pet, User, LedgerEvent
-from ..services.integrations import get_manufacturer_from_chip, DogAPIClient, GoogleAuthService
+from ..models import Pet, User, LedgerEvent, Vaccination, SharedAccess
+from ..services.integrations import get_manufacturer_from_chip, DogAPIClient, GoogleAuthService, EmailService, HashService, PDFService
+from datetime import datetime, timedelta
 import uuid
 
 dog_client = DogAPIClient()
 google_auth = GoogleAuthService()
+email_service = EmailService()
+hash_service = HashService()
+pdf_service = PDFService()
 
 COMMON_STYLE = """
 <style>
@@ -99,17 +103,59 @@ def init_pages():
                 ui.label('Yes, PawsLedger uses industry-standard encryption and obfuscates owner PII until an emergency state is toggled.')
         nav_footer()
 
-    @ui.page('/contact')
-    async def contact_page():
+    @ui.page('/shared/{token}')
+    async def shared_profile(token: str):
         nav_header()
-        with ui.column().classes('w-full items-center p-8 max-w-4xl mx-auto'):
-            ui.label('Contact Us').classes('text-4xl font-bold mb-6')
-            with ui.card().classes('w-full p-6'):
-                ui.label('Have questions or need support?').classes('text-lg mb-4')
-                ui.input('Your Name').classes('w-full mb-4')
-                ui.input('Your Email').classes('w-full mb-4')
-                ui.textarea('Message').classes('w-full mb-4')
-                ui.button('Send Message', on_click=lambda: ui.notify('Message sent (mock)')).classes('w-full')
+        with Session(engine) as session:
+            statement = select(SharedAccess).where(SharedAccess.token == token)
+            shared_access = session.exec(statement).first()
+            
+            if not shared_access or shared_access.expires_at < datetime.utcnow():
+                with ui.column().classes('w-full items-center p-8'):
+                    ui.label('Access Expired or Invalid').classes('text-2xl text-red-500')
+                    ui.label('This shared link is no longer active.').classes('text-gray-500')
+                return
+
+            pet = shared_access.pet
+            
+            # Log Heartbeat Audit
+            event = LedgerEvent(
+                pet_id=pet.id,
+                event_type="HEARTBEAT_ACCESS",
+                description="Shared records accessed via time-bound link"
+            )
+            session.add(event)
+            session.commit()
+            
+            # Notify owner
+            if pet.owner and pet.owner.email:
+                await email_service.notify_owner_of_access(pet.owner.email, pet.breed or "Pet", "Service Provider (Shared Link)")
+
+            with ui.column().classes('w-full items-center p-8 max-w-4xl mx-auto'):
+                ui.label(f'Care Guide & Records: {pet.breed}').classes('text-3xl font-bold mb-6')
+                
+                with ui.row().classes('w-full gap-4'):
+                    with ui.card().classes('flex-1 p-6'):
+                        ui.label('Vaccination History').classes('text-xl font-bold mb-4 border-b')
+                        if not pet.vaccinations:
+                            ui.label('No vaccination records found.').classes('italic text-gray-500')
+                        else:
+                            for v in pet.vaccinations:
+                                with ui.row().classes('justify-between w-full mb-2'):
+                                    with ui.column():
+                                        ui.label(v.vaccine_name).classes('font-bold')
+                                        ui.label(f"Given: {v.date_given.date()}").classes('text-xs text-gray-500')
+                                    ui.label(f"Expires: {v.expiration_date.date()}").classes('text-xs font-bold text-blue-600')
+
+                    with ui.card().classes('w-64 p-6'):
+                        ui.label('Quick Info').classes('font-bold border-b mb-2')
+                        ui.label(f'Species: {pet.pet_species}')
+                        ui.label(f'Breed: {pet.breed}')
+                        ui.label(f'DOB: {pet.dob.date() if pet.dob else "Unknown"}')
+                        ui.separator().classes('my-2')
+                        ui.label('Access Status').classes('text-xs text-gray-400')
+                        ui.label('Active').classes('text-green-600 font-bold')
+                        ui.label(f"Expires: {shared_access.expires_at.strftime('%Y-%m-%d %H:%M')}").classes('text-xs text-gray-500')
         nav_footer()
 
     @ui.page('/login')
@@ -249,8 +295,8 @@ def init_pages():
                 species = ui.select(['DOG', 'CAT'], label='Species', value='DOG').classes('w-full mb-4')
                 
                 async def submit():
-                    if not chip_id.value or len(chip_id.value) != 15:
-                        ui.notify('Invalid Chip ID. Must be 15 digits.', type='negative')
+                    if not chip_id.value or len(chip_id.value) != 15 or not chip_id.value.isdigit():
+                        ui.notify('Invalid Chip ID. Must be exactly 15 numeric digits.', type='negative')
                         return
                     
                     manufacturer = get_manufacturer_from_chip(chip_id.value)
@@ -273,38 +319,216 @@ def init_pages():
                 ui.button('Create Identity', on_click=submit).classes('w-full mt-4')
         nav_footer()
 
+    @ui.page('/lost')
+    async def lost_pets_page():
+        nav_header()
+        with ui.column().classes('w-full items-center p-8 max-w-4xl mx-auto'):
+            ui.label('Public Safety & Recovery').classes('text-4xl font-bold mb-4')
+            ui.label('If you have found a pet, use our global lookup or scan their QR tag to notify the owner.').classes('text-gray-500 mb-8 text-center')
+            
+            with ui.card().classes('w-full p-8 items-center bg-blue-50 border-none'):
+                ui.icon('search', size='48px', color='primary')
+                ui.label('Search the Global Ledger').classes('text-xl font-bold mt-4')
+                chip_input = ui.input('Enter 15-digit Microchip ID').classes('w-64 mt-2')
+                
+                async def lookup():
+                    if not chip_input.value: return
+                    ui.navigate.to(f'/?chip={chip_input.value}') # Redirect to landing page with query
+                
+                ui.button('Search Nationwide Network', on_click=lookup).classes('mt-4')
+
+            with ui.row().classes('w-full gap-6 mt-8'):
+                with ui.card().classes('flex-1 p-6'):
+                    ui.label('Found a Pet?').classes('text-xl font-bold mb-2')
+                    ui.label('1. Check for a PawsLedger QR tag.').classes('text-sm')
+                    ui.label('2. Scan with your phone camera.').classes('text-sm')
+                    ui.label('3. Tap "Contact Owner" to send an alert.').classes('text-sm')
+                
+                with ui.card().classes('flex-1 p-6'):
+                    ui.label('Owner Privacy').classes('text-xl font-bold mb-2')
+                    ui.label('We never show owner phone numbers or addresses publicly. Alerts are sent via our secure bridge.').classes('text-sm text-gray-600')
+
+        nav_footer()
+
+    @ui.page('/contact')
+    async def contact_page():
+        nav_header()
+        with ui.column().classes('w-full items-center p-8 max-w-4xl mx-auto'):
+            ui.label('Contact Us').classes('text-4xl font-bold mb-6')
+            with ui.card().classes('w-full p-6'):
+                ui.label('Have questions or need support?').classes('text-lg mb-4')
+                ui.input('Your Name').classes('w-full mb-4')
+                ui.input('Your Email').classes('w-full mb-4')
+                ui.textarea('Message').classes('w-full mb-4')
+                ui.button('Send Message', on_click=lambda: ui.notify('Message sent (mock)')).classes('w-full')
+        nav_footer()
+
+    @ui.page('/verify')
+    async def verify_page():
+        nav_header()
+        with ui.column().classes('w-full items-center p-8 max-w-2xl mx-auto'):
+            ui.label('Verify Vaccination Record').classes('text-3xl font-bold mb-4')
+            ui.label('Enter the SHA-256 hash found at the bottom of a PawsLedger PDF export to verify its authenticity.').classes('text-gray-500 mb-8 text-center')
+            
+            hash_input = ui.input('Verification Hash').classes('w-full mb-4').props('outlined')
+            
+            results = ui.column().classes('w-full mt-4')
+
+            async def verify():
+                results.clear()
+                if not hash_input.value: return
+                
+                with Session(engine) as session:
+                    # Simplified verification: check if any vaccination or aggregate matches
+                    # In a real app, you'd store the aggregate export hashes separately
+                    vax = session.exec(select(Vaccination).where(Vaccination.record_hash == hash_input.value)).first()
+                    
+                    if vax:
+                        with results, ui.card().classes('w-full p-6 bg-green-50 border-green-200'):
+                            with ui.row().classes('items-center gap-2 mb-2'):
+                                ui.icon('verified', color='green')
+                                ui.label('RECORD VERIFIED').classes('font-bold text-green-700')
+                            ui.label(f"Vaccine: {vax.vaccine_name}")
+                            ui.label(f"Pet ID: {vax.pet_id}")
+                            ui.label(f"Date Given: {vax.date_given.date()}")
+                            ui.label(f"Clinic: {vax.clinic_name}")
+                    else:
+                        with results, ui.card().classes('w-full p-6 bg-red-50 border-red-200'):
+                            with ui.row().classes('items-center gap-2 mb-2'):
+                                ui.icon('error', color='red')
+                                ui.label('VERIFICATION FAILED').classes('font-bold text-red-700')
+                            ui.label('The provided hash does not match any records in our ledger.')
+
+            ui.button('Verify Record', on_click=verify).classes('w-full')
+        nav_footer()
+
     @ui.page('/pet/{pet_id}')
     async def pet_profile(pet_id: str):
         nav_header()
         with Session(engine) as session:
-            pet = session.get(Pet, uuid.UUID(pet_id))
+            pet = session.exec(select(Pet).where(Pet.id == uuid.UUID(pet_id))).first()
             if not pet:
                 ui.label('Pet Not Found').classes('text-2xl text-red-500')
                 return
 
-            with ui.column().classes('w-full items-center p-8'):
-                ui.label(f'Identity Ledger: {pet.chip_id}').classes('text-3xl font-bold')
+            with ui.column().classes('w-full items-center p-8 max-w-6xl mx-auto'):
+                ui.label(f'Identity Ledger: {pet.chip_id}').classes('text-3xl font-bold mb-8')
                 
-                with ui.row().classes('gap-4 mt-6'):
-                    with ui.card().classes('p-4 w-64'):
-                        ui.label('General Info').classes('font-bold border-b mb-2')
-                        ui.label(f'Species: {pet.pet_species}')
-                        ui.label(f'Breed: {pet.breed}')
-                        ui.label(f'Manufacturer: {pet.manufacturer}')
-                        ui.label(f'Status: {pet.identity_status}').classes('text-green-600' if pet.identity_status == 'VERIFIED' else 'text-yellow-600')
-                        if pet.owner:
-                            ui.label(f'Owner: {pet.owner.name}').classes('text-sm text-gray-600 mt-2')
+                with ui.row().classes('w-full gap-6 items-start'):
+                    # Left Column: General Info & Shared Access
+                    with ui.column().classes('w-1/3 gap-6'):
+                        with ui.card().classes('w-full p-6'):
+                            ui.label('General Info').classes('text-xl font-bold border-b mb-4')
+                            ui.label(f'Species: {pet.pet_species}')
+                            ui.label(f'Breed: {pet.breed}')
+                            ui.label(f'Manufacturer: {pet.manufacturer}')
+                            ui.label(f'Status: {pet.identity_status}').classes('text-green-600' if pet.identity_status == 'VERIFIED' else 'text-yellow-600')
+                            if pet.owner:
+                                ui.label(f'Owner: {pet.owner.name}').classes('text-sm text-gray-600 mt-2')
 
-                    with ui.card().classes('p-4 w-80'):
-                        ui.label('Ledger Events').classes('font-bold border-b mb-2')
-                        for event in pet.ledger_events:
-                            with ui.row().classes('justify-between w-full'):
-                                ui.label(event.event_type).classes('text-xs font-mono')
-                                ui.label(event.timestamp.strftime('%Y-%m-%d')).classes('text-xs text-gray-400')
-                            ui.label(event.description).classes('text-sm mb-2')
-                        
-                        if not pet.ledger_events:
-                            ui.label('No events recorded.').classes('text-sm italic')
+                        with ui.card().classes('w-full p-6'):
+                            ui.label('Managed Access').classes('text-xl font-bold border-b mb-4')
+                            ui.label('Generate a time-bound care link for sitters/vets.').classes('text-xs text-gray-500 mb-4')
+                            
+                            async def create_link():
+                                access = SharedAccess(pet_id=pet.id, expires_at=datetime.utcnow() + timedelta(hours=24))
+                                session.add(access)
+                                session.commit()
+                                url = f"/shared/{access.token}"
+                                with ui.dialog() as dialog, ui.card():
+                                    ui.label('Shared Access Link Created').classes('font-bold')
+                                    ui.label('Valid for 24 hours.').classes('text-xs')
+                                    ui.input(value=url).classes('w-full mt-2').props('readonly outline')
+                                    ui.button('Close', on_click=dialog.close).classes('mt-4')
+                                dialog.open()
+                            
+                            ui.button('Create 24h Link', icon='share', on_click=create_link).classes('w-full').props('outline')
+
+                    # Middle Column: Vaccination Ledger
+                    with ui.column().classes('flex-1 gap-6'):
+                        with ui.card().classes('w-full p-6'):
+                            with ui.row().classes('justify-between items-center w-full mb-4 border-b pb-2'):
+                                ui.label('Vaccination Ledger').classes('text-xl font-bold')
+                                
+                                async def export_pdf():
+                                    if not pet.vaccinations:
+                                        ui.notify('No vaccinations to export.', type='warning')
+                                        return
+                                    aggregate_data = [v.dict(exclude={"id", "pet_id", "record_hash", "pet"}) for v in pet.vaccinations]
+                                    export_hash = hash_service.hash_record({"pet_id": str(pet.id), "vaccinations": aggregate_data})
+                                    path = pdf_service.generate_vaccination_report(pet.breed or "Pet", pet.vaccinations, export_hash)
+                                    ui.download(path, f"{pet.breed}_vaccinations.pdf")
+
+                                ui.button('Export Verified PDF', icon='download', on_click=export_pdf).props('flat color=primary small')
+
+                            if not pet.vaccinations:
+                                ui.label('No vaccinations recorded.').classes('italic text-gray-500')
+                            else:
+                                for v in pet.vaccinations:
+                                    with ui.card().classes('w-full mb-2 p-3 bg-blue-50 border-none shadow-none'):
+                                        with ui.row().classes('justify-between w-full'):
+                                            with ui.column():
+                                                ui.label(v.vaccine_name).classes('font-bold')
+                                                ui.label(f"By {v.administering_vet} @ {v.clinic_name}").classes('text-xs text-gray-500')
+                                            with ui.column().classes('items-end'):
+                                                ui.label(f"Expires: {v.expiration_date.date()}").classes('text-xs font-bold text-blue-600')
+                                                ui.label(f"Hash: {v.record_hash[:8]}...").classes('text-[10px] text-gray-400 font-mono')
+
+                            with ui.expansion('Add Vaccination Record', icon='add').classes('w-full mt-4 border-t'):
+                                v_name = ui.input('Vaccine Name (e.g. Rabies 3yr)').classes('w-full')
+                                v_man = ui.input('Manufacturer').classes('w-full')
+                                v_serial = ui.input('Serial #').classes('w-full')
+                                v_lot = ui.input('Lot #').classes('w-full')
+                                v_date = ui.input('Date Given (YYYY-MM-DD)').classes('w-full')
+                                v_exp = ui.input('Expiration Date (YYYY-MM-DD)').classes('w-full')
+                                v_vet = ui.input('Administering Vet').classes('w-full')
+                                v_license = ui.input('Vet License #').classes('w-full')
+                                v_clinic = ui.input('Clinic Name').classes('w-full')
+                                v_phone = ui.input('Clinic Phone').classes('w-full')
+
+                                async def save_vaccination():
+                                    try:
+                                        new_v = Vaccination(
+                                            pet_id=pet.id,
+                                            vaccine_name=v_name.value,
+                                            manufacturer=v_man.value,
+                                            serial_number=v_serial.value,
+                                            lot_number=v_lot.value,
+                                            date_given=datetime.strptime(v_date.value, '%Y-%m-%d'),
+                                            expiration_date=datetime.strptime(v_exp.value, '%Y-%m-%d'),
+                                            administering_vet=v_vet.value,
+                                            vet_license=v_license.value,
+                                            clinic_name=v_clinic.value,
+                                            clinic_phone=v_phone.value
+                                        )
+                                        # Hash
+                                        record_data = new_v.dict(exclude={"id", "pet_id", "record_hash", "pet"})
+                                        new_v.record_hash = hash_service.hash_record(record_data)
+                                        
+                                        session.add(new_v)
+                                        # Log event
+                                        session.add(LedgerEvent(pet_id=pet.id, event_type="VACCINATION", description=f"Vaccination added: {v_name.value}"))
+                                        session.commit()
+                                        ui.notify('Vaccination record added to ledger!', type='positive')
+                                        ui.navigate.to(f'/pet/{pet.id}')
+                                    except Exception as e:
+                                        ui.notify(f'Error: {str(e)}', type='negative')
+
+                                ui.button('Commit to Ledger', on_click=save_vaccination).classes('w-full mt-2')
+
+                    # Right Column: Audit Trail
+                    with ui.column().classes('w-64 gap-6'):
+                        with ui.card().classes('w-full p-6'):
+                            ui.label('Audit Trail').classes('text-xl font-bold border-b mb-4')
+                            for event in sorted(pet.ledger_events, key=lambda x: x.timestamp, reverse=True):
+                                with ui.column().classes('mb-3'):
+                                    with ui.row().classes('justify-between w-full'):
+                                        ui.label(event.event_type).classes('text-[10px] font-bold text-gray-400')
+                                        ui.label(event.timestamp.strftime('%H:%M')).classes('text-[10px] text-gray-400')
+                                    ui.label(event.description).classes('text-xs')
+                            
+                            if not pet.ledger_events:
+                                ui.label('No events recorded.').classes('text-sm italic')
 
                 ui.button('Back to Dashboard', on_click=lambda: ui.navigate.to('/dashboard')).classes('mt-8').props('flat')
         nav_footer()
@@ -319,7 +543,7 @@ def init_pages():
                 ui.label('Invalid QR Tag').classes('text-2xl text-red-500')
                 return
                 
-            pet = session.get(Pet, pet_uuid)
+            pet = session.exec(select(Pet).where(Pet.id == pet_uuid)).first()
             if not pet:
                  ui.label('Invalid Tag').classes('text-2xl text-red-500')
                  return
@@ -328,6 +552,10 @@ def init_pages():
             event = LedgerEvent(pet_id=pet.id, event_type="EMERGENCY_SCAN", description="Public QR scan detected")
             session.add(event)
             session.commit()
+
+            # Notify owner
+            if pet.owner and pet.owner.email:
+                await email_service.notify_owner_of_scan(pet.owner.email, pet.breed or "Pet")
 
             with ui.column().classes('w-full items-center p-8 bg-red-50 min-h-screen'):
                 ui.icon('emergency', size='64px', color='red')
@@ -338,8 +566,19 @@ def init_pages():
                     ui.label(f'Breed: {pet.breed}').classes('text-xl font-bold text-center')
                     ui.label(f'Chip ID: {pet.chip_id}').classes('text-sm text-gray-500 text-center mb-6')
                     
-                    ui.button('CALL OWNER', icon='phone').classes('w-full bg-green-600 text-white py-4 text-xl mb-4')
-                    ui.button('NOTIFY VET', icon='local_hospital', color='secondary').classes('w-full')
+                    async def contact_owner():
+                        if pet.owner and pet.owner.email:
+                            await email_service.send_email(
+                                pet.owner.email, 
+                                f"URGENT: Someone found your pet ({pet.breed})", 
+                                f"Hello,\n\nSomeone scanned the QR tag of your pet {pet.breed} and is trying to contact you.\n\nPlease check your phone/dashboard."
+                            )
+                            ui.notify('Owner has been notified!', type='positive')
+                        else:
+                            ui.notify('Owner contact info not available.', type='negative')
+
+                    ui.button('CONTACT OWNER', icon='email', on_click=contact_owner).classes('w-full bg-green-600 text-white py-4 text-xl mb-4')
+                    ui.label('Owner PII is hidden for privacy. Clicking the button above sends an instant alert to the owner.').classes('text-xs text-gray-500 text-center')
                 
                 ui.label('Information on this page is provided for emergency recovery only.').classes('text-xs text-gray-400 mt-8')
         nav_footer()

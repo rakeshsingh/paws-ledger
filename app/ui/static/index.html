@@ -154,30 +154,6 @@
             font-weight: 500;
         }
 
-        .info-grid {
-            max-width: 800px;
-            margin: 0 auto 4rem auto;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
-            padding: 0 2rem;
-        }
-
-        .info-item {
-            text-align: center;
-        }
-
-        .info-item h3 {
-            font-size: 1.125rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .info-item p {
-            font-size: 0.9rem;
-            color: var(--text-light);
-            line-height: 1.5;
-        }
-
         footer {
             padding: 2rem;
             text-align: center;
@@ -200,8 +176,10 @@
 <body>
     <header>
         <a href="/" class="logo">Paws<span>Ledger</span></a>
-        <div style="font-size: 0.9rem; color: var(--text-light);">
-            <a href="/dashboard" style="text-decoration: none; color: inherit; margin-right: 1.5rem;">Dashboard</a>
+        <div style="font-size: 0.9rem; color: var(--text-light); display: flex; gap: 1.5rem; align-items: center;">
+            <a href="/lost" style="text-decoration: none; color: inherit;">Public Safety</a>
+            <a href="/verify" style="text-decoration: none; color: inherit;">Verify Record</a>
+            <a href="/dashboard" style="text-decoration: none; color: inherit;">Dashboard</a>
             <a href="/login" style="text-decoration: none; color: var(--primary-color); font-weight: 600;">Login / Register</a>
         </div>
     </header>
@@ -240,9 +218,7 @@
     </main>
 
     <script>
-        document.getElementById('lookup-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const chipId = document.getElementById('microchip').value;
+        const handleLookup = async (chipId) => {
             const submitBtn = document.getElementById('submit-btn');
             const resultsDiv = document.getElementById('results');
             const statusBadge = document.getElementById('status-badge');
@@ -294,7 +270,22 @@
                 alert('An error occurred during lookup.');
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Lookup Identity';
+                submitBtn.textContent = 'Search';
+            }
+        };
+
+        document.getElementById('lookup-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            handleLookup(document.getElementById('microchip').value);
+        });
+
+        // Check for query parameters on load
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const chip = urlParams.get('chip');
+            if (chip) {
+                document.getElementById('microchip').value = chip;
+                handleLookup(chip);
             }
         });
     </script>
