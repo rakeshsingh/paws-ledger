@@ -247,6 +247,9 @@ def init_pages():
 
     @ui.page('/login')
     async def login_page(request: Request):
+        if app.storage.user.get('email'):
+            ui.navigate.to('/dashboard')
+            return
         nav_header()
         with ui.column().classes('w-full items-center p-8'):
             with ui.card().classes('w-full max-w-sm p-6 items-center'):
@@ -254,9 +257,8 @@ def init_pages():
                 ui.label('Secure login for PawsLedger').classes('text-gray-500 mb-6 text-center')
                 
                 # Google Login Button
-                async def login_google():
-                    redirect_url = await google_auth.get_authorize_url(request)
-                    ui.navigate.to(redirect_url)
+                def login_google():
+                    ui.navigate.to('/api/v1/auth/login')
 
                 with ui.button(on_click=login_google) \
                     .classes('w-full bg-white text-gray-700 border border-gray-300 py-2 mb-4 flex items-center justify-center') \
@@ -269,10 +271,13 @@ def init_pages():
         nav_footer()
 
     @ui.page('/auth/callback')
-    async def auth_callback(request: Request):
+    async def nicegui_auth_callback(request: Request):
+        print(f"DEBUG: Entering nicegui_auth_callback. Request URL: {request.url}")
         try:
             token = await google_auth.authorize_access_token(request)
+            print(f"DEBUG: Token received: {token is not None}")
             user_info = await google_auth.get_user_info(token)
+            print(f"DEBUG: User info: {user_info}")
             
             sub = user_info["sub"]
             email = user_info["email"]
@@ -284,19 +289,23 @@ def init_pages():
                 user = session.exec(statement).first()
                 
                 if not user:
+                    print(f"DEBUG: User {email} not found, checking by email...")
                     # Fallback to email for migration/linking if necessary
                     statement = select(User).where(User.email == email)
                     user = session.exec(statement).first()
                     
                     if user:
+                        print(f"DEBUG: Linking existing user {email} with sub {sub}")
                         user.sub = sub # Link existing user
                     else:
+                        print(f"DEBUG: Creating new user {email}")
                         user = User(sub=sub, email=email, name=name)
                         session.add(user)
                     
                     session.commit()
                     session.refresh(user)
                 
+                print(f"DEBUG: Updating app.storage.user for {user.email}")
                 app.storage.user.update({
                     'email': user.email,
                     'name': user.name,
@@ -304,14 +313,20 @@ def init_pages():
                     'greet_user': True
                 })
             
+            print("DEBUG: Navigating to /dashboard")
             ui.navigate.to('/dashboard')
         except Exception as e:
+            print(f"DEBUG: Authentication error: {str(e)}")
+            import traceback
+            traceback.print_exc()
             ui.notify(f'Authentication error: {str(e)}', type='negative')
             ui.navigate.to('/login')
 
     @ui.page('/dashboard')
     async def dashboard():
+        print(f"DEBUG: Entering dashboard. Storage user email: {app.storage.user.get('email')}")
         if not app.storage.user.get('email'):
+            print("DEBUG: No email in storage, redirecting to /login")
             ui.navigate.to('/login')
             return
         

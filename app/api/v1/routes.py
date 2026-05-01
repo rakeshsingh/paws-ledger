@@ -19,8 +19,7 @@ pdf_service = PDFService()
 
 @router.get("/auth/login")
 async def auth_login(request: Request):
-    redirect_url = await google_auth.get_authorize_url(request)
-    return RedirectResponse(url=redirect_url)
+    return await google_auth.authorize_redirect(request)
 
 @router.get("/auth/callback")
 async def auth_callback(request: Request, session: Session = Depends(get_session)):
