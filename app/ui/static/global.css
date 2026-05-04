@@ -1,0 +1,424 @@
+/*
+   PawsLedger — Kinship & Clarity Design System
+   Single source of truth for all UI styling.
+   Used across all NiceGUI pages via <link> in pages.py.
+
+   Color palette aligned with static/templates/landing.html
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+/* ============================================================
+   CSS Custom Properties (Design Tokens)
+   ============================================================ */
+:root {
+  /* Brand palette — warm terracotta & gold from landing template */
+  --pl-primary: #a03a21;
+  --pl-primary-hover: #83250e;
+  --pl-primary-container: #c15237;
+  --pl-primary-light: #ffdad2;
+  --pl-secondary: #7d5800;
+  --pl-secondary-hover: #5f4100;
+  --pl-secondary-container: #ffc65d;
+  --pl-accent: #9a3412;
+
+  /* Surfaces */
+  --pl-bg: #f7f9ff;
+  --pl-surface: #ffffff;
+  --pl-surface-container: #eaeef5;
+  --pl-surface-container-low: #f0f4fb;
+  --pl-surface-container-high: #e4e8ef;
+  --pl-surface-container-highest: #dee3e9;
+  --pl-surface-warm: #fff7ed;
+
+  /* Text */
+  --pl-on-surface: #171c21;
+  --pl-on-surface-variant: #57423d;
+  --pl-text-muted: #57423d;
+  --pl-text-hint: #8a716c;
+
+  /* Borders */
+  --pl-outline: #8a716c;
+  --pl-outline-variant: #dec0b9;
+  --pl-border: #dec0b9;
+  --pl-border-light: rgba(0, 0, 0, 0.05);
+
+  /* Typography */
+  --pl-font: 'Plus Jakarta Sans', 'Inter', sans-serif;
+
+  /* Shapes */
+  --pl-radius-sm: 0.25rem;
+  --pl-radius-md: 0.5rem;
+  --pl-radius-lg: 0.75rem;
+  --pl-radius-xl: 1rem;
+  --pl-radius-full: 9999px;
+
+  /* Shadows */
+  --pl-shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --pl-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --pl-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+
+  /* Quasar color overrides — replace default blue with warm palette */
+  --q-primary: #a03a21;
+  --q-secondary: #7d5800;
+  --q-accent: #c15237;
+  --q-positive: #16a34a;
+  --q-negative: #ba1a1a;
+  --q-info: #57423d;
+  --q-warning: #7d5800;
+}
+
+/* ============================================================
+   Base / Reset
+   ============================================================ */
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--pl-bg);
+  color: var(--pl-on-surface);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================================
+   NiceGUI / Quasar Overrides
+   ============================================================ */
+.nicegui-content {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.nicegui-header {
+  background-color: rgba(250, 250, 249, 0.95) !important;
+  backdrop-filter: blur(12px);
+  color: var(--pl-on-surface) !important;
+}
+
+/* Force Quasar's color utilities to use warm palette */
+.bg-primary { background-color: #a03a21 !important; }
+.text-primary { color: #a03a21 !important; }
+.bg-secondary { background-color: #7d5800 !important; }
+.text-secondary { color: #7d5800 !important; }
+.bg-accent { background-color: #c15237 !important; }
+.text-accent { color: #c15237 !important; }
+
+/* All Quasar buttons get warm styling by default */
+.q-btn {
+  border-radius: var(--pl-radius-lg) !important;
+  text-transform: none !important;
+  font-weight: 600 !important;
+  font-family: 'Inter', sans-serif !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Quasar primary-colored buttons → warm terracotta */
+.q-btn--standard.bg-primary,
+.q-btn.bg-primary {
+  background-color: var(--pl-primary) !important;
+  color: white !important;
+}
+
+.q-btn--standard.bg-primary:hover,
+.q-btn.bg-primary:hover {
+  background-color: var(--pl-primary-hover) !important;
+}
+
+.q-card {
+  border-radius: var(--pl-radius-xl) !important;
+  box-shadow: var(--pl-shadow-sm) !important;
+  border: 1px solid var(--pl-border) !important;
+}
+
+footer {
+  background: var(--pl-surface);
+  border-top: 1px solid var(--pl-border);
+}
+
+/* ============================================================
+   Logo
+   ============================================================ */
+.pl-logo {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--pl-primary) !important;
+  text-decoration: none;
+  letter-spacing: -0.05em;
+}
+
+.pl-logo-muted {
+  color: var(--pl-text-muted) !important;
+  font-weight: 400;
+}
+
+/* ============================================================
+   Header Navigation
+   ============================================================ */
+.pl-header {
+  background-color: var(--pl-surface);
+  border-bottom: 1px solid var(--pl-border);
+}
+
+.pl-nav-link {
+  color: var(--pl-on-surface) !important;
+  font-weight: 500;
+  opacity: 0.7;
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.pl-nav-link:hover {
+  opacity: 1;
+  color: var(--pl-primary) !important;
+}
+
+/* ============================================================
+   Footer
+   ============================================================ */
+.pl-footer {
+  background-color: var(--pl-surface);
+  border-top: 1px solid var(--pl-border);
+  color: var(--pl-text-muted);
+  opacity: 0.5;
+}
+
+/* ============================================================
+   Typography
+   ============================================================ */
+.pl-page-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: var(--pl-on-surface);
+  letter-spacing: -0.02em;
+}
+
+.pl-hero-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--pl-on-surface);
+}
+
+.pl-section-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--pl-on-surface);
+}
+
+.pl-subtitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--pl-on-surface);
+}
+
+.pl-text-muted {
+  color: var(--pl-text-muted);
+  opacity: 0.7;
+}
+
+.pl-text-hint {
+  color: var(--pl-text-hint);
+  font-size: 0.875rem;
+}
+
+.pl-text-xs {
+  font-size: 0.75rem;
+  color: var(--pl-text-hint);
+}
+
+.pl-label {
+  font-weight: 600;
+  color: var(--pl-on-surface-variant);
+}
+
+/* ============================================================
+   Cards
+   ============================================================ */
+.pl-card {
+  background-color: var(--pl-surface);
+  border-radius: var(--pl-radius-xl);
+  padding: 1.5rem;
+  box-shadow: var(--pl-shadow-sm);
+  border: 1px solid var(--pl-border-light);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pl-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--pl-shadow-md);
+}
+
+.pl-card-warm {
+  background-color: var(--pl-surface-warm);
+}
+
+.pl-card-cta {
+  background-color: var(--pl-surface-warm);
+  text-align: center;
+}
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+
+/* Primary — warm terracotta (#a03a21) */
+.pl-btn-primary {
+  background-color: var(--pl-primary) !important;
+  color: white !important;
+  border: none !important;
+}
+
+.pl-btn-primary:hover {
+  background-color: var(--pl-primary-hover) !important;
+  filter: brightness(1.1);
+}
+
+/* Secondary — warm gold (#7d5800) */
+.pl-btn-secondary {
+  background-color: var(--pl-secondary) !important;
+  color: white !important;
+  border: none !important;
+}
+
+.pl-btn-secondary:hover {
+  background-color: var(--pl-secondary-hover) !important;
+  filter: brightness(1.1);
+}
+
+/* Primary container — lighter terracotta (#c15237) */
+.pl-btn-accent {
+  background-color: var(--pl-primary-container) !important;
+  color: white !important;
+  border: none !important;
+}
+
+.pl-btn-accent:hover {
+  filter: brightness(1.1);
+}
+
+/* Dark — stone-900 (#1c1917) */
+.pl-btn-dark {
+  background-color: #1c1917 !important;
+  color: white !important;
+  border: none !important;
+}
+
+.pl-btn-dark:hover {
+  background-color: #292524 !important;
+}
+
+/* Ghost — transparent with subtle border */
+.pl-btn-ghost {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.pl-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Pill shape for CTA buttons */
+.pl-btn-pill {
+  border-radius: var(--pl-radius-full) !important;
+}
+
+/* Active press effect */
+.pl-btn-primary:active,
+.pl-btn-secondary:active,
+.pl-btn-accent:active,
+.pl-btn-dark:active {
+  transform: scale(0.95);
+}
+
+/* ============================================================
+   Inputs
+   ============================================================ */
+.pl-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: var(--pl-radius-md);
+  border: 1px solid var(--pl-outline-variant);
+  background-color: white;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.pl-input:focus {
+  outline: none;
+  ring: 2px solid var(--pl-primary);
+  border-color: var(--pl-primary);
+}
+
+/* ============================================================
+   Badges
+   ============================================================ */
+.pl-badge {
+  padding: 0.25rem 1rem;
+  border-radius: var(--pl-radius-full);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.pl-badge-verified {
+  background-color: var(--pl-primary-light);
+  color: #92400e;
+}
+
+.pl-badge-external {
+  background-color: var(--pl-surface-warm);
+  color: var(--pl-accent);
+}
+
+/* ============================================================
+   Status indicators
+   ============================================================ */
+.pl-status-verified {
+  color: #16a34a;
+}
+
+.pl-status-unverified {
+  color: #ca8a04;
+}
+
+.pl-status-active {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.pl-status-expired {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+/* ============================================================
+   Utility
+   ============================================================ */
+.pl-border-section {
+  border-bottom: 1px solid var(--pl-border);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.pl-mono {
+  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.625rem;
+  color: var(--pl-text-hint);
+}
+
+/* Glass surface effect (from landing template) */
+.pl-glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Google Sign-In button (follows Google branding guidelines) */
+.google-signin-btn .q-btn__content {
+  justify-content: center;
+  gap: 12px;
+}

@@ -112,11 +112,13 @@ To eliminate password liability and minimize operational overhead, PawsLedger de
 3. **Callback & Token Exchange:** On success, the IdP sends an authorization code to a secured `/auth/callback` endpoint. The backend exchanges this code for an ID Token (a signed JWT) via a server-to-server POST request.
 4. **JWT Verification:** The backend verifies the ID Token signature locally using the IdP's public keys (retrieved via the `jwks_uri`).
 
-**Stateless Session Management:**
+**Hybrid Session Management:**
 
-* Once verified, the application issues its own session JWT, stored in an `HttpOnly`, `Secure`, `SameSite=Lax` cookie.
+* PawsLedger uses a hybrid session architecture combining two complementary mechanisms:
+  * **NiceGUI Server-Side Storage (`app.storage.user`):** Maintains reactive UI state (email, name, id, greet_user flag) keyed by a browser-managed session cookie. This is required by NiceGUI's server-side rendering model and enables real-time UI updates.
+  * **HMAC-Signed `paws_user_id` Cookie:** An `HttpOnly`, `Secure`, `SameSite=Lax` cookie containing the user's UUID signed via `itsdangerous.URLSafeSerializer`. This cookie is used for API-layer user identification (e.g., the `/api/v1/me` endpoint) and is verified by unsigning with the application secret key.
 * The user's verified email serves as the immutable anchor in the PawsLedger database, linking the authenticated human to their pet records and ledger history.
-* This approach is fully stateless — no server-side session store is needed, enabling horizontal scaling without session-database overhead.
+* **Scaling Note:** Because NiceGUI's `app.storage.user` is server-side state, horizontal scaling requires either sticky sessions (session affinity) or a shared session store (e.g., Redis) to ensure UI state consistency across instances. The signed cookie for API identification is stateless and does not impose this constraint.
 
 **Scope-Driven Privacy (Least Privilege):**
 

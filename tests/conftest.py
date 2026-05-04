@@ -34,7 +34,7 @@ def client_fixture(session: Session):
 
 @pytest.fixture
 def mock_google_auth(mocker):
-    return mocker.patch("app.api.v1.routes.google_auth")
+    return mocker.patch("app.api.v1.auth.google_auth")
 
 @pytest.fixture
 def test_user(session: Session):

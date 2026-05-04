@@ -24,6 +24,11 @@ fastapi_app.add_middleware(
 # Include API routes
 fastapi_app.include_router(api_router)
 
+# Top-level /auth/callback to match Google OAuth registered redirect URI.
+# Delegates to the same logic as /api/v1/auth/callback.
+from .api.v1.auth import auth_callback as _auth_callback
+fastapi_app.add_api_route("/auth/callback", _auth_callback, methods=["GET"])
+
 
 
 @fastapi_app.on_event("startup")

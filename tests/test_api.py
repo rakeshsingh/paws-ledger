@@ -21,7 +21,7 @@ def test_lookup_not_found(client):
     assert response.status_code == 404
 
 def test_resolve_qr_notifies_owner(client, test_pet, mocker):
-    mock_notify = mocker.patch("app.api.v1.routes.email_service.notify_owner_of_scan")
+    mock_notify = mocker.patch("app.api.v1.pets.email_service.notify_owner_of_scan")
     response = client.get(f"/api/v1/qr/{test_pet.id}")
     assert response.status_code == 200
     assert "emergency_contact" in response.json()
@@ -44,7 +44,7 @@ def test_add_vaccination(client, test_pet):
     assert data["record_hash"] is not None
 
 def test_shared_access_heartbeat(client, test_pet, mocker):
-    mock_notify = mocker.patch("app.api.v1.routes.email_service.notify_owner_of_access")
+    mock_notify = mocker.patch("app.api.v1.pets.email_service.notify_owner_of_access")
     
     # 1. Create access
     resp = client.post(f"/api/v1/pets/{test_pet.id}/shared-access?hours=1")

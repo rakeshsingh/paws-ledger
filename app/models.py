@@ -7,6 +7,7 @@ class User(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     sub: str = Field(index=True, unique=True) # Subject ID from IdP
     email: str = Field(index=True, unique=True)
+    address: Optional[str] = None
     name: str
     role: str = "Guardian"  # Guardian, Caregiver, Vet
 
@@ -14,15 +15,25 @@ class User(SQLModel, table=True):
 
 class Pet(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    chip_id: str = Field(index=True, unique=True, max_length=15)
     name: str = Field(index=True)
     gender: str = "Unknown" # Male, Female, Unknown
+    chip_id: str = Field(index=True, unique=True, max_length=15)
     manufacturer: Optional[str] = None
     identity_status: str = "UNVERIFIED"  # VERIFIED, UNVERIFIED
     owner_id: Optional[UUID] = Field(default=None, foreign_key="user.id")
     pet_species: str = "DOG"
     breed: Optional[str] = None
     dob: Optional[datetime] = None
+
+    # Care information
+    energy_level: Optional[str] = None          # Low, Moderate, High, Very High
+    max_alone_hours: Optional[int] = None       # Max hours the pet can be left alone
+    feeds_per_day: Optional[int] = None         # Number of meals per day
+    dietary_notes: Optional[str] = None         # Allergies, special diet, preferred food
+    exercise_needs: Optional[str] = None        # e.g. "30 min walk twice daily"
+    medical_conditions: Optional[str] = None    # Ongoing conditions (e.g. arthritis, diabetes)
+    temperament: Optional[str] = None           # e.g. "Friendly with kids, anxious around dogs"
+    care_notes: Optional[str] = None            # Free-form observations for caregivers
     
     owner: Optional[User] = Relationship(back_populates="pets")
     ledger_events: List["LedgerEvent"] = Relationship(back_populates="pet")
