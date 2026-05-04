@@ -30,10 +30,44 @@ def nav_header():
             # Right actions
             with ui.row().classes('gap-4 items-center'):
                 if app.storage.user.get('email'):
-                    ui.button('Logout', on_click=lambda: (
-                        app.storage.user.clear(), ui.navigate.to('/')
-                    )).props('flat no-caps').classes('text-stone-600 font-medium')
+                    full_name = app.storage.user.get('name', '')
+                    first_name = full_name.split()[0] if full_name else 'User'
+
+                    # User avatar + name button with dropdown
+                    with ui.button(on_click=lambda: None).props('flat no-caps no-wrap').classes(
+                        'text-stone-600 font-medium'
+                    ):
+                        with ui.row().classes('items-center gap-2'):
+                            # Circular avatar with user icon
+                            with ui.element('div').classes(
+                                'flex items-center justify-center rounded-full'
+                            ).style(
+                                'width: 32px; height: 32px; background: #ffdad2;'
+                            ):
+                                ui.icon('person').style(
+                                    'font-size: 18px; color: #a03a21;'
+                                )
+                            ui.label(first_name).style(
+                                'font-weight: 600; font-size: 14px; color: #171c21;'
+                            )
+
+                        with ui.menu():
+                            ui.menu_item(
+                                'My Profile',
+                                on_click=lambda: ui.navigate.to('/owner/profile'),
+                            )
+                            ui.menu_item(
+                                'Dashboard',
+                                on_click=lambda: ui.navigate.to('/dashboard'),
+                            )
+                            ui.separator()
+                            ui.menu_item(
+                                'Logout',
+                                on_click=lambda: (
+                                    app.storage.user.clear(), ui.navigate.to('/')
+                                ),
+                            )
                 else:
-                    ui.button('Register Pet', on_click=lambda: ui.navigate.to('/login')).classes(
-                        'text-white px-6 py-2 rounded-full font-semibold shadow-md'
-                    ).style('background-color: #a03a21;')
+                    ui.link('Login', '/login').classes(
+                        'text-stone-600 font-medium no-underline'
+                    )

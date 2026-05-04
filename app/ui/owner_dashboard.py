@@ -7,11 +7,26 @@ from .header import nav_header
 from .footer import nav_footer
 from .common import try_restore_session
 
-# Placeholder pet images keyed by species
-PET_IMAGES = {
-    'DOG': 'https://lh3.googleusercontent.com/aida-public/AB6AXuAXUZaZI5GrWaLYxj2lznTVqxqJ3FOZHoSfjx6jAffHDaq3HscRjX3zXbIQR7UnQMNS9HWCqnpLfpzIMNTRONTXVWObGNjBDD1z21wnT2xykSzl13S1Md_Bai95kLvJHOW8MbJRxqMzIqMvAn5S-lpJA0_bAHCoIFcYC-QuUCHYGwNSrmCjUjvntkBMZN02Uxy3QVUm2B0_2H9OpGJJUihxS4h64hi5uBbiwvmS-gBvx45Wuk16KJKeUezJtKTWB5ENuRPlCi8jAm1f',
-    'CAT': 'https://lh3.googleusercontent.com/aida-public/AB6AXuCPTH8vESvvcGO9mILxsC4a8w1o5z4iSLguhf7VqSYvtF6CT8WPnNE1vyADGkm8OqBw-hUubvMY1CIK2LYqOKY1sg1DtR5nCOPa_k4YbmTjnu345GZ00J876zQsD2p8QFZeRlzfvrl58VuC-6GnyrjHItxbtRvXzCFr41UwlFlMo02mdSd2lblevkaTyhxEW6fRGShq4SvldBVW18kJQVvW79_xYP3AGAPdeVmGT3X7onRq24rZTkWmxZAPx4hSyRhPz_7JmqPd5RYR',
+# Species icon mapping for placeholder avatars
+SPECIES_ICONS = {
+    'DOG': 'pets',       # paw icon — dogs
+    'CAT': 'emoji_nature',  # nature icon — cats
 }
+SPECIES_ICON_DEFAULT = 'pets'
+
+# Background tints per species for the icon placeholder
+SPECIES_BG = {
+    'DOG': '#ffdad2',
+    'CAT': '#ffdea9',
+}
+SPECIES_BG_DEFAULT = '#eaeef5'
+
+# Icon foreground color per species
+SPECIES_FG = {
+    'DOG': '#a03a21',
+    'CAT': '#7d5800',
+}
+SPECIES_FG_DEFAULT = '#57423d'
 
 BORDER_COLORS = ['#a03a21', '#7d5800', '#5d5c58', '#a03a21', '#7d5800']
 
@@ -91,8 +106,8 @@ def init_dashboard_page():
                     with ui.row().classes('w-full gap-6 flex-wrap'):
                         for idx, pet in enumerate(pets):
                             border_color = BORDER_COLORS[idx % len(BORDER_COLORS)]
-                            img_url = PET_IMAGES.get(pet.pet_species, PET_IMAGES['DOG'])
                             badge_text = 'Verified Identity' if pet.identity_status == 'VERIFIED' else 'Unverified'
+                            has_photo = bool(pet.photo_url)
 
                             with ui.card().classes(
                                 'overflow-hidden flex flex-col cursor-pointer'
@@ -101,13 +116,26 @@ def init_dashboard_page():
                                 'box-shadow: 0 4px 12px rgba(0,0,0,0.05); width: calc(50% - 0.75rem); '
                                 'min-width: 260px; transition: box-shadow 0.3s;'
                             ).on('click', lambda p=pet: ui.navigate.to(f'/pet/{p.id}')):
-                                # Image
+                                # Pet photo or species icon placeholder
                                 with ui.element('div').style(
                                     'height: 192px; overflow: hidden; position: relative;'
                                 ):
-                                    ui.image(img_url).style(
-                                        'width: 100%; height: 100%; object-fit: cover;'
-                                    )
+                                    if has_photo:
+                                        ui.image(pet.photo_url).style(
+                                            'width: 100%; height: 100%; object-fit: cover;'
+                                        )
+                                    else:
+                                        # Icon-based placeholder
+                                        species = pet.pet_species or 'DOG'
+                                        bg = SPECIES_BG.get(species, SPECIES_BG_DEFAULT)
+                                        fg = SPECIES_FG.get(species, SPECIES_FG_DEFAULT)
+                                        icon_name = SPECIES_ICONS.get(species, SPECIES_ICON_DEFAULT)
+                                        with ui.element('div').classes(
+                                            'flex items-center justify-center w-full h-full'
+                                        ).style(f'background: {bg};'):
+                                            ui.icon(icon_name).style(
+                                                f'font-size: 72px; color: {fg}; opacity: 0.7;'
+                                            )
                                     # Badge
                                     ui.label(badge_text).style(
                                         'position: absolute; top: 1rem; right: 1rem; '
@@ -244,14 +272,6 @@ def init_dashboard_page():
                             'font-size: 160px; opacity: 0.1; color: #171c21;'
                         )
 
-                    # Quick actions
-                    ui.button(
-                        'My Profile', icon='person',
-                        on_click=lambda: ui.navigate.to('/owner/profile'),
-                    ).classes('w-full').props('outline')
-                    ui.button(
-                        'Logout',
-                        on_click=lambda: (app.storage.user.clear(), ui.navigate.to('/')),
-                    ).classes('w-full').props('flat')
+              
 
         nav_footer()

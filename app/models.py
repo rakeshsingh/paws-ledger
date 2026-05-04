@@ -8,6 +8,9 @@ class User(SQLModel, table=True):
     sub: str = Field(index=True, unique=True) # Subject ID from IdP
     email: str = Field(index=True, unique=True)
     address: Optional[str] = None
+    phone: Optional[str] = None
+    city: Optional[str] = None
+    country: Optional[str] = None
     name: str
     role: str = "Guardian"  # Guardian, Caregiver, Vet
 
@@ -24,6 +27,7 @@ class Pet(SQLModel, table=True):
     pet_species: str = "DOG"
     breed: Optional[str] = None
     dob: Optional[datetime] = None
+    photo_url: Optional[str] = None  # Owner-provided profile photo URL
 
     # Care information
     energy_level: Optional[str] = None          # Low, Moderate, High, Very High

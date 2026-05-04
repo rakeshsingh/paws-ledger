@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>User Profile | PawsLedger</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-fixed-dim": "#f5bd55",
+                      "on-secondary-fixed-variant": "#5f4100",
+                      "tertiary": "#5d5c58",
+                      "surface-container-highest": "#dee3e9",
+                      "surface-container-high": "#e4e8ef",
+                      "on-secondary-container": "#755100",
+                      "on-tertiary-fixed": "#1c1c18",
+                      "on-surface": "#171c21",
+                      "on-tertiary-fixed-variant": "#474743",
+                      "on-error": "#ffffff",
+                      "surface-container": "#eaeef5",
+                      "secondary-fixed": "#ffdea9",
+                      "inverse-on-surface": "#edf1f8",
+                      "surface-tint": "#a43c23",
+                      "primary-container": "#c15237",
+                      "on-secondary": "#ffffff",
+                      "primary-fixed": "#ffdad2",
+                      "on-error-container": "#93000a",
+                      "on-primary-container": "#fffbff",
+                      "tertiary-fixed-dim": "#c9c6c1",
+                      "on-background": "#171c21",
+                      "primary-fixed-dim": "#ffb4a2",
+                      "on-tertiary-container": "#fcffe0",
+                      "on-primary-fixed-variant": "#83250e",
+                      "outline": "#8a716c",
+                      "on-primary": "#ffffff",
+                      "on-surface-variant": "#57423d",
+                      "outline-variant": "#dec0b9",
+                      "surface-dim": "#d6dae1",
+                      "surface": "#f7f9ff",
+                      "tertiary-container": "#767470",
+                      "secondary": "#7d5800",
+                      "secondary-container": "#ffc65d",
+                      "background": "#f7f9ff",
+                      "surface-container-lowest": "#ffffff",
+                      "error": "#ba1a1a",
+                      "on-tertiary": "#ffffff",
+                      "on-primary-fixed": "#3c0700",
+                      "inverse-surface": "#2c3136",
+                      "surface-container-low": "#f0f4fb",
+                      "on-secondary-fixed": "#271900",
+                      "inverse-primary": "#ffb4a2",
+                      "primary": "#a03a21",
+                      "surface-variant": "#dee3e9",
+                      "tertiary-fixed": "#e5e2dc",
+                      "error-container": "#ffdad6",
+                      "surface-bright": "#f7f9ff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xl": "40px",
+                      "sm": "8px",
+                      "xs": "4px",
+                      "md": "16px",
+                      "lg": "24px",
+                      "container-max": "1200px",
+                      "unit": "4px",
+                      "gutter": "20px"
+              },
+              "fontFamily": {
+                      "h2": ["Plus Jakarta Sans"],
+                      "h1": ["Plus Jakarta Sans"],
+                      "label-sm": ["Inter"],
+                      "h3": ["Plus Jakarta Sans"],
+                      "body-md": ["Inter"],
+                      "body-lg": ["Inter"],
+                      "label-bold": ["Inter"]
+              },
+              "fontSize": {
+                      "h2": ["32px", {"lineHeight": "1.25", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "h1": ["40px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "label-sm": ["12px", {"lineHeight": "1.4", "fontWeight": "500"}],
+                      "h3": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                      "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                      "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                      "label-bold": ["14px", {"lineHeight": "1.4", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+      </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #f7f9ff;
+            color: #171c21;
+        }
+        /* Dropdown styles */
+        .dropdown:hover .dropdown-menu {
+            display: block;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-body-md text-body-md">
+<!-- TopAppBar -->
+<header class="bg-stone-50/95 dark:bg-stone-950/95 backdrop-blur-md border-b border-stone-200/60 dark:border-stone-800/60 shadow-sm sticky top-0 z-50 h-16">
+<div class="flex justify-between items-center w-full max-w-7xl mx-auto px-4 md:px-8 h-full">
+<div class="text-2xl font-extrabold tracking-tighter text-orange-700 dark:text-orange-500">PawsLedger</div>
+<nav class="hidden md:flex items-center space-x-8 font-['Plus_Jakarta_Sans'] text-sm font-medium tracking-tight">
+<a class="text-stone-600 dark:text-stone-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors" href="#">Home</a>
+<a class="text-stone-600 dark:text-stone-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors" href="#">Search Pets</a>
+<div class="relative dropdown">
+<button class="flex items-center gap-1 text-stone-600 dark:text-stone-400 hover:text-orange-600 dark:hover:text-orange-400 transition-colors py-2">
+                        About
+                        <span class="material-symbols-outlined text-sm">expand_more</span>
+</button>
+<div class="dropdown-menu hidden absolute left-0 top-full bg-white dark:bg-stone-900 shadow-xl border border-stone-100 dark:border-stone-800 rounded-xl min-w-[160px] py-2">
+<a class="block px-4 py-2 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800 hover:text-orange-600" href="#">About Us</a>
+<a class="block px-4 py-2 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800 hover:text-orange-600" href="#">Contact</a>
+<a class="block px-4 py-2 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800 hover:text-orange-600" href="#">FAQ</a>
+</div>
+</div>
+<a class="text-orange-700 dark:text-orange-500 font-bold border-b-2 border-orange-700 dark:border-orange-500 pb-1" href="#">Account</a>
+</nav>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-stone-600 hover:bg-stone-100 dark:hover:bg-stone-900 p-2 rounded-lg transition-all duration-200">notifications</button>
+<button class="material-symbols-outlined text-stone-600 hover:bg-stone-100 dark:hover:bg-stone-900 p-2 rounded-lg transition-all duration-200">settings</button>
+<div class="h-9 w-9 rounded-full overflow-hidden border-2 border-orange-700 active:scale-95 transition-transform cursor-pointer">
+<img alt="Pet owner profile photo" class="h-full w-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3MTd7WTvdtk8n-tcZ6PbapJoGhA4Ldv6lwt67kwNo9DY2W0enYZqrd6Y84AQkEOsRIC_J6HaktCC1BhgDnOklVeZ7SFrzhUZL5_RSK40UFokH8fLgBAnk6E1w-eger-QOSe7RjqcKe7mi0sVThSKMW7nQKN_TrZwDWrB6954yRXdWYEAdGNte4YNHDDuHd0chE8xoAlsChLp1f4eYF4M2RYSPYggysSdb_m4EVSvTJAZubvqamYPFKcVbMqVEg40igC3ZKMX0thQM"/>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-grow w-full max-w-7xl mx-auto px-6 py-12">
+<div class="max-w-4xl mx-auto">
+<!-- Profile Header -->
+<section class="flex flex-col md:flex-row items-center gap-8 mb-12 bg-white p-xl rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)] border-l-4 border-primary">
+<div class="relative group">
+<div class="h-32 w-32 rounded-full overflow-hidden border-4 border-white shadow-md">
+<img alt="Pet owner profile photo" class="h-full w-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLh2YGd7788t1PK81ptMF0xlwQ1RBldy2GOBSa3AJivhNOzth-QsjyS1bDJvyqqCQvtdU8HijMJEtinnJiVf38yv4NNIRu5K3FK3LQ16aOBbF2ttoYtogNkypnYSSZxnEGVz6rUJgG6CgIQuUbHPGDQR49KNocy09Q-rhXdl4KBY3xLXJangcnIBW6myqnP21zhzaj_AjIP8z7gkksx9CxRqAQOBuS5ybXemjQxFZ1UKWgz3RpaORFHTulCpoiDsTcxvIMsPybwxn0"/>
+</div>
+<button class="absolute bottom-0 right-0 bg-primary text-white p-2 rounded-full shadow-lg hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-sm">photo_camera</span>
+</button>
+</div>
+<div class="text-center md:text-left">
+<h1 class="font-h1 text-h1 text-on-surface mb-2">Alexander Bennett</h1>
+<p class="text-stone-500 font-body-lg">Professional Pet Caretaker &amp; Owner</p>
+<div class="mt-4 flex flex-wrap justify-center md:justify-start gap-2">
+<span class="px-3 py-1 bg-green-100 text-green-800 text-label-sm rounded-full">Account Active</span>
+<span class="px-3 py-1 bg-stone-100 text-stone-600 text-label-sm rounded-full">Member since 2022</span>
+</div>
+</div>
+</section>
+<!-- Profile Form Content -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+<!-- Sidebar Info -->
+<aside class="lg:col-span-1 space-y-6">
+<div class="bg-surface-container-low p-lg rounded-xl">
+<h3 class="font-h3 text-h3 mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">security</span>
+                            Privacy
+                        </h3>
+<p class="text-stone-600 text-body-md mb-4">Your personal information is encrypted and only used for medical coordination.</p>
+<a class="text-primary font-label-bold hover:underline" href="#">Learn more about security</a>
+</div>
+<div class="bg-primary-fixed p-lg rounded-xl">
+<h3 class="font-h3 text-h3 mb-4 flex items-center gap-2 text-on-primary-fixed">
+<span class="material-symbols-outlined">pets</span>
+                            Active Pets
+                        </h3>
+<div class="flex -space-x-2">
+<img alt="Pet thumbnail" class="w-10 h-10 rounded-full border-2 border-white object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCON6AaVtUBumlND0Nq9RD2aspTFyFSP1rS2JNYEox8j6osszOOdy2L_1ZzyaYsexhZav6SYiuktI0nxkz05YawHe6Pla73vaHxWCaEkBhR4hJpPrTPr4uQeUG5-MYxuNJfwhbPnC8HyL9sbD9SsJfOiw4KJ8Q4tsJM9l5Sss-G_6riQJAblT7pOWtAas3QswCSkJMbBsuxjmsFZqoI4RpHiW3uvQexIsrLsg4latVLmCt8G3_j5RMKmyU0uao3ID_zYTlKbhHCMAq0"/>
+<img alt="Pet thumbnail" class="w-10 h-10 rounded-full border-2 border-white object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCSG3nRTr3sNPw0rB6EBltC3IRHzKhymUZP_8UDepdPsHd_tvS2j_lG5J_xcunZaktlZZ30Uv3L9YMGi4rsvOCuUrJJZ5bV6FuJxni1cvNLWf3-xzbS6zGK3ezlxcWi9LOg8NSHaAOkvkP5hiuupv4Cif1q_ZsKHdwxY_CARnwfCW2SThEGmz2BvS57o5ijnEThVjHyANfveYLHyySd__ElY1biHY1KotzsKZ9GQaHgNDV4O5yOaHFwD6KUMqCBEGtMsPS6wKu2YcoH"/>
+<div class="w-10 h-10 rounded-full border-2 border-white bg-stone-200 flex items-center justify-center text-xs font-bold">+1</div>
+</div>
+</div>
+</aside>
+<!-- Main Form -->
+<div class="lg:col-span-2 bg-white p-xl rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
+<form class="space-y-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="space-y-1">
+<label class="font-label-bold text-on-surface block">First Name</label>
+<input class="w-full px-md py-3 border border-stone-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-body-md" placeholder="Enter first name" type="text" value="Alexander"/>
+</div>
+<div class="space-y-1">
+<label class="font-label-bold text-on-surface block">Last Name</label>
+<input class="w-full px-md py-3 border border-stone-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-body-md" placeholder="Enter last name" type="text" value="Bennett"/>
+</div>
+</div>
+<div class="space-y-1">
+<label class="font-label-bold text-on-surface block">Email Address</label>
+<input class="w-full px-md py-3 border border-stone-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-body-md" placeholder="name@example.com" type="email" value="alex.bennett@pawsledger.com"/>
+</div>
+<div class="space-y-1">
+<label class="font-label-bold text-on-surface block">Phone Number</label>
+<input class="w-full px-md py-3 border border-stone-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-body-md" placeholder="+1 (000) 000-0000" type="tel" value="+1 (555) 234-5678"/>
+</div>
+<div class="space-y-1">
+<label class="font-label-bold text-on-surface block">Address</label>
+<textarea class="w-full px-md py-3 border border-stone-200 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all text-body-md" placeholder="Enter your full address" rows="3">1248 Oakwood Avenue, Suite 300
+Portland, OR 97204</textarea>
+</div>
+<div class="pt-6 border-t border-stone-100 flex flex-col sm:flex-row gap-4 items-center justify-between">
+<p class="text-stone-500 text-label-sm">Last updated: October 14, 2023</p>
+<div class="flex gap-4 w-full sm:w-auto">
+<button class="flex-1 sm:flex-none px-8 py-3 bg-stone-100 border border-stone-200 rounded-full font-label-bold text-stone-600 hover:bg-stone-200 transition-colors" type="button">Cancel</button>
+<button class="flex-1 sm:flex-none px-8 py-3 bg-primary text-white rounded-full font-label-bold hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95" type="submit">Save Changes</button>
+</div>
+</div>
+</form>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-stone-50 dark:bg-stone-950 border-t border-stone-200 dark:border-stone-800 py-12 mt-auto">
+<div class="flex flex-col md:flex-row justify-between items-center w-full max-w-7xl mx-auto px-4 md:px-8 gap-6">
+<div class="text-center md:text-left">
+<div class="text-lg font-bold text-stone-900 dark:text-stone-100 mb-2">PawsLedger</div>
+<p class="font-['Plus_Jakarta_Sans'] text-xs font-normal text-stone-500 dark:text-stone-500">© 2024 PawsLedger. Nurturing Professionalism in Pet Care.</p>
+</div>
+<nav class="flex flex-wrap justify-center gap-8 font-['Plus_Jakarta_Sans'] text-xs uppercase tracking-widest font-semibold">
+<a class="text-stone-500 dark:text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 hover:underline transition-colors" href="#">Privacy Policy</a>
+<a class="text-stone-500 dark:text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 hover:underline transition-colors" href="#">Terms of Service</a>
+<a class="text-stone-500 dark:text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 hover:underline transition-colors" href="#">Cookie Policy</a>
+<a class="text-stone-500 dark:text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 hover:underline transition-colors" href="#">Legal</a>
+</nav>
+</div>
+</footer>
+</body></html>

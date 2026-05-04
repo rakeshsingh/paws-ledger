@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlmodel import Session
+from typing import Optional
 from uuid import UUID
 from ...database import get_session
 from ...models import User
@@ -13,6 +14,15 @@ router = APIRouter()
 
 class AddressUpdate(BaseModel):
     address: str
+
+
+class ProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    country: Optional[str] = None
 
 
 def _get_current_user(request: Request, session: Session = Depends(get_session)) -> User:
@@ -39,7 +49,10 @@ async def get_owner_profile(request: Request, session: Session = Depends(get_ses
         "id": str(user.id),
         "name": user.name,
         "email": user.email,
+        "phone": user.phone or "",
         "address": user.address or "",
+        "city": user.city or "",
+        "country": user.country or "",
         "role": user.role,
         "pet_count": len(user.pets),
     }
@@ -59,4 +72,42 @@ async def update_owner_address(
     return {
         "message": "Address updated successfully",
         "address": user.address,
+    }
+
+
+@router.put("/owner/profile")
+async def update_owner_profile(
+    payload: ProfileUpdate,
+    request: Request,
+    session: Session = Depends(get_session),
+):
+    user = _get_current_user(request, session)
+
+    if payload.name is not None:
+        user.name = payload.name
+    if payload.email is not None:
+        user.email = payload.email
+    if payload.phone is not None:
+        user.phone = payload.phone
+    if payload.address is not None:
+        user.address = payload.address
+    if payload.city is not None:
+        user.city = payload.city
+    if payload.country is not None:
+        user.country = payload.country
+
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+
+    return {
+        "id": str(user.id),
+        "name": user.name,
+        "email": user.email,
+        "phone": user.phone or "",
+        "address": user.address or "",
+        "city": user.city or "",
+        "country": user.country or "",
+        "role": user.role,
+        "pet_count": len(user.pets),
     }

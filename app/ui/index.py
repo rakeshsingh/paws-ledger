@@ -60,6 +60,14 @@ def init_index_page():
                         search_btn = ui.button('Search', on_click=lambda: do_lookup()).style(
                             'background-color: #7d5800; color: white; font-weight: 600;'
                         ).classes('px-6 py-2 rounded-lg')
+                        ui.button(
+                            'Protect',
+                            on_click=lambda: ui.navigate.to(
+                                '/register' if app.storage.user.get('email') else '/login'
+                            ),
+                        ).style(
+                            'background-color: #a03a21; color: white; font-weight: 600;'
+                        ).classes('px-6 py-2 rounded-lg')
 
                     # Search results area
                     results_card = ui.column().classes('w-full mt-4').style('display: none')
@@ -216,55 +224,102 @@ def init_index_page():
                                     'font-size: 12px; color: #57423d;'
                                 )
 
-        # ── Dual Path Section ──
-        with ui.element('section').classes('w-full py-24').style('background-color: #f7f9ff;'):
-            with ui.row().classes('max-w-7xl mx-auto px-6 gap-8'):
-                # Finder path
-                with ui.card().classes('flex-1 p-12 relative overflow-hidden').style(
-                    'border-radius: 2.5rem; background-color: #f5f5f4; border: 1px solid #e7e5e4;'
-                ):
-                    with ui.column().classes('gap-6 relative z-10'):
-                        with ui.element('span').classes(
-                            'inline-block p-4 rounded-2xl shadow-sm'
-                        ).style('background: white;'):
-                            ui.icon('find_in_page').style('font-size: 32px; color: #7d5800;')
-                        ui.label('I found a lost Pet').style(
-                            "font-family: 'Plus Jakarta Sans'; font-size: 32px; font-weight: 600; color: #171c21;"
-                        )
-                        ui.label(
-                            'Scan the microchip and search our global ledger to find contact details '
-                            'for the owner. Your kindness is their miracle.'
-                        ).style('color: #57423d; max-width: 24rem;')
-                        ui.button(
-                            'Start Recovery Process', icon='arrow_forward',
-                            on_click=lambda: chip_input.run_method('focus'),
-                        ).classes('px-8 py-4 rounded-xl font-semibold').style(
-                            'background-color: #1c1917; color: white;'
-                        )
+        # # ── Dual Path Section ──
+        # with ui.element('section').classes('w-full py-24').style('background-color: #f7f9ff;'):
+        #     with ui.row().classes('max-w-7xl mx-auto px-6 gap-8'):
+        #         # Finder path
+        #         with ui.card().classes('flex-1 p-12 relative overflow-hidden').style(
+        #             'border-radius: 2.5rem; background-color: #f5f5f4; border: 1px solid #e7e5e4;'
+        #         ):
+        #             with ui.column().classes('gap-6 relative z-10'):
+        #                 with ui.element('span').classes(
+        #                     'inline-block p-4 rounded-2xl shadow-sm'
+        #                 ).style('background: white;'):
+        #                     ui.icon('find_in_page').style('font-size: 32px; color: #7d5800;')
+        #                 ui.label('I found a lost Pet').style(
+        #                     "font-family: 'Plus Jakarta Sans'; font-size: 32px; font-weight: 600; color: #171c21;"
+        #                 )
+        #                 ui.label(
+        #                     'Scan the microchip and search our global ledger to find contact details '
+        #                     'for the owner. Your kindness is their miracle.'
+        #                 ).style('color: #57423d; max-width: 24rem;')
+        #                 ui.button(
+        #                     'Start Recovery Process', icon='arrow_forward',
+        #                     on_click=lambda: chip_input.run_method('focus'),
+        #                 ).classes('px-8 py-4 rounded-xl font-semibold').style(
+        #                     'background-color: #1c1917; color: white;'
+        #                 )
 
-                # Owner path
-                with ui.card().classes('flex-1 p-12 relative overflow-hidden').style(
-                    'border-radius: 2.5rem; background: rgba(193,82,55,0.05); '
-                    'border: 1px solid rgba(193,82,55,0.1);'
-                ):
-                    with ui.column().classes('gap-6 relative z-10'):
-                        with ui.element('span').classes(
-                            'inline-block p-4 rounded-2xl shadow-sm'
-                        ).style('background: white;'):
-                            ui.icon('shield_with_heart').style('font-size: 32px; color: #a03a21;')
-                        ui.label('I am a Pet Owner').style(
-                            "font-family: 'Plus Jakarta Sans'; font-size: 32px; font-weight: 600; color: #171c21;"
-                        )
-                        ui.label(
-                            "Register your pet's chip and vital information. Keep your contact data "
-                            "updated so you're always reachable in an emergency."
-                        ).style('color: #57423d; max-width: 24rem;')
-                        ui.button(
-                            'Register My Pet Now', icon='add_circle',
-                            on_click=lambda: ui.navigate.to('/login' if not app.storage.user.get('email') else '/register'),
-                        ).classes('px-8 py-4 rounded-xl font-semibold').style(
-                            'background-color: #a03a21; color: white;'
-                        )
+        #         # Owner path
+        #         with ui.card().classes('flex-1 p-12 relative overflow-hidden').style(
+        #             'border-radius: 2.5rem; background: rgba(193,82,55,0.05); '
+        #             'border: 1px solid rgba(193,82,55,0.1);'
+        #         ):
+        #             with ui.column().classes('gap-6 relative z-10'):
+        #                 with ui.element('span').classes(
+        #                     'inline-block p-4 rounded-2xl shadow-sm'
+        #                 ).style('background: white;'):
+        #                     ui.icon('shield_with_heart').style('font-size: 32px; color: #a03a21;')
+        #                 ui.label('I am a Pet Owner').style(
+        #                     "font-family: 'Plus Jakarta Sans'; font-size: 32px; font-weight: 600; color: #171c21;"
+        #                 )
+        #                 ui.label(
+        #                     "Register your pet's chip and vital information. Keep your contact data "
+        #                     "updated so you're always reachable in an emergency."
+        #                 ).style('color: #57423d; max-width: 24rem;')
+        #                 ui.button(
+        #                     'Register My Pet Now', icon='add_circle',
+        #                     on_click=lambda: ui.navigate.to('/login' if not app.storage.user.get('email') else '/register'),
+        #                 ).classes('px-8 py-4 rounded-xl font-semibold').style(
+        #                     'background-color: #a03a21; color: white;'
+        #                 )
+
+
+
+        # # ── How It Works Section ──
+        # with ui.element('section').classes('w-full py-24').style('background-color: #f0f4fb;'):
+        #     with ui.row().classes('max-w-7xl mx-auto px-6 gap-16 items-center'):
+        #         # Image
+        #         with ui.column().classes('flex-1'):
+        #             ui.image(HOW_IT_WORKS_IMG).classes('w-full rounded-3xl shadow-xl').style(
+        #                 'height: 500px; object-fit: cover; border: 1px solid white;'
+        #             )
+
+        #         # Steps
+        #         with ui.column().classes('flex-1 gap-10'):
+        #             ui.label('How It Works').style(
+        #                 "font-family: 'Plus Jakarta Sans'; font-size: 32px; font-weight: 600; color: #171c21;"
+        #             )
+        #             ui.label(
+        #                 'Three simple steps to bridge the gap between a lost pet and their home.'
+        #             ).style('color: #57423d; margin-bottom: 1rem;')
+
+        #             for num, title, desc in [
+        #                 ('1', 'Scan & Locate',
+        #                  'Any finder can take a lost pet to a vet or shelter to scan for a 15-digit microchip ID.'),
+        #                 ('2', 'Search the Ledger',
+        #                  "Enter the ID on PawsLedger to pull up the pet's profile and secure contact form."),
+        #                 ('3', 'Initiate Reunion',
+        #                  "We facilitate a safe, anonymous initial contact to coordinate the pet's safe return home."),
+        #             ]:
+        #                 with ui.row().classes('gap-6'):
+        #                     with ui.element('div').classes(
+        #                         'flex-shrink-0 flex items-center justify-center rounded-full font-bold shadow-sm'
+        #                     ).style(
+        #                         'width: 48px; height: 48px; background: white; color: #a03a21; '
+        #                         'border: 1px solid #f5f5f4;'
+        #                     ):
+        #                         ui.label(num)
+        #                     with ui.column().classes('gap-1'):
+        #                         ui.label(title).style('font-weight: 600; color: #171c21;')
+        #                         ui.label(desc).style('color: #57423d;')
+
+        #             ui.button(
+        #                 'Learn More About Microchips',
+        #                 on_click=lambda: ui.navigate.to('/faq'),
+        #             ).classes('px-8 py-4 rounded-xl font-semibold shadow-lg mt-4').style(
+        #                 'background-color: #c15237; color: white;'
+        #             )
 
         # ── Value Props Section ──
         with ui.element('section').classes('w-full py-24').style(
@@ -296,79 +351,33 @@ def init_index_page():
                                 "font-family: 'Plus Jakarta Sans'; font-size: 24px; font-weight: 600; color: #171c21;"
                             )
                             ui.label(desc).style('color: #57423d;')
-
-        # ── How It Works Section ──
-        with ui.element('section').classes('w-full py-24').style('background-color: #f0f4fb;'):
-            with ui.row().classes('max-w-7xl mx-auto px-6 gap-16 items-center'):
-                # Image
-                with ui.column().classes('flex-1'):
-                    ui.image(HOW_IT_WORKS_IMG).classes('w-full rounded-3xl shadow-xl').style(
-                        'height: 500px; object-fit: cover; border: 1px solid white;'
-                    )
-
-                # Steps
-                with ui.column().classes('flex-1 gap-10'):
-                    ui.label('How It Works').style(
-                        "font-family: 'Plus Jakarta Sans'; font-size: 32px; font-weight: 600; color: #171c21;"
-                    )
-                    ui.label(
-                        'Three simple steps to bridge the gap between a lost pet and their home.'
-                    ).style('color: #57423d; margin-bottom: 1rem;')
-
-                    for num, title, desc in [
-                        ('1', 'Scan & Locate',
-                         'Any finder can take a lost pet to a vet or shelter to scan for a 15-digit microchip ID.'),
-                        ('2', 'Search the Ledger',
-                         "Enter the ID on PawsLedger to pull up the pet's profile and secure contact form."),
-                        ('3', 'Initiate Reunion',
-                         "We facilitate a safe, anonymous initial contact to coordinate the pet's safe return home."),
-                    ]:
-                        with ui.row().classes('gap-6'):
-                            with ui.element('div').classes(
-                                'flex-shrink-0 flex items-center justify-center rounded-full font-bold shadow-sm'
-                            ).style(
-                                'width: 48px; height: 48px; background: white; color: #a03a21; '
-                                'border: 1px solid #f5f5f4;'
-                            ):
-                                ui.label(num)
-                            with ui.column().classes('gap-1'):
-                                ui.label(title).style('font-weight: 600; color: #171c21;')
-                                ui.label(desc).style('color: #57423d;')
-
-                    ui.button(
-                        'Learn More About Microchips',
-                        on_click=lambda: ui.navigate.to('/faq'),
-                    ).classes('px-8 py-4 rounded-xl font-semibold shadow-lg mt-4').style(
-                        'background-color: #c15237; color: white;'
-                    )
-
         # ── CTA Section ──
-        with ui.element('section').classes('w-full py-24 px-6'):
-            with ui.element('div').classes(
-                'max-w-7xl mx-auto rounded-3xl p-12 md:p-20 text-center relative overflow-hidden'
-            ).style('background-color: #1c1917;'):
-                with ui.column().classes('relative z-10 max-w-3xl mx-auto gap-8 items-center'):
-                    ui.label("Ready to secure your pet's future?").style(
-                        "font-family: 'Plus Jakarta Sans'; font-size: 40px; font-weight: 700; "
-                        "color: white; line-height: 1.2; letter-spacing: -0.02em;"
-                    )
-                    ui.label(
-                        "Don't wait until it's too late. Registration takes less than 5 minutes and lasts a lifetime."
-                    ).style('font-size: 18px; color: #d6d3d1;')
+        # with ui.element('section').classes('w-full py-24 px-6'):
+        #     with ui.element('div').classes(
+        #         'max-w-7xl mx-auto rounded-3xl p-12 md:p-20 text-center relative overflow-hidden'
+        #     ).style('background-color: #1c1917;'):
+        #         with ui.column().classes('relative z-10 max-w-3xl mx-auto gap-8 items-center'):
+        #             ui.label("Ready to secure your pet's future?").style(
+        #                 "font-family: 'Plus Jakarta Sans'; font-size: 40px; font-weight: 700; "
+        #                 "color: white; line-height: 1.2; letter-spacing: -0.02em;"
+        #             )
+        #             ui.label(
+        #                 "Don't wait until it's too late. Registration takes less than 5 minutes and lasts a lifetime."
+        #             ).style('font-size: 18px; color: #d6d3d1;')
 
-                    with ui.row().classes('gap-4 justify-center'):
-                        ui.button(
-                            'Register Your Pet Today',
-                            on_click=lambda: ui.navigate.to('/login' if not app.storage.user.get('email') else '/register'),
-                        ).classes('px-10 py-4 rounded-full font-semibold text-lg').style(
-                            'background-color: #a03a21; color: white;'
-                        )
-                        ui.button(
-                            'Contact Support',
-                            on_click=lambda: ui.navigate.to('/contact'),
-                        ).classes('px-10 py-4 rounded-full font-semibold text-lg').style(
-                            'background: rgba(255,255,255,0.1); color: white; '
-                            'border: 1px solid rgba(255,255,255,0.2);'
-                        )
+        #             with ui.row().classes('gap-4 justify-center'):
+        #                 ui.button(
+        #                     'Register Your Pet Today',
+        #                     on_click=lambda: ui.navigate.to('/login' if not app.storage.user.get('email') else '/register'),
+        #                 ).classes('px-10 py-4 rounded-full font-semibold text-lg').style(
+        #                     'background-color: #a03a21; color: white;'
+        #                 )
+        #                 ui.button(
+        #                     'Contact Support',
+        #                     on_click=lambda: ui.navigate.to('/contact'),
+        #                 ).classes('px-10 py-4 rounded-full font-semibold text-lg').style(
+        #                     'background: rgba(255,255,255,0.1); color: white; '
+        #                     'border: 1px solid rgba(255,255,255,0.2);'
+        #                 )
 
         nav_footer()
