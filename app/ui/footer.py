@@ -18,6 +18,7 @@ def nav_footer():
 
             # Right — inline links
             with ui.row().classes('items-center gap-6'):
+                ui.link('Pricing', '/pricing').style('color: #78716c; text-decoration: none;')
                 ui.link('Privacy', '#').style('color: #78716c; text-decoration: none;')
                 ui.link('Terms', '#').style('color: #78716c; text-decoration: none;')
                 ui.link('Contact', '/contact').style('color: #78716c; text-decoration: none;')

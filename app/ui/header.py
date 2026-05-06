@@ -17,6 +17,7 @@ def nav_header():
 
                 ui.link('Home', '/').classes(link_classes)
                 ui.link('Dashboard', '/dashboard').classes(link_classes)
+                ui.link('Support', '/faq').classes(link_classes)
 
                 if app.storage.user.get('email'):
                     full_name = app.storage.user.get('name', '')
