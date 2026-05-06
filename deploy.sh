@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 #
 # PawsLedger — Hetzner VPS Deployment Script
-# Deploys the application with Nginx + Gunicorn (Uvicorn workers) as user 'paws'.
+# Deploys the application with Nginx + Gunicorn + Cloudflare Tunnel as user 'paws'.
 #
 # Stack:
-#   - Nginx (reverse proxy + SSL termination)
+#   - Cloudflare Tunnel (SSL termination + secure ingress, no open ports)
+#   - Nginx (local reverse proxy + WebSocket handling + static files)
 #   - Gunicorn with Uvicorn workers (ASGI server)
 #   - Python 3.11+ virtual environment
 #   - SQLite database
-#   - Let's Encrypt SSL via Certbot
 #
 # Usage:
 #   1. SSH into your Hetzner VPS as root
@@ -18,12 +18,13 @@
 # Prerequisites:
 #   - Debian/Ubuntu-based VPS (Hetzner Cloud with Ubuntu 22.04+ recommended)
 #   - Root or sudo access
-#   - A domain name pointed to the VPS IP (for SSL)
+#   - A Cloudflare account with a domain and a Tunnel token
+#     (Create at: Zero Trust → Networks → Tunnels → Create Tunnel → Docker/CLI)
 #   - Internet connectivity
 #
-# IMPORTANT: NiceGUI requires WebSocket support. This script configures Nginx
-# to proxy WebSocket connections correctly. Gunicorn uses Uvicorn workers
-# (UvicornWorker) since the app is ASGI-based (FastAPI + NiceGUI).
+# IMPORTANT: NiceGUI requires WebSocket support. Cloudflare Tunnels support
+# WebSockets natively. Nginx is configured to proxy WebSocket connections
+# between cloudflared and Gunicorn.
 
 set -euo pipefail
 
@@ -34,6 +35,7 @@ DATA_DIR="${APP_DIR}/data"
 VENV_DIR="${APP_DIR}/.venv"
 SERVICE_NAME="pawsledger"
 APP_PORT=8080
+NGINX_PORT=8081  # Nginx listens here; cloudflared points to this
 WORKERS=2  # Uvicorn workers (NiceGUI works best with few workers due to WebSocket state)
 
 # ─── Colors ──────────────────────────────────────────────────
@@ -53,15 +55,11 @@ if [[ $EUID -ne 0 ]]; then
     error "This script must be run as root (use sudo)."
 fi
 
-info "Starting PawsLedger deployment on Hetzner VPS..."
+info "Starting PawsLedger deployment on Hetzner VPS (Cloudflare Tunnel)..."
 echo ""
 read -rp "Enter your domain name (e.g. paws.example.com): " DOMAIN
 if [[ -z "${DOMAIN}" ]]; then
-    warn "No domain provided. Nginx will be configured with server IP only (no SSL)."
-    DOMAIN="_"
-    ENABLE_SSL=false
-else
-    ENABLE_SSL=true
+    error "Domain is required for Cloudflare Tunnel configuration."
 fi
 
 # ─────────────────────────────────────────────────────────────
@@ -71,22 +69,34 @@ apt-get update -qq
 apt-get upgrade -y -qq
 apt-get install -y -qq \
     python3 python3-venv python3-pip python3-dev \
-    nginx certbot python3-certbot-nginx \
-    ufw curl git rsync build-essential \
-    sqlite3
+    nginx curl git rsync build-essential sqlite3
 
 info "System packages installed."
 
 # ─────────────────────────────────────────────────────────────
-step "Step 2: Firewall (UFW)"
+step "Step 2: Install Cloudflare Tunnel (cloudflared)"
 # ─────────────────────────────────────────────────────────────
-ufw allow OpenSSH
-ufw allow 'Nginx Full'
-ufw --force enable
-info "Firewall configured: SSH + Nginx (HTTP/HTTPS) allowed."
+if ! command -v cloudflared &> /dev/null; then
+    info "Installing cloudflared..."
+    curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb -o /tmp/cloudflared.deb
+    dpkg -i /tmp/cloudflared.deb
+    rm /tmp/cloudflared.deb
+    info "cloudflared installed."
+else
+    info "cloudflared already installed ($(cloudflared --version))."
+fi
 
 # ─────────────────────────────────────────────────────────────
-step "Step 3: Create Application User"
+step "Step 3: Firewall (UFW) — Lockdown"
+# ─────────────────────────────────────────────────────────────
+apt-get install -y -qq ufw
+ufw allow OpenSSH
+# No HTTP/HTTPS ports needed — Cloudflare Tunnel connects outbound
+ufw --force enable
+info "Firewall configured: Only SSH allowed. No inbound HTTP/HTTPS ports needed."
+
+# ─────────────────────────────────────────────────────────────
+step "Step 4: Create Application User"
 # ─────────────────────────────────────────────────────────────
 if ! id "${APP_USER}" &> /dev/null; then
     adduser --disabled-password --gecos "PawsLedger Service" "${APP_USER}"
@@ -96,7 +106,7 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────
-step "Step 4: Deploy Application Files"
+step "Step 5: Deploy Application Files"
 # ─────────────────────────────────────────────────────────────
 mkdir -p "${APP_DIR}"
 mkdir -p "${DATA_DIR}"
@@ -120,7 +130,7 @@ chmod 755 "${DATA_DIR}"
 info "Files deployed."
 
 # ─────────────────────────────────────────────────────────────
-step "Step 5: Python Virtual Environment & Dependencies"
+step "Step 6: Python Virtual Environment & Dependencies"
 # ─────────────────────────────────────────────────────────────
 sudo -u "${APP_USER}" python3 -m venv "${VENV_DIR}"
 sudo -u "${APP_USER}" "${VENV_DIR}/bin/pip" install --upgrade pip wheel
@@ -129,7 +139,7 @@ sudo -u "${APP_USER}" "${VENV_DIR}/bin/pip" install gunicorn uvicorn[standard]
 info "Python dependencies installed."
 
 # ─────────────────────────────────────────────────────────────
-step "Step 6: Environment Configuration"
+step "Step 7: Environment Configuration"
 # ─────────────────────────────────────────────────────────────
 ENV_FILE="${APP_DIR}/.env"
 
@@ -153,12 +163,7 @@ if [[ ! -f "${ENV_FILE}" ]]; then
 
     read -rp "Google Client ID: " GOOGLE_CLIENT_ID
     read -rp "Google Client Secret: " GOOGLE_CLIENT_SECRET
-
-    if [[ "${DOMAIN}" != "_" ]]; then
-        DEFAULT_CALLBACK="https://${DOMAIN}/api/v1/auth/callback"
-    else
-        DEFAULT_CALLBACK="http://$(hostname -I | awk '{print $1}'):${APP_PORT}/api/v1/auth/callback"
-    fi
+    DEFAULT_CALLBACK="https://${DOMAIN}/api/v1/auth/callback"
     read -rp "Google Callback URL [${DEFAULT_CALLBACK}]: " GOOGLE_CALLBACK_URL
     GOOGLE_CALLBACK_URL="${GOOGLE_CALLBACK_URL:-${DEFAULT_CALLBACK}}"
 
@@ -183,7 +188,7 @@ EOF
 fi
 
 # ─────────────────────────────────────────────────────────────
-step "Step 7: Gunicorn Systemd Service"
+step "Step 8: Gunicorn Systemd Service"
 # ─────────────────────────────────────────────────────────────
 cat > "/etc/systemd/system/${SERVICE_NAME}.service" <<EOF
 [Unit]
@@ -214,31 +219,33 @@ StandardError=journal
 WantedBy=multi-user.target
 EOF
 
-# Create log directory
 mkdir -p "/var/log/${SERVICE_NAME}"
 chown "${APP_USER}:${APP_USER}" "/var/log/${SERVICE_NAME}"
 
 systemctl daemon-reload
 systemctl enable "${SERVICE_NAME}.service"
-info "Systemd service '${SERVICE_NAME}' created and enabled."
+info "Gunicorn systemd service created and enabled."
 
 # ─────────────────────────────────────────────────────────────
-step "Step 8: Nginx Configuration"
+step "Step 9: Nginx Configuration (Local Reverse Proxy)"
 # ─────────────────────────────────────────────────────────────
+# Nginx sits between cloudflared and Gunicorn to handle:
+# - WebSocket upgrade headers for NiceGUI
+# - Static file serving
+# - Request buffering
 
-# Remove default site
 rm -f /etc/nginx/sites-enabled/default
 
 cat > "/etc/nginx/sites-available/${SERVICE_NAME}" <<EOF
 # PawsLedger Nginx Configuration
-# Reverse proxy to Gunicorn with WebSocket support for NiceGUI
+# Local reverse proxy: cloudflared → Nginx (${NGINX_PORT}) → Gunicorn (${APP_PORT})
 
 upstream pawsledger_backend {
     server 127.0.0.1:${APP_PORT};
 }
 
 server {
-    listen 80;
+    listen 127.0.0.1:${NGINX_PORT};
     server_name ${DOMAIN};
 
     # Security headers
@@ -247,7 +254,7 @@ server {
     add_header X-XSS-Protection "1; mode=block" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 
-    # Max upload size (for pet photos etc.)
+    # Max upload size
     client_max_body_size 10M;
 
     # Proxy all requests to Gunicorn
@@ -256,7 +263,7 @@ server {
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Proto https;
 
         # WebSocket support (required for NiceGUI)
         proxy_http_version 1.1;
@@ -266,7 +273,7 @@ server {
         proxy_send_timeout 86400;
     }
 
-    # NiceGUI socket.io endpoint (explicit WebSocket handling)
+    # NiceGUI WebSocket endpoint
     location /_nicegui_ws/ {
         proxy_pass http://pawsledger_backend;
         proxy_http_version 1.1;
@@ -275,81 +282,84 @@ server {
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Forwarded-Proto https;
         proxy_read_timeout 86400;
         proxy_send_timeout 86400;
     }
 
-    # Static files (served directly by Nginx for performance)
+    # Static files (served directly by Nginx)
     location /static/ {
         alias ${APP_DIR}/app/ui/static/;
         expires 7d;
         add_header Cache-Control "public, immutable";
     }
-
-    # Health check endpoint
-    location /health {
-        proxy_pass http://pawsledger_backend/docs;
-        access_log off;
-    }
 }
 EOF
 
 ln -sf "/etc/nginx/sites-available/${SERVICE_NAME}" "/etc/nginx/sites-enabled/${SERVICE_NAME}"
-
-# Test Nginx config
 nginx -t
-info "Nginx configured with WebSocket proxy support."
+info "Nginx configured (listening on 127.0.0.1:${NGINX_PORT})."
 
 # ─────────────────────────────────────────────────────────────
-step "Step 9: Start Services"
+step "Step 10: Cloudflare Tunnel Service"
+# ─────────────────────────────────────────────────────────────
+echo ""
+echo "─── Cloudflare Tunnel Setup ───"
+echo ""
+echo "To get your tunnel token:"
+echo "  1. Go to Cloudflare Zero Trust → Networks → Tunnels"
+echo "  2. Create a tunnel (or use existing) named 'pawsledger'"
+echo "  3. Under Public Hostname, add:"
+echo "     - Subdomain: (your subdomain, e.g. 'paws')"
+echo "     - Domain: (your domain)"
+echo "     - Service Type: HTTP"
+echo "     - URL: localhost:${NGINX_PORT}"
+echo "  4. Copy the tunnel token from the Install connector step"
+echo ""
+read -rp "Cloudflare Tunnel Token (paste here): " TUNNEL_TOKEN
+
+if [[ -z "${TUNNEL_TOKEN}" ]]; then
+    warn "No tunnel token provided. Skipping tunnel service setup."
+    warn "You can set it up manually later with:"
+    echo "  sudo cloudflared service install <YOUR_TOKEN>"
+else
+    # Install cloudflared as a system service with the token
+    cloudflared service install "${TUNNEL_TOKEN}"
+    info "Cloudflare Tunnel service installed and running."
+fi
+
+# ─────────────────────────────────────────────────────────────
+step "Step 11: Start Services"
 # ─────────────────────────────────────────────────────────────
 systemctl restart "${SERVICE_NAME}"
 systemctl restart nginx
 info "Gunicorn and Nginx started."
 
 # ─────────────────────────────────────────────────────────────
-step "Step 10: SSL Certificate (Let's Encrypt)"
-# ─────────────────────────────────────────────────────────────
-if [[ "${ENABLE_SSL}" == true ]]; then
-    echo ""
-    read -rp "Set up SSL with Let's Encrypt now? (Y/n): " setup_ssl
-    if [[ "${setup_ssl}" != "n" && "${setup_ssl}" != "N" ]]; then
-        read -rp "Email for Let's Encrypt notifications: " LE_EMAIL
-        certbot --nginx -d "${DOMAIN}" --non-interactive --agree-tos --email "${LE_EMAIL}" --redirect
-        info "SSL certificate installed. HTTPS enabled with auto-redirect."
-
-        # Certbot auto-renewal is set up automatically via systemd timer
-        systemctl enable certbot.timer
-        systemctl start certbot.timer
-    else
-        warn "Skipping SSL. Run manually later:"
-        echo "  sudo certbot --nginx -d ${DOMAIN}"
-    fi
-else
-    warn "No domain configured — skipping SSL setup."
-    echo "  To add SSL later, configure your domain and run:"
-    echo "  sudo certbot --nginx -d your-domain.com"
-fi
-
-# ─────────────────────────────────────────────────────────────
-step "Step 11: Verify Deployment"
+step "Step 12: Verify Deployment"
 # ─────────────────────────────────────────────────────────────
 sleep 3
 
+echo ""
 if systemctl is-active --quiet "${SERVICE_NAME}"; then
-    info "Gunicorn service is running."
+    info "✓ Gunicorn service is running."
 else
-    warn "Gunicorn service may not be running. Check:"
-    echo "  sudo systemctl status ${SERVICE_NAME}"
-    echo "  sudo journalctl -u ${SERVICE_NAME} -n 50"
+    warn "✗ Gunicorn service may not be running."
+    echo "  Check: sudo systemctl status ${SERVICE_NAME}"
 fi
 
 if systemctl is-active --quiet nginx; then
-    info "Nginx is running."
+    info "✓ Nginx is running."
 else
-    warn "Nginx may not be running. Check:"
-    echo "  sudo systemctl status nginx"
+    warn "✗ Nginx may not be running."
+    echo "  Check: sudo systemctl status nginx"
+fi
+
+if systemctl is-active --quiet cloudflared 2>/dev/null; then
+    info "✓ Cloudflare Tunnel is running."
+else
+    warn "✗ Cloudflare Tunnel may not be running."
+    echo "  Check: sudo systemctl status cloudflared"
 fi
 
 # ─── Summary ─────────────────────────────────────────────────
@@ -357,7 +367,7 @@ echo ""
 echo "═══════════════════════════════════════════════════════════════"
 info "PawsLedger deployment complete!"
 echo ""
-echo "  Domain:         ${DOMAIN}"
+echo "  Domain:         https://${DOMAIN}"
 echo "  App directory:  ${APP_DIR}"
 echo "  Data directory: ${DATA_DIR}"
 echo "  Config file:    ${ENV_FILE}"
@@ -366,28 +376,34 @@ echo ""
 echo "  ┌─────────────────────────────────────────────────────────┐"
 echo "  │  Architecture:                                          │"
 echo "  │                                                         │"
-echo "  │  Client → Nginx (443/80) → Gunicorn (8080) → FastAPI   │"
-echo "  │              ↕ WebSocket      ↕ Uvicorn Workers          │"
-echo "  │              SSL              NiceGUI UI                 │"
+echo "  │  Client → Cloudflare (SSL) → cloudflared (tunnel)       │"
+echo "  │              → Nginx (${NGINX_PORT}) → Gunicorn (${APP_PORT})          │"
+echo "  │                  ↕ WebSocket    ↕ Uvicorn Workers        │"
+echo "  │                                 NiceGUI + FastAPI        │"
+echo "  │                                                         │"
+echo "  │  Firewall: Only SSH open. No HTTP/HTTPS ports exposed.  │"
 echo "  └─────────────────────────────────────────────────────────┘"
+echo ""
+echo "  Cloudflare Tunnel config (in dashboard):"
+echo "    Public Hostname: ${DOMAIN}"
+echo "    Service Type:    HTTP"
+echo "    Service URL:     localhost:${NGINX_PORT}"
 echo ""
 echo "  Useful commands:"
 echo "    sudo systemctl status ${SERVICE_NAME}    # App status"
 echo "    sudo systemctl restart ${SERVICE_NAME}   # Restart app"
-echo "    sudo journalctl -u ${SERVICE_NAME} -f    # Live logs"
+echo "    sudo systemctl status cloudflared        # Tunnel status"
+echo "    sudo journalctl -u ${SERVICE_NAME} -f    # Live app logs"
+echo "    sudo journalctl -u cloudflared -f        # Tunnel logs"
 echo "    sudo tail -f /var/log/${SERVICE_NAME}/error.log"
-echo "    sudo nginx -t                            # Test Nginx config"
-echo "    sudo systemctl restart nginx             # Restart Nginx"
+echo "    sudo nginx -t && sudo systemctl restart nginx"
 echo ""
-echo "  Deployment as user '${APP_USER}':"
+echo "  Deploy updates:"
 echo "    sudo su - ${APP_USER}"
 echo "    cd ~/paws-ledger"
 echo "    source .venv/bin/activate"
-echo "    python -m app.main                       # Manual run (dev)"
-echo ""
-if [[ "${ENABLE_SSL}" == true ]]; then
-    echo "  URL: https://${DOMAIN}"
-else
-    echo "  URL: http://$(hostname -I | awk '{print $1}')"
-fi
+echo "    # pull/rsync new code, then:"
+echo "    pip install -r requirements.txt"
+echo "    exit"
+echo "    sudo systemctl restart ${SERVICE_NAME}"
 echo "═══════════════════════════════════════════════════════════════"
