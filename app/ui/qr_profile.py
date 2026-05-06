@@ -1,7 +1,7 @@
 from nicegui import ui
 from sqlmodel import Session, select
 from ..database import engine
-from ..models import Pet, LedgerEvent
+from ..models import Pet, PetTag, LedgerEvent
 from .footer import nav_footer
 from .common import email_service
 import uuid
@@ -11,15 +11,28 @@ def init_qr_profile_page():
     @ui.page('/qr/{tag_id}')
     async def public_profile(tag_id: str):
         with Session(engine) as session:
-            try:
-                pet_uuid = uuid.UUID(tag_id)
-            except ValueError:
-                ui.label('Invalid QR Tag').classes('pl-page-title').style('color: var(--pl-primary)')
-                return
+            pet = None
 
-            pet = session.exec(select(Pet).where(Pet.id == pet_uuid)).first()
+            # First try to resolve as a tag_code (NFC/QR physical tag)
+            tag = session.exec(
+                select(PetTag).where(PetTag.tag_code == tag_id)
+            ).first()
+            if tag and tag.status == "ACTIVE":
+                pet = tag.pet
+            else:
+                # Fall back to resolving as a pet UUID (legacy QR codes)
+                try:
+                    pet_uuid = uuid.UUID(tag_id)
+                    pet = session.exec(
+                        select(Pet).where(Pet.id == pet_uuid)
+                    ).first()
+                except ValueError:
+                    pass
+
             if not pet:
-                ui.label('Invalid Tag').classes('pl-page-title').style('color: var(--pl-primary)')
+                ui.label('Invalid QR Tag').classes('pl-page-title').style(
+                    'color: var(--pl-primary)'
+                )
                 return
 
             # Log the scan

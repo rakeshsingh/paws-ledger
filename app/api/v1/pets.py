@@ -1,15 +1,36 @@
-"""Pet routes — lookup, QR, nudge, transfer, vaccinations, shared access."""
+"""Pet routes — lookup, QR, nudge, transfer, vaccinations, shared access, tags."""
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 from sqlmodel import Session, select
 from ...database import get_session
-from ...models import Pet, LedgerEvent, Vaccination, SharedAccess
+from ...models import Pet, LedgerEvent, Vaccination, SharedAccess, PetTag
 from .common import aaha_client, email_service, hash_service, pdf_service
-from uuid import UUID
+from typing import Optional
+from uuid import UUID, uuid4
 from datetime import datetime, timedelta
 
 router = APIRouter()
+
+
+# ─── Tag Schemas ─────────────────────────────────────────────
+
+class TagCreate(BaseModel):
+    tag_type: str = "QR"            # QR, NFC, DUAL
+    tag_code: Optional[str] = None  # Auto-generated if not provided
+    serial_number: Optional[str] = None
+    manufacturer: Optional[str] = None
+    nfc_uid: Optional[str] = None
+    nfc_technology: Optional[str] = None
+    label: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class TagUpdate(BaseModel):
+    label: Optional[str] = None
+    notes: Optional[str] = None
+    status: Optional[str] = None    # ACTIVE, DEACTIVATED, LOST, REPLACED
 
 
 @router.get("/lookup/{chip_id}")
@@ -211,3 +232,189 @@ async def nudge_owner(chip_id: str, session: Session = Depends(get_session)):
     )
 
     return {"message": "Nudge sent to owner successfully."}
+
+
+# ─── Tag Management Endpoints ────────────────────────────────
+
+@router.get("/pets/{pet_id}/tags")
+async def list_tags(pet_id: UUID, session: Session = Depends(get_session)):
+    """List all tags for a pet."""
+    pet = session.get(Pet, pet_id)
+    if not pet:
+        raise HTTPException(status_code=404, detail="Pet not found")
+    return [
+        {
+            "id": str(tag.id),
+            "tag_type": tag.tag_type,
+            "tag_code": tag.tag_code,
+            "serial_number": tag.serial_number,
+            "manufacturer": tag.manufacturer,
+            "status": tag.status,
+            "activated_at": tag.activated_at.isoformat() if tag.activated_at else None,
+            "deactivated_at": tag.deactivated_at.isoformat() if tag.deactivated_at else None,
+            "nfc_uid": tag.nfc_uid,
+            "nfc_technology": tag.nfc_technology,
+            "qr_url": tag.qr_url,
+            "label": tag.label,
+            "notes": tag.notes,
+        }
+        for tag in pet.tags
+    ]
+
+
+@router.post("/pets/{pet_id}/tags")
+async def create_tag(pet_id: UUID, payload: TagCreate, session: Session = Depends(get_session)):
+    """Create and link a new NFC/QR tag to a pet."""
+    pet = session.get(Pet, pet_id)
+    if not pet:
+        raise HTTPException(status_code=404, detail="Pet not found")
+
+    # Generate tag_code if not provided
+    tag_code = payload.tag_code or str(uuid4()).replace("-", "")[:12].upper()
+
+    # Check uniqueness
+    existing = session.exec(
+        select(PetTag).where(PetTag.tag_code == tag_code)
+    ).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="Tag code already registered")
+
+    # Build QR URL
+    qr_url = f"/qr/tag/{tag_code}"
+
+    new_tag = PetTag(
+        pet_id=pet_id,
+        tag_type=payload.tag_type,
+        tag_code=tag_code,
+        serial_number=payload.serial_number,
+        manufacturer=payload.manufacturer,
+        nfc_uid=payload.nfc_uid,
+        nfc_technology=payload.nfc_technology,
+        qr_url=qr_url,
+        label=payload.label,
+        notes=payload.notes,
+    )
+    session.add(new_tag)
+
+    # Log event
+    session.add(LedgerEvent(
+        pet_id=pet_id,
+        event_type="TAG_ACTIVATED",
+        description=f"{payload.tag_type} tag activated: {tag_code}"
+        + (f" ({payload.label})" if payload.label else ""),
+    ))
+    session.commit()
+    session.refresh(new_tag)
+
+    return {
+        "id": str(new_tag.id),
+        "tag_type": new_tag.tag_type,
+        "tag_code": new_tag.tag_code,
+        "qr_url": new_tag.qr_url,
+        "status": new_tag.status,
+        "label": new_tag.label,
+    }
+
+
+@router.put("/pets/{pet_id}/tags/{tag_id}")
+async def update_tag(
+    pet_id: UUID, tag_id: UUID, payload: TagUpdate,
+    session: Session = Depends(get_session),
+):
+    """Update a tag's label, notes, or status."""
+    tag = session.get(PetTag, tag_id)
+    if not tag or tag.pet_id != pet_id:
+        raise HTTPException(status_code=404, detail="Tag not found")
+
+    if payload.label is not None:
+        tag.label = payload.label
+    if payload.notes is not None:
+        tag.notes = payload.notes
+    if payload.status is not None:
+        old_status = tag.status
+        tag.status = payload.status
+        if payload.status == "DEACTIVATED" and old_status != "DEACTIVATED":
+            tag.deactivated_at = datetime.utcnow()
+            session.add(LedgerEvent(
+                pet_id=pet_id,
+                event_type="TAG_DEACTIVATED",
+                description=f"Tag deactivated: {tag.tag_code}"
+                + (f" ({tag.label})" if tag.label else ""),
+            ))
+        elif payload.status == "ACTIVE" and old_status != "ACTIVE":
+            tag.deactivated_at = None
+            session.add(LedgerEvent(
+                pet_id=pet_id,
+                event_type="TAG_ACTIVATED",
+                description=f"Tag reactivated: {tag.tag_code}"
+                + (f" ({tag.label})" if tag.label else ""),
+            ))
+
+    session.add(tag)
+    session.commit()
+    session.refresh(tag)
+
+    return {
+        "id": str(tag.id),
+        "tag_type": tag.tag_type,
+        "tag_code": tag.tag_code,
+        "status": tag.status,
+        "label": tag.label,
+        "notes": tag.notes,
+    }
+
+
+@router.delete("/pets/{pet_id}/tags/{tag_id}")
+async def delete_tag(pet_id: UUID, tag_id: UUID, session: Session = Depends(get_session)):
+    """Permanently remove a tag."""
+    tag = session.get(PetTag, tag_id)
+    if not tag or tag.pet_id != pet_id:
+        raise HTTPException(status_code=404, detail="Tag not found")
+
+    session.add(LedgerEvent(
+        pet_id=pet_id,
+        event_type="TAG_REMOVED",
+        description=f"Tag removed: {tag.tag_code}"
+        + (f" ({tag.label})" if tag.label else ""),
+    ))
+    session.delete(tag)
+    session.commit()
+    return {"message": "Tag removed successfully"}
+
+
+@router.get("/qr/tag/{tag_code}")
+async def resolve_tag(tag_code: str, session: Session = Depends(get_session)):
+    """Resolve a physical tag code to a pet profile (public endpoint for QR/NFC scans)."""
+    tag = session.exec(
+        select(PetTag).where(PetTag.tag_code == tag_code)
+    ).first()
+    if not tag:
+        raise HTTPException(status_code=404, detail="Tag not registered")
+    if tag.status != "ACTIVE":
+        raise HTTPException(status_code=410, detail="Tag is no longer active")
+
+    pet = tag.pet
+
+    # Log scan event
+    session.add(LedgerEvent(
+        pet_id=pet.id,
+        event_type="EMERGENCY_SCAN",
+        description=f"Tag scanned: {tag.tag_code} ({tag.tag_type})",
+    ))
+    session.commit()
+
+    # Notify owner
+    if pet.owner and pet.owner.email:
+        await email_service.notify_owner_of_scan(
+            pet.owner.email, pet.breed or "Pet"
+        )
+
+    return {
+        "pet_id": str(pet.id),
+        "pet_species": pet.pet_species,
+        "breed": pet.breed,
+        "identity_status": pet.identity_status,
+        "tag_type": tag.tag_type,
+        "chip_id": pet.chip_id,
+        "profile_url": f"/pet/{pet.id}",
+    }

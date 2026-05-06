@@ -1,0 +1,134 @@
+{
+  "source": "2022 AAHA Canine Vaccination Guidelines",
+  "species": "DOG",
+  "last_updated": "2024-11-01",
+  "core_vaccines": [
+    {
+      "name": "Canine Distemper Virus (CDV)",
+      "abbreviation": "CDV",
+      "category": "core",
+      "description": "Protects against canine distemper, a serious viral disease affecting the respiratory, gastrointestinal, and nervous systems.",
+      "initial_series": {
+        "puppies_under_16_weeks": "At least 3 doses between 6 and 16 weeks of age, 2-4 weeks apart",
+        "dogs_over_16_weeks": "2 doses, 2-4 weeks apart"
+      },
+      "booster": "Single dose within 1 year of last initial dose, then every 3 years",
+      "booster_interval_years": 3,
+      "route": "Subcutaneous or Intramuscular",
+      "common_brands": ["Nobivac DAPPv", "Vanguard Plus 5", "Duramune Max 5"]
+    },
+    {
+      "name": "Canine Parvovirus (CPV-2)",
+      "abbreviation": "CPV",
+      "category": "core",
+      "description": "Protects against parvovirus, a highly contagious virus causing severe vomiting, diarrhea, and potentially death in puppies.",
+      "initial_series": {
+        "puppies_under_16_weeks": "At least 3 doses between 6 and 16 weeks of age, 2-4 weeks apart",
+        "dogs_over_16_weeks": "2 doses, 2-4 weeks apart"
+      },
+      "booster": "Single dose within 1 year of last initial dose, then every 3 years",
+      "booster_interval_years": 3,
+      "route": "Subcutaneous or Intramuscular",
+      "common_brands": ["Nobivac DAPPv", "Vanguard Plus 5", "Duramune Max 5"]
+    },
+    {
+      "name": "Canine Adenovirus Type 2 (CAV-2)",
+      "abbreviation": "CAV-2",
+      "category": "core",
+      "description": "Protects against infectious canine hepatitis and respiratory disease caused by adenovirus.",
+      "initial_series": {
+        "puppies_under_16_weeks": "At least 3 doses between 6 and 16 weeks of age, 2-4 weeks apart",
+        "dogs_over_16_weeks": "2 doses, 2-4 weeks apart"
+      },
+      "booster": "Single dose within 1 year of last initial dose, then every 3 years",
+      "booster_interval_years": 3,
+      "route": "Subcutaneous or Intramuscular",
+      "common_brands": ["Nobivac DAPPv", "Vanguard Plus 5", "Duramune Max 5"]
+    },
+    {
+      "name": "Canine Parainfluenza Virus (CPiV)",
+      "abbreviation": "CPiV",
+      "category": "core",
+      "description": "Protects against parainfluenza, a common contributor to kennel cough complex.",
+      "initial_series": {
+        "puppies_under_16_weeks": "At least 3 doses between 6 and 16 weeks of age, 2-4 weeks apart (often combined with CDV/CPV/CAV)",
+        "dogs_over_16_weeks": "2 doses, 2-4 weeks apart"
+      },
+      "booster": "Single dose within 1 year of last initial dose, then every 3 years",
+      "booster_interval_years": 3,
+      "route": "Subcutaneous or Intramuscular",
+      "common_brands": ["Nobivac DAPPv", "Vanguard Plus 5"]
+    },
+    {
+      "name": "Leptospirosis (4-serovar)",
+      "abbreviation": "Lepto4",
+      "category": "core",
+      "description": "Protects against leptospirosis, a bacterial zoonotic disease transmitted through contaminated water and soil.",
+      "initial_series": {
+        "puppies_under_16_weeks": "2 doses, 2-4 weeks apart, starting at 12 weeks of age",
+        "dogs_over_16_weeks": "2 doses, 2-4 weeks apart"
+      },
+      "booster": "Single dose within 1 year of last initial dose, then annually",
+      "booster_interval_years": 1,
+      "route": "Subcutaneous",
+      "common_brands": ["Nobivac Lepto4", "Vanguard L4", "Duramune Leptospira"]
+    },
+    {
+      "name": "Rabies",
+      "abbreviation": "Rabies",
+      "category": "core",
+      "description": "Protects against rabies virus. Required by law in most jurisdictions. Fatal zoonotic disease.",
+      "initial_series": {
+        "puppies_under_16_weeks": "Single dose at 12-16 weeks as required by law",
+        "dogs_over_16_weeks": "Single dose as required by law"
+      },
+      "booster": "As required by law — typically 1 year after initial, then every 1-3 years depending on product and jurisdiction",
+      "booster_interval_years": 3,
+      "route": "Subcutaneous or Intramuscular",
+      "common_brands": ["Imrab 3", "Nobivac 3-Rabies", "Defensor 3"]
+    }
+  ],
+  "noncore_vaccines": [
+    {
+      "name": "Bordetella bronchiseptica + Parainfluenza (Kennel Cough)",
+      "abbreviation": "Bordetella",
+      "category": "noncore",
+      "description": "Protects against kennel cough. Recommended for dogs that visit boarding facilities, dog parks, or grooming salons.",
+      "initial_series": {
+        "intranasal": "Single intranasal dose",
+        "oral": "Single oral dose",
+        "parenteral": "2 subcutaneous doses, 2-4 weeks apart"
+      },
+      "booster": "Annually",
+      "booster_interval_years": 1,
+      "route": "Intranasal, Oral, or Subcutaneous",
+      "common_brands": ["Bronchi-Shield", "Nobivac Intra-Trac", "Vanguard B"]
+    },
+    {
+      "name": "Borrelia burgdorferi (Lyme Disease)",
+      "abbreviation": "Lyme",
+      "category": "noncore",
+      "description": "Protects against Lyme disease. Recommended for dogs in endemic areas or those exposed to ticks.",
+      "initial_series": {
+        "all_ages": "2 doses, 2-4 weeks apart"
+      },
+      "booster": "Single dose within 1 year of last initial dose, then annually",
+      "booster_interval_years": 1,
+      "route": "Subcutaneous",
+      "common_brands": ["Nobivac Lyme", "Vanguard crLyme", "LymeVax"]
+    },
+    {
+      "name": "Canine Influenza Virus (H3N2/H3N8)",
+      "abbreviation": "CIV",
+      "category": "noncore",
+      "description": "Protects against canine influenza. Recommended for dogs in social environments or areas with outbreaks.",
+      "initial_series": {
+        "all_ages": "2 doses, 2-4 weeks apart"
+      },
+      "booster": "Single dose within 1 year of last initial dose, then annually",
+      "booster_interval_years": 1,
+      "route": "Subcutaneous",
+      "common_brands": ["Nobivac Canine Flu Bivalent", "Vanguard CIV H3N2/H3N8"]
+    }
+  ]
+}

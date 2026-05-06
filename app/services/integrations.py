@@ -24,21 +24,40 @@ def get_manufacturer_from_chip(chip_id: str) -> str:
     return MANUFACTURER_MAP.get(prefix, f"Generic ({prefix})")
 
 class DogAPIClient:
-    BASE_URL = "https://api.thedogapi.com/v1"
-    
+    """Client for the Dog CEO API (dog.ceo) — free, no API key required."""
+    BASE_URL = "https://dog.ceo/api"
+
     async def get_breeds(self) -> List[Dict]:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"{self.BASE_URL}/breeds")
-            if response.status_code == 200:
-                return response.json()
+        """Fetch all dog breeds from dog.ceo API.
+
+        Returns a list of dicts with 'name' key for each breed,
+        including sub-breeds formatted as 'Sub-breed Parent-breed'.
+        """
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            try:
+                response = await client.get(f"{self.BASE_URL}/breeds/list/all")
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get('status') == 'success':
+                        breeds = []
+                        for breed, sub_breeds in data.get('message', {}).items():
+                            # Capitalize breed name
+                            breed_name = breed.capitalize()
+                            breeds.append({'name': breed_name})
+                            # Add sub-breeds as "Sub-breed Breed"
+                            for sub in sub_breeds:
+                                sub_name = f"{sub.capitalize()} {breed_name}"
+                                breeds.append({'name': sub_name})
+                        return sorted(breeds, key=lambda b: b['name'])
+            except Exception:
+                pass
             return []
 
     async def search_breed(self, name: str) -> List[Dict]:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(f"{self.BASE_URL}/breeds/search?q={name}")
-            if response.status_code == 200:
-                return response.json()
-            return []
+        """Search breeds by name (client-side filter from full list)."""
+        all_breeds = await self.get_breeds()
+        query = name.lower()
+        return [b for b in all_breeds if query in b['name'].lower()]
 
 class AAHAClient:
     """

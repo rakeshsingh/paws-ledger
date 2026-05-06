@@ -6,39 +6,27 @@ def nav_header():
         'bg-stone-50/80 backdrop-blur-md border-b border-stone-200 shadow-sm px-6 md:px-12 py-4'
     ).style("font-family: 'Plus Jakarta Sans', sans-serif;"):
         with ui.row().classes('w-full max-w-7xl mx-auto justify-between items-center'):
-            # Brand
+            # Brand (left)
             ui.link('PawsLedger', '/').classes(
                 'text-2xl font-bold tracking-tight no-underline'
             ).style('color: #c24112;')
 
-            # Nav links
+            # Nav links + auth (right-aligned together)
             with ui.row().classes('gap-8 items-center'):
                 link_classes = 'text-stone-600 font-medium no-underline'
 
                 ui.link('Home', '/').classes(link_classes)
                 ui.link('Dashboard', '/dashboard').classes(link_classes)
 
-                # About dropdown with submenu
-                with ui.button('About', icon='arrow_drop_down').props(
-                    'flat no-caps'
-                ).classes('text-stone-600 font-medium'):
-                    with ui.menu():
-                        ui.menu_item('About', on_click=lambda: ui.navigate.to('/about'))
-                        ui.menu_item('Contact', on_click=lambda: ui.navigate.to('/contact'))
-                        ui.menu_item('FAQ', on_click=lambda: ui.navigate.to('/faq'))
-
-            # Right actions
-            with ui.row().classes('gap-4 items-center'):
                 if app.storage.user.get('email'):
                     full_name = app.storage.user.get('name', '')
                     first_name = full_name.split()[0] if full_name else 'User'
 
                     # User avatar + name button with dropdown
-                    with ui.button(on_click=lambda: None).props('flat no-caps no-wrap').classes(
-                        'text-stone-600 font-medium'
-                    ):
+                    with ui.button(on_click=lambda: None).props(
+                        'flat no-caps no-wrap'
+                    ).classes('text-stone-600 font-medium'):
                         with ui.row().classes('items-center gap-2'):
-                            # Circular avatar with user icon
                             with ui.element('div').classes(
                                 'flex items-center justify-center rounded-full'
                             ).style(
@@ -68,6 +56,4 @@ def nav_header():
                                 ),
                             )
                 else:
-                    ui.link('Login', '/login').classes(
-                        'text-stone-600 font-medium no-underline'
-                    )
+                    ui.link('Login', '/login').classes(link_classes)

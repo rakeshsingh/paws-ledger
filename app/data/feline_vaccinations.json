@@ -1,0 +1,119 @@
+{
+  "source": "2020 AAHA/AAFP Feline Vaccination Guidelines",
+  "species": "CAT",
+  "last_updated": "2024-11-01",
+  "core_vaccines": [
+    {
+      "name": "Feline Panleukopenia Virus (FPV)",
+      "abbreviation": "FPV",
+      "category": "core",
+      "description": "Protects against feline panleukopenia (feline distemper), a highly contagious and often fatal viral disease.",
+      "initial_series": {
+        "kittens_under_16_weeks": "Starting at 6 weeks of age, every 3-4 weeks until 16-20 weeks of age (minimum 2 doses)",
+        "cats_over_16_weeks": "2 doses, 3-4 weeks apart"
+      },
+      "booster": "Single dose 1 year after last initial dose, then every 3 years",
+      "booster_interval_years": 3,
+      "route": "Subcutaneous or Intranasal",
+      "common_brands": ["Nobivac Feline 1-HCPCh", "Felocell CVR", "PureVax Feline 4"]
+    },
+    {
+      "name": "Feline Herpesvirus Type 1 (FHV-1)",
+      "abbreviation": "FHV-1",
+      "category": "core",
+      "description": "Protects against feline viral rhinotracheitis, a major cause of upper respiratory infection in cats.",
+      "initial_series": {
+        "kittens_under_16_weeks": "Starting at 6 weeks of age, every 3-4 weeks until 16-20 weeks of age (minimum 2 doses)",
+        "cats_over_16_weeks": "2 doses, 3-4 weeks apart"
+      },
+      "booster": "Single dose 1 year after last initial dose, then every 3 years",
+      "booster_interval_years": 3,
+      "route": "Subcutaneous or Intranasal",
+      "common_brands": ["Nobivac Feline 1-HCPCh", "Felocell CVR", "PureVax Feline 4"]
+    },
+    {
+      "name": "Feline Calicivirus (FCV)",
+      "abbreviation": "FCV",
+      "category": "core",
+      "description": "Protects against feline calicivirus, a common cause of upper respiratory infections and oral disease in cats.",
+      "initial_series": {
+        "kittens_under_16_weeks": "Starting at 6 weeks of age, every 3-4 weeks until 16-20 weeks of age (minimum 2 doses)",
+        "cats_over_16_weeks": "2 doses, 3-4 weeks apart"
+      },
+      "booster": "Single dose 1 year after last initial dose, then every 3 years",
+      "booster_interval_years": 3,
+      "route": "Subcutaneous or Intranasal",
+      "common_brands": ["Nobivac Feline 1-HCPCh", "Felocell CVR", "PureVax Feline 4"]
+    },
+    {
+      "name": "Rabies",
+      "abbreviation": "Rabies",
+      "category": "core",
+      "description": "Protects against rabies virus. Required by law in most jurisdictions. Fatal zoonotic disease.",
+      "initial_series": {
+        "kittens_under_16_weeks": "Single dose at 12-16 weeks of age as required by law",
+        "cats_over_16_weeks": "Single dose as required by law"
+      },
+      "booster": "As required by law — typically 1 year after initial, then every 1-3 years depending on product and jurisdiction",
+      "booster_interval_years": 3,
+      "route": "Subcutaneous (non-adjuvanted preferred) — right hind limb distal to stifle",
+      "common_brands": ["PureVax Rabies (non-adjuvanted)", "Imrab 3", "Nobivac 3-Rabies"]
+    }
+  ],
+  "noncore_vaccines": [
+    {
+      "name": "Feline Leukemia Virus (FeLV)",
+      "abbreviation": "FeLV",
+      "category": "noncore",
+      "description": "Protects against feline leukemia virus. Recommended for all kittens and cats with outdoor access or exposure to FeLV-positive cats.",
+      "initial_series": {
+        "kittens_under_16_weeks": "2 doses, 3-4 weeks apart, starting at 8 weeks of age",
+        "cats_over_16_weeks": "2 doses, 3-4 weeks apart"
+      },
+      "booster": "Single dose 1 year after last initial dose. Subsequent boosters based on risk — annually for high-risk cats, may discontinue for indoor-only adults",
+      "booster_interval_years": 1,
+      "route": "Subcutaneous — left hind limb distal to stifle",
+      "common_brands": ["PureVax FeLV (non-adjuvanted)", "Nobivac Feline 2-FeLV", "Leukocell 2"]
+    },
+    {
+      "name": "Feline Immunodeficiency Virus (FIV)",
+      "abbreviation": "FIV",
+      "category": "noncore",
+      "description": "Protects against feline immunodeficiency virus. May be considered for cats at high risk of exposure through fighting.",
+      "initial_series": {
+        "all_ages": "3 doses, 2-3 weeks apart"
+      },
+      "booster": "Annually for cats with continued risk",
+      "booster_interval_years": 1,
+      "route": "Subcutaneous",
+      "common_brands": ["Fel-O-Vax FIV"]
+    },
+    {
+      "name": "Chlamydia felis",
+      "abbreviation": "Chlamydia",
+      "category": "noncore",
+      "description": "Protects against chlamydial conjunctivitis. Recommended for multi-cat environments with confirmed chlamydia infections.",
+      "initial_series": {
+        "kittens_under_16_weeks": "2 doses, 3-4 weeks apart, starting at 9 weeks of age",
+        "cats_over_16_weeks": "2 doses, 3-4 weeks apart"
+      },
+      "booster": "Annually for cats with continued risk",
+      "booster_interval_years": 1,
+      "route": "Subcutaneous",
+      "common_brands": ["Nobivac Feline 1-HCPCh+FeLV", "Felocell CVR-C"]
+    },
+    {
+      "name": "Bordetella bronchiseptica (Feline)",
+      "abbreviation": "Bordetella",
+      "category": "noncore",
+      "description": "Protects against bordetella respiratory infection. May be considered for cats in high-density environments.",
+      "initial_series": {
+        "all_ages": "Single intranasal dose at 8 weeks of age or older"
+      },
+      "booster": "Annually for cats with continued risk",
+      "booster_interval_years": 1,
+      "route": "Intranasal",
+      "common_brands": ["Nobivac Bb (feline)"]
+    }
+  ]
+}

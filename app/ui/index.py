@@ -110,24 +110,6 @@ def init_index_page():
                                             ).classes('w-full mt-2').style(
                                                 'background-color: #a03a21; color: white;'
                                             )
-
-                                            async def nudge_owner(chip=pet.chip_id):
-                                                import httpx
-                                                async with httpx.AsyncClient(
-                                                    base_url='http://localhost:8080'
-                                                ) as http_client:
-                                                    resp = await http_client.post(f'/api/v1/nudge/{chip}')
-                                                    if resp.status_code == 200:
-                                                        ui.notify('Nudge sent to owner!', type='positive')
-                                                    else:
-                                                        ui.notify('Failed to send nudge.', type='negative')
-
-                                            ui.button(
-                                                'Nudge Owner', icon='notifications',
-                                                on_click=nudge_owner,
-                                            ).classes('w-full mt-2').style(
-                                                'background-color: #7d5800; color: white;'
-                                            )
                                         else:
                                             ui.label(
                                                 'This pet is registered on PawsLedger. '
@@ -322,35 +304,23 @@ def init_index_page():
         #             )
 
         # ── Value Props Section ──
-        with ui.element('section').classes('w-full py-24').style(
+        with ui.element('section').classes('w-full py-6').style(
             'background: white; border-top: 1px solid #e7e5e4; border-bottom: 1px solid #e7e5e4;'
         ):
-            with ui.column().classes('max-w-7xl mx-auto px-6 items-center'):
+            with ui.row().classes('max-w-7xl mx-auto px-6 items-center gap-8'):
                 ui.label('Why Trust PawsLedger?').style(
-                    "font-family: 'Plus Jakarta Sans'; font-size: 32px; font-weight: 600; color: #171c21;"
-                ).classes('mb-2')
-                ui.label(
-                    "Built on the principles of nurturing professionalism and absolute security for your pet's sensitive data."
-                ).style('color: #57423d; margin-bottom: 3rem; text-align: center; max-width: 42rem;')
-
-                with ui.row().classes('w-full gap-12 justify-center'):
-                    for icon_name, color, title, desc in [
-                        ('hub', '#a03a21', 'Global Connection',
-                         'Our ledger connects with thousands of shelters and vet clinics worldwide for seamless identification.'),
-                        ('encrypted', '#7d5800', 'Privacy First Security',
-                         'Your personal data is encrypted and only shared with verified finders through our secure communication relay.'),
-                        ('volunteer_activism', '#171c21', 'Peace of Mind',
-                         'Real-time alerts and recovery assistance support you from the moment a pet is reported lost.'),
-                    ]:
-                        with ui.column().classes('flex-1 items-center text-center gap-4 px-6'):
-                            with ui.element('div').classes(
-                                'flex items-center justify-center rounded-2xl'
-                            ).style(f'width: 64px; height: 64px; background: #eaeef5;'):
-                                ui.icon(icon_name).style(f'font-size: 32px; color: {color};')
-                            ui.label(title).style(
-                                "font-family: 'Plus Jakarta Sans'; font-size: 24px; font-weight: 600; color: #171c21;"
-                            )
-                            ui.label(desc).style('color: #57423d;')
+                    "font-family: 'Plus Jakarta Sans'; font-size: 18px; font-weight: 700; color: #171c21; white-space: nowrap;"
+                )
+                for icon_name, color, title in [
+                    ('hub', '#a03a21', 'Global Connection'),
+                    ('encrypted', '#7d5800', 'Privacy First'),
+                    ('volunteer_activism', '#171c21', 'Peace of Mind'),
+                ]:
+                    with ui.row().classes('items-center gap-2'):
+                        ui.icon(icon_name).style(f'font-size: 20px; color: {color};')
+                        ui.label(title).style(
+                            'font-size: 14px; font-weight: 600; color: #171c21;'
+                        )
         # ── CTA Section ──
         # with ui.element('section').classes('w-full py-24 px-6'):
         #     with ui.element('div').classes(

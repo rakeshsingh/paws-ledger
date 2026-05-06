@@ -2,7 +2,7 @@ from nicegui import ui, app
 from starlette.requests import Request
 from sqlmodel import Session, select
 from ..database import engine
-from ..models import Pet, LedgerEvent, Vaccination, SharedAccess, User
+from ..models import Pet, LedgerEvent, Vaccination, SharedAccess, User, PetTag
 from .header import nav_header
 from .footer import nav_footer
 from .common import try_restore_session, hash_service, pdf_service
@@ -268,7 +268,6 @@ def _render_contact_location_card(pet, is_owner: bool = False):
                 with ui.row().classes('gap-6 justify-center'):
                     for icon_name, label in [
                         ('mail', 'Email Relay'),
-                        ('chat', 'Secure Chat'),
                     ]:
                         with ui.column().classes('items-center gap-1'):
                             with ui.element('div').classes(
@@ -307,6 +306,219 @@ def _render_trust_signals():
                         "font-family: 'Plus Jakarta Sans'; font-size: 18px; "
                         "font-weight: 600;"
                     )
+
+
+def _render_tag_management(pet, session):
+    """Tag management card for the owner's private view."""
+    with ui.element('div').classes('w-full mt-5 p-10 rounded-xl').style(
+        'background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.05); '
+        'border-left: 4px solid #7d5800;'
+    ):
+        with ui.row().classes('w-full justify-between items-center mb-6'):
+            with ui.row().classes('items-center gap-3'):
+                ui.icon('nfc').style('font-size: 28px; color: #7d5800;')
+                ui.label('NFC / QR Tags').style(
+                    "font-family: 'Plus Jakarta Sans'; font-size: 24px; "
+                    "font-weight: 600; color: #171c21;"
+                )
+            tag_count = len(pet.tags)
+            if tag_count > 0:
+                ui.label(f'{tag_count} tag{"s" if tag_count != 1 else ""}').style(
+                    'padding: 4px 12px; background: #ffdea9; color: #5f4100; '
+                    'font-size: 12px; font-weight: 600; border-radius: 9999px;'
+                )
+
+        # Existing tags list
+        tags_container = ui.column().classes('w-full gap-3 mb-6')
+        with tags_container:
+            if pet.tags:
+                for tag in pet.tags:
+                    _render_tag_row(tag, pet)
+            else:
+                ui.label(
+                    'No tags linked yet. Add a QR or NFC tag to enable '
+                    'instant identification when scanned.'
+                ).style('color: #57423d; font-style: italic; font-size: 14px;')
+
+        # Add tag form
+        with ui.expansion('Add New Tag', icon='add_circle').classes('w-full'):
+            with ui.column().classes('w-full gap-4 pt-4'):
+                tag_type = ui.select(
+                    ['QR', 'NFC', 'DUAL'], label='Tag Type', value='QR'
+                ).classes('w-full').props('outlined dense')
+                tag_label = ui.input(
+                    placeholder='e.g. Collar tag, Harness tag'
+                ).classes('w-full').props('outlined dense label="Label"')
+                tag_code_input = ui.input(
+                    placeholder='Leave blank to auto-generate'
+                ).classes('w-full').props('outlined dense label="Tag Code (optional)"')
+
+                # NFC-specific fields
+                nfc_section = ui.column().classes('w-full gap-4')
+                with nfc_section:
+                    nfc_uid_input = ui.input(
+                        placeholder='e.g. 04:A2:3B:C1:D4:E5:F6'
+                    ).classes('w-full').props('outlined dense label="NFC UID"')
+                    nfc_tech_input = ui.select(
+                        ['NTAG213', 'NTAG215', 'NTAG216', 'Mifare Classic', 'Mifare Ultralight'],
+                        label='NFC Technology', value='NTAG215',
+                    ).classes('w-full').props('outlined dense')
+                nfc_section.set_visibility(False)
+
+                def on_type_change(e):
+                    nfc_section.set_visibility(e.value in ('NFC', 'DUAL'))
+
+                tag_type.on('update:model-value', on_type_change)
+
+                tag_serial = ui.input(
+                    placeholder='Manufacturer serial number'
+                ).classes('w-full').props('outlined dense label="Serial Number (optional)"')
+                tag_manufacturer = ui.input(
+                    placeholder='e.g. PawTag, Tile'
+                ).classes('w-full').props('outlined dense label="Manufacturer (optional)"')
+                tag_notes = ui.textarea(
+                    placeholder='Any notes about this tag'
+                ).classes('w-full').props('outlined rows=2 label="Notes (optional)"')
+
+                async def add_tag():
+                    code = tag_code_input.value.strip() if tag_code_input.value else None
+                    with Session(engine) as s:
+                        if code:
+                            existing = s.exec(
+                                select(PetTag).where(PetTag.tag_code == code)
+                            ).first()
+                            if existing:
+                                ui.notify('Tag code already registered.', type='negative')
+                                return
+
+                        generated_code = code or str(uuid.uuid4()).replace('-', '')[:12].upper()
+                        qr_url = f'/qr/{generated_code}'
+
+                        new_tag = PetTag(
+                            pet_id=pet.id,
+                            tag_type=tag_type.value,
+                            tag_code=generated_code,
+                            serial_number=tag_serial.value.strip() or None,
+                            manufacturer=tag_manufacturer.value.strip() or None,
+                            nfc_uid=nfc_uid_input.value.strip() if nfc_uid_input.value else None,
+                            nfc_technology=(
+                                nfc_tech_input.value if tag_type.value in ('NFC', 'DUAL') else None
+                            ),
+                            qr_url=qr_url,
+                            label=tag_label.value.strip() or None,
+                            notes=tag_notes.value.strip() or None,
+                        )
+                        s.add(new_tag)
+                        s.add(LedgerEvent(
+                            pet_id=pet.id,
+                            event_type="TAG_ACTIVATED",
+                            description=(
+                                f"{tag_type.value} tag activated: {generated_code}"
+                                + (f" ({tag_label.value.strip()})" if tag_label.value.strip() else "")
+                            ),
+                        ))
+                        s.commit()
+
+                    ui.notify('Tag added successfully!', type='positive')
+                    ui.navigate.to(f'/pet/{pet.id}')
+
+                ui.button(
+                    'Register Tag', icon='nfc', on_click=add_tag,
+                ).classes('w-full mt-2').style(
+                    'background: #7d5800; color: white; font-weight: 600;'
+                ).props('no-caps')
+
+
+def _render_tag_row(tag, pet):
+    """Render a single tag row with status and actions."""
+    is_active = tag.status == 'ACTIVE'
+    status_bg = '#dcfce7' if is_active else '#fef2f2'
+    status_fg = '#166534' if is_active else '#991b1b'
+    type_icon = 'qr_code_2' if tag.tag_type == 'QR' else (
+        'nfc' if tag.tag_type == 'NFC' else 'devices'
+    )
+
+    with ui.row().classes(
+        'w-full items-center justify-between p-4 rounded-lg'
+    ).style(f'background: {status_bg};'):
+        with ui.row().classes('items-center gap-4'):
+            ui.icon(type_icon).style(f'font-size: 24px; color: {status_fg};')
+            with ui.column().classes('gap-0'):
+                with ui.row().classes('items-center gap-2'):
+                    ui.label(tag.label or f'{tag.tag_type} Tag').style(
+                        'font-weight: 600; font-size: 14px;'
+                    )
+                    ui.label(tag.status).style(
+                        f'font-size: 10px; font-weight: 700; color: {status_fg}; '
+                        'text-transform: uppercase; letter-spacing: 0.05em;'
+                    )
+                ui.label(f'Code: {tag.tag_code}').style(
+                    'font-family: monospace; font-size: 12px; color: #57423d;'
+                )
+                if tag.nfc_uid:
+                    ui.label(f'NFC UID: {tag.nfc_uid}').style(
+                        'font-family: monospace; font-size: 11px; color: #78716c;'
+                    )
+
+        with ui.row().classes('items-center gap-2'):
+            if is_active:
+                async def deactivate(t=tag):
+                    with Session(engine) as s:
+                        db_tag = s.get(PetTag, t.id)
+                        if db_tag:
+                            db_tag.status = 'DEACTIVATED'
+                            db_tag.deactivated_at = datetime.utcnow()
+                            s.add(LedgerEvent(
+                                pet_id=pet.id,
+                                event_type="TAG_DEACTIVATED",
+                                description=f"Tag deactivated: {t.tag_code}",
+                            ))
+                            s.add(db_tag)
+                            s.commit()
+                    ui.notify('Tag deactivated.', type='warning')
+                    ui.navigate.to(f'/pet/{pet.id}')
+
+                ui.button(icon='block', on_click=deactivate).props(
+                    'flat dense round'
+                ).tooltip('Deactivate')
+            else:
+                async def reactivate(t=tag):
+                    with Session(engine) as s:
+                        db_tag = s.get(PetTag, t.id)
+                        if db_tag:
+                            db_tag.status = 'ACTIVE'
+                            db_tag.deactivated_at = None
+                            s.add(LedgerEvent(
+                                pet_id=pet.id,
+                                event_type="TAG_ACTIVATED",
+                                description=f"Tag reactivated: {t.tag_code}",
+                            ))
+                            s.add(db_tag)
+                            s.commit()
+                    ui.notify('Tag reactivated.', type='positive')
+                    ui.navigate.to(f'/pet/{pet.id}')
+
+                ui.button(icon='check_circle', on_click=reactivate).props(
+                    'flat dense round'
+                ).tooltip('Reactivate')
+
+            async def remove_tag(t=tag):
+                with Session(engine) as s:
+                    db_tag = s.get(PetTag, t.id)
+                    if db_tag:
+                        s.add(LedgerEvent(
+                            pet_id=pet.id,
+                            event_type="TAG_REMOVED",
+                            description=f"Tag removed: {t.tag_code}",
+                        ))
+                        s.delete(db_tag)
+                        s.commit()
+                ui.notify('Tag removed.', type='negative')
+                ui.navigate.to(f'/pet/{pet.id}')
+
+            ui.button(icon='delete', on_click=remove_tag).props(
+                'flat dense round color=negative'
+            ).tooltip('Remove')
 
 
 # ─────────────────────────────────────────────────────────────
@@ -501,6 +713,15 @@ def _render_private_view(pet, session):
                         'font-size: 14px; font-weight: 600; color: #16a34a;'
                     )
 
+            # Edit button
+            ui.button(
+                'Edit Pet', icon='edit',
+                on_click=lambda: ui.navigate.to(f'/pet/{pet.id}/edit'),
+            ).style(
+                'background: #a03a21; color: white; font-weight: 600; '
+                'padding: 10px 24px; border-radius: 8px;'
+            ).props('no-caps')
+
     # ── Row 1: Pet ID card (full) + Registry status ──
     with ui.row().classes('w-full gap-5 flex-wrap items-stretch'):
         # Pet identification card — full details
@@ -646,6 +867,9 @@ def _render_private_view(pet, session):
                         'color: #57423d; font-style: italic;'
                     )
 
+    # ── NFC/QR Tag Management ──
+    _render_tag_management(pet, session)
+
     # ── Vaccination ledger (owner-only: full detail + add form) ──
     with ui.element('div').classes('w-full mt-5 p-10 rounded-xl').style(
         'background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.05); '
@@ -675,160 +899,460 @@ def _render_private_view(pet, session):
                 ui.download(path, f"{pet.breed}_vaccinations.pdf")
 
             ui.button(
-                'Export Verified PDF', icon='download',
+                'Export PDF', icon='download',
                 on_click=export_pdf,
             ).props('flat small no-caps').style('color: #a03a21;')
 
-        if not pet.vaccinations:
-            ui.label('No vaccinations recorded.').style(
-                'color: #57423d; font-style: italic;'
-            )
-        else:
+        # Existing records table
+        if pet.vaccinations:
+            # Table header
+            with ui.row().classes('w-full items-center px-4 py-2 rounded-t-lg').style(
+                'background: #eaeef5; font-size: 11px; font-weight: 700; '
+                'color: #57423d; text-transform: uppercase; letter-spacing: 0.05em;'
+            ):
+                ui.label('Vaccine').classes('flex-1')
+                ui.label('Manufacturer').style('width: 120px;')
+                ui.label('Serial/Lot').style('width: 100px;')
+                ui.label('Date Given').style('width: 100px;')
+                ui.label('Expires').style('width: 100px;')
+
             for v in pet.vaccinations:
                 is_current = v.expiration_date > datetime.utcnow()
-                row_bg = '#f0f4fb' if is_current else '#fef2f2'
-                with ui.row().classes(
-                    'w-full items-center justify-between p-4 rounded-lg mb-3'
-                ).style(f'background: {row_bg};'):
-                    with ui.column().classes('gap-0'):
-                        ui.label(v.vaccine_name).style(
-                            'font-weight: 600; font-size: 16px;'
-                        )
-                        ui.label(
-                            f'By {v.administering_vet} @ {v.clinic_name}'
-                        ).style('font-size: 12px; color: #57423d;')
-                    with ui.column().classes('items-end gap-0'):
-                        exp_color = '#16a34a' if is_current else '#dc2626'
-                        ui.label(
-                            f'Expires: {v.expiration_date.date()}'
-                        ).style(
-                            f'font-weight: 600; font-size: 12px; '
-                            f'color: {exp_color};'
-                        )
-                        ui.label(
-                            f'Hash: {(v.record_hash or "")[:8]}...'
-                        ).style(
-                            'font-family: monospace; font-size: 10px; '
-                            'color: #8a716c;'
-                        )
+                row_bg = '#f7f9ff' if is_current else '#fef2f2'
+                exp_color = '#16a34a' if is_current else '#dc2626'
+                with ui.row().classes('w-full items-center px-4 py-3').style(
+                    f'background: {row_bg}; border-bottom: 1px solid #eaeef5; font-size: 13px;'
+                ):
+                    ui.label(v.vaccine_name).classes('flex-1').style('font-weight: 600;')
+                    ui.label(v.manufacturer or '—').style('width: 120px; color: #57423d;')
+                    ui.label(v.serial_number or '—').style(
+                        'width: 100px; font-family: monospace; font-size: 11px; color: #57423d;'
+                    )
+                    ui.label(
+                        v.date_given.strftime('%Y-%m-%d') if v.date_given else '—'
+                    ).style('width: 100px; color: #57423d;')
+                    ui.label(
+                        v.expiration_date.strftime('%Y-%m-%d') if v.expiration_date else '—'
+                    ).style(f'width: 100px; font-weight: 600; color: {exp_color};')
+        else:
+            ui.label('No vaccinations recorded.').style(
+                'color: #57423d; font-style: italic; margin-bottom: 1rem;'
+            )
 
-        # Add vaccination form
-        with ui.expansion(
-            'Add Vaccination Record', icon='add'
-        ).classes('w-full mt-4'):
-            v_name = ui.input(
-                'Vaccine Name (e.g. Rabies 3yr)'
-            ).classes('w-full')
-            v_man = ui.input('Manufacturer').classes('w-full')
-            v_serial = ui.input('Serial #').classes('w-full')
-            v_lot = ui.input('Lot #').classes('w-full')
-            v_date = ui.input('Date Given (YYYY-MM-DD)').classes('w-full')
-            v_exp = ui.input(
-                'Expiration Date (YYYY-MM-DD)'
-            ).classes('w-full')
-            v_vet = ui.input('Administering Vet').classes('w-full')
-            v_license = ui.input('Vet License #').classes('w-full')
-            v_clinic = ui.input('Clinic Name').classes('w-full')
-            v_phone = ui.input('Clinic Phone').classes('w-full')
+        # ── Add vaccination records (multi-row) ──
+        from ..data import get_vaccine_options_for_dropdown
+        vaccine_options = get_vaccine_options_for_dropdown(pet.pet_species)
 
-            async def save_vaccination():
-                try:
-                    with Session(engine) as s:
+        ui.separator().classes('my-4')
+        ui.label('Add Vaccination Records').style(
+            'font-weight: 600; font-size: 16px; color: #171c21; margin-bottom: 0.5rem;'
+        )
+        ui.label(
+            'Fill in one row per vaccine. Fields match NASPHV Form 51 requirements.'
+        ).style('font-size: 12px; color: #8a716c; margin-bottom: 1rem;')
+
+        # Container for dynamic rows
+        rows_container = ui.column().classes('w-full gap-3')
+        vaccine_rows = []
+
+        def add_row():
+            """Add a new vaccine input row."""
+            with rows_container:
+                row_data = {}
+                with ui.row().classes('w-full items-end gap-3 p-3 rounded-lg').style(
+                    'background: #f0f4fb; border: 1px solid #eaeef5;'
+                ):
+                    row_data['name'] = ui.select(
+                        options=vaccine_options, label='Vaccine',
+                        with_input=True,
+                    ).classes('flex-1').props('outlined dense use-input input-debounce="200"')
+                    row_data['manufacturer'] = ui.input(
+                        'Manufacturer'
+                    ).style('width: 130px;').props('outlined dense')
+                    row_data['serial'] = ui.input(
+                        'Serial/Lot #'
+                    ).style('width: 110px;').props('outlined dense')
+                    row_data['date_given'] = ui.input(
+                        'Date Given'
+                    ).style('width: 130px;').props('outlined dense type=date')
+                    row_data['expiration'] = ui.input(
+                        'Expires'
+                    ).style('width: 130px;').props('outlined dense type=date')
+
+                    def remove_this_row(rd=row_data):
+                        if rd in vaccine_rows:
+                            vaccine_rows.remove(rd)
+                        ui.navigate.to(f'/pet/{pet.id}')
+
+                    ui.button(
+                        icon='close', on_click=remove_this_row,
+                    ).props('flat dense round color=negative').tooltip('Remove row')
+
+                vaccine_rows.append(row_data)
+
+        # Add first row by default
+        add_row()
+
+        # Add more button
+        ui.button(
+            '+ Add Another Vaccine', on_click=add_row,
+        ).classes('mt-2').props('flat no-caps').style(
+            'color: #3b82f6; font-weight: 600; font-size: 13px;'
+        )
+
+        # Save all button
+        async def save_all_vaccinations():
+            saved_count = 0
+            errors = []
+            with Session(engine) as s:
+                for i, row in enumerate(vaccine_rows):
+                    vname = row['name'].value
+                    vdate = row['date_given'].value
+                    vexp = row['expiration'].value
+
+                    if not vname:
+                        continue  # skip empty rows
+                    if not vdate or not vexp:
+                        errors.append(f'Row {i+1}: Date Given and Expiration are required.')
+                        continue
+
+                    try:
                         new_v = Vaccination(
                             pet_id=pet.id,
-                            vaccine_name=v_name.value,
-                            manufacturer=v_man.value,
-                            serial_number=v_serial.value,
-                            lot_number=v_lot.value,
-                            date_given=datetime.strptime(
-                                v_date.value, '%Y-%m-%d'
-                            ),
-                            expiration_date=datetime.strptime(
-                                v_exp.value, '%Y-%m-%d'
-                            ),
-                            administering_vet=v_vet.value,
-                            vet_license=v_license.value,
-                            clinic_name=v_clinic.value,
-                            clinic_phone=v_phone.value,
+                            vaccine_name=vname,
+                            manufacturer=row['manufacturer'].value.strip() or None,
+                            serial_number=row['serial'].value.strip() or None,
+                            date_given=datetime.strptime(vdate, '%Y-%m-%d'),
+                            expiration_date=datetime.strptime(vexp, '%Y-%m-%d'),
+                            administering_vet='',
+                            clinic_name='',
                         )
                         record_data = new_v.dict(
                             exclude={"id", "pet_id", "record_hash", "pet"}
                         )
-                        new_v.record_hash = hash_service.hash_record(
-                            record_data
-                        )
+                        new_v.record_hash = hash_service.hash_record(record_data)
                         s.add(new_v)
                         s.add(LedgerEvent(
                             pet_id=pet.id,
                             event_type="VACCINATION",
-                            description=f"Vaccination added: {v_name.value}",
+                            description=f"Vaccination added: {vname}",
                         ))
-                        s.commit()
-                    ui.notify(
-                        'Vaccination record added to ledger!',
-                        type='positive',
-                    )
-                    ui.navigate.to(f'/pet/{pet.id}')
-                except Exception as e:
-                    ui.notify(f'Error: {str(e)}', type='negative')
+                        saved_count += 1
+                    except Exception as e:
+                        errors.append(f'Row {i+1}: {str(e)}')
 
-            ui.button(
-                'Commit to Ledger', on_click=save_vaccination,
-            ).classes('w-full mt-2').style(
-                'background: #a03a21; color: white; font-weight: 600;'
-            ).props('no-caps')
+                if saved_count > 0:
+                    s.commit()
 
-    # ── Audit trail ──
-    with ui.element('div').classes('w-full mt-5 p-10 rounded-xl').style(
-        'background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.05); '
-        'border-left: 4px solid #7d5800;'
-    ):
-        ui.label('Audit Trail').style(
-            "font-family: 'Plus Jakarta Sans'; font-size: 24px; "
-            "font-weight: 600; color: #171c21; margin-bottom: 1.5rem;"
-        )
-        events = sorted(
-            pet.ledger_events, key=lambda x: x.timestamp, reverse=True
-        )
-        if events:
-            event_icons = {
-                'VACCINATION': ('vaccines', '#c15237'),
-                'EMERGENCY_SCAN': ('qr_code_scanner', '#7d5800'),
-                'HEARTBEAT_ACCESS': ('medical_services', '#ffc65d'),
-                'OWNERSHIP_CHANGE': ('swap_horiz', '#767470'),
-                'WEIGHT_CHECK': ('monitor_weight', '#ffc65d'),
-            }
-            for event in events:
-                icon_name, icon_color = event_icons.get(
-                    event.event_type, ('description', '#767470')
+            if errors:
+                for err in errors:
+                    ui.notify(err, type='warning')
+            if saved_count > 0:
+                ui.notify(
+                    f'{saved_count} vaccination record{"s" if saved_count > 1 else ""} added!',
+                    type='positive',
                 )
-                with ui.row().classes(
-                    'w-full items-start gap-4 py-3'
-                ).style('border-bottom: 1px solid #f5f5f4;'):
-                    ui.icon(icon_name).style(
-                        f'font-size: 20px; color: {icon_color}; '
-                        'margin-top: 2px;'
-                    )
-                    with ui.column().classes('flex-grow gap-0'):
-                        ui.label(event.description).style(
-                            'font-weight: 600; font-size: 14px; '
-                            'color: #171c21;'
-                        )
-                        ui.label(
-                            event.timestamp.strftime('%b %d, %Y • %H:%M')
-                        ).style('font-size: 12px; color: #57423d;')
-                    ui.label(event.event_type).style(
-                        'font-family: monospace; font-size: 10px; '
-                        'color: #8a716c; background: #f5f5f4; '
-                        'padding: 2px 8px; border-radius: 4px;'
-                    )
-        else:
-            ui.label('No events recorded.').style(
-                'color: #57423d; font-style: italic;'
-            )
+                ui.navigate.to(f'/pet/{pet.id}')
+            elif not errors:
+                ui.notify('No records to save. Fill in at least one row.', type='info')
+
+        ui.button(
+            'Save Vaccination Records', icon='save', on_click=save_all_vaccinations,
+        ).classes('w-full mt-4').style(
+            'background: #a03a21; color: white; font-weight: 600;'
+        ).props('no-caps')
 
     # ── Trust signals (same as public) ──
     _render_trust_signals()
+
+
+# ─────────────────────────────────────────────────────────────
+# PET EDIT PAGE — inline edit form for pet owners
+# ─────────────────────────────────────────────────────────────
+
+def _render_pet_edit_page(pet, session):
+    """Render the pet edit form matching pet_profile_edit.html template."""
+    from ..data import get_vaccine_options_for_dropdown
+    from .common import dog_client
+
+    # ── Header ──
+    with ui.column().classes('w-full items-center mb-8'):
+        ui.label('Edit Pet Profile').style(
+            "font-family: 'Plus Jakarta Sans'; font-size: 40px; "
+            "font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; "
+            "color: #171c21;"
+        )
+        ui.label(
+            "Update your companion's care and identification details."
+        ).style('font-size: 18px; line-height: 1.6; color: #5d5c58; margin-top: 4px;')
+
+    # ── Section tabs ──
+    section_ids = ['edit-basic', 'edit-care', 'edit-health']
+    tab_labels = ['Basic Info', 'Daily Care', 'Health & Temperament']
+
+    with ui.row().classes('w-full gap-10 mb-8 pb-4').style(
+        'border-bottom: 1px solid #eaeef5;'
+    ):
+        for i, label in enumerate(tab_labels):
+            active_style = (
+                'color: #a03a21; font-weight: 600; font-size: 14px; '
+                'border-bottom: 2px solid #a03a21; padding-bottom: 16px; '
+                'margin-bottom: -17px; cursor: pointer;'
+            )
+            inactive_style = (
+                'color: #5d5c58; font-weight: 600; font-size: 14px; '
+                'padding-bottom: 16px; margin-bottom: -17px; cursor: pointer;'
+            )
+            sid = section_ids[i]
+            tab = ui.label(label).style(active_style if i == 0 else inactive_style)
+            tab.on(
+                'click',
+                js_handler=f'() => document.getElementById("{sid}").scrollIntoView({{behavior: "smooth", block: "start"}})',
+            )
+
+    # ══════════════════════════════════════════════════════════
+    # SECTION 1: BASIC INFO
+    # ══════════════════════════════════════════════════════════
+    with ui.element('div').classes('w-full rounded-xl overflow-hidden mb-6').style(
+        'background: white; border: 1px solid #eaeef5; '
+        'box-shadow: 0 1px 3px rgba(0,0,0,0.05);'
+    ).props('id="edit-basic"'):
+        with ui.element('div').classes('p-6').style(
+            'border-bottom: 1px solid #eaeef5;'
+        ):
+            ui.label('Basic Info').style(
+                "font-family: 'Plus Jakarta Sans'; font-size: 24px; "
+                "font-weight: 600; color: #171c21;"
+            )
+
+        with ui.column().classes('p-10 gap-6'):
+            with ui.row().classes('w-full gap-6'):
+                with ui.column().classes('flex-1 gap-1'):
+                    ui.label('Pet Name').style(
+                        'font-weight: 600; font-size: 14px; color: #171c21;'
+                    )
+                    name_input = ui.input(
+                        value=pet.name or ''
+                    ).classes('w-full').props('outlined dense')
+
+                with ui.column().classes('flex-1 gap-1'):
+                    ui.label('Microchip ID').style(
+                        'font-weight: 600; font-size: 14px; color: #171c21;'
+                    )
+                    chip_input = ui.input(
+                        value=pet.chip_id or ''
+                    ).classes('w-full').props('outlined dense readonly')
+                    ui.label('Chip ID cannot be changed after registration.').style(
+                        'font-size: 11px; color: #8a716c; font-style: italic;'
+                    )
+
+            with ui.row().classes('w-full gap-6'):
+                with ui.column().classes('flex-1 gap-1'):
+                    ui.label('Species').style(
+                        'font-weight: 600; font-size: 14px; color: #171c21;'
+                    )
+                    species_input = ui.select(
+                        ['DOG', 'CAT'], label='', value=pet.pet_species or 'DOG'
+                    ).classes('w-full').props('outlined dense')
+
+                with ui.column().classes('flex-1 gap-1'):
+                    ui.label('Breed').style(
+                        'font-weight: 600; font-size: 14px; color: #171c21;'
+                    )
+                    breed_input = ui.input(
+                        value=pet.breed or ''
+                    ).classes('w-full').props('outlined dense')
+
+            with ui.row().classes('w-full gap-6'):
+                with ui.column().classes('flex-1 gap-1'):
+                    ui.label('Birth Date').style(
+                        'font-weight: 600; font-size: 14px; color: #171c21;'
+                    )
+                    dob_val = pet.dob.strftime('%Y-%m-%d') if pet.dob else ''
+                    dob_input = ui.input(value=dob_val).classes('w-full').props(
+                        'outlined dense type=date'
+                    )
+
+                with ui.column().classes('flex-1 gap-1'):
+                    ui.label('Gender').style(
+                        'font-weight: 600; font-size: 14px; color: #171c21;'
+                    )
+                    gender_input = ui.select(
+                        ['Male', 'Female', 'Unknown'],
+                        label='', value=pet.gender or 'Unknown',
+                    ).classes('w-full').props('outlined dense')
+
+    # ══════════════════════════════════════════════════════════
+    # SECTION 2: DAILY CARE
+    # ══════════════════════════════════════════════════════════
+    with ui.element('div').classes('w-full rounded-xl overflow-hidden mb-6').style(
+        'background: white; border: 1px solid #eaeef5; '
+        'box-shadow: 0 1px 3px rgba(0,0,0,0.05);'
+    ).props('id="edit-care"'):
+        with ui.element('div').classes('p-6').style(
+            'border-bottom: 1px solid #eaeef5;'
+        ):
+            ui.label('Daily Care').style(
+                "font-family: 'Plus Jakarta Sans'; font-size: 24px; "
+                "font-weight: 600; color: #171c21;"
+            )
+
+        with ui.column().classes('p-10 gap-6'):
+            with ui.row().classes('w-full gap-6'):
+                with ui.column().classes('flex-1 gap-1'):
+                    ui.label('Energy Level').style(
+                        'font-weight: 600; font-size: 14px; color: #171c21;'
+                    )
+                    energy_input = ui.select(
+                        ['Low', 'Moderate', 'High', 'Very High'],
+                        label='', value=pet.energy_level or 'Moderate',
+                    ).classes('w-full').props('outlined dense')
+
+                with ui.column().classes('flex-1 gap-1'):
+                    ui.label('Max Alone Hours').style(
+                        'font-weight: 600; font-size: 14px; color: #171c21;'
+                    )
+                    alone_input = ui.number(
+                        '', value=pet.max_alone_hours, min=0, max=24,
+                    ).classes('w-full').props('outlined dense')
+
+            with ui.row().classes('w-full gap-6'):
+                with ui.column().classes('flex-1 gap-1'):
+                    ui.label('Feeds per Day').style(
+                        'font-weight: 600; font-size: 14px; color: #171c21;'
+                    )
+                    feeds_input = ui.number(
+                        '', value=pet.feeds_per_day, min=1, max=10,
+                    ).classes('w-full').props('outlined dense')
+
+    # ══════════════════════════════════════════════════════════
+    # SECTION 3: HEALTH & TEMPERAMENT
+    # ══════════════════════════════════════════════════════════
+    with ui.element('div').classes('w-full rounded-xl overflow-hidden mb-10').style(
+        'background: white; border: 1px solid #eaeef5; '
+        'box-shadow: 0 1px 3px rgba(0,0,0,0.05);'
+    ).props('id="edit-health"'):
+        with ui.element('div').classes('p-6').style(
+            'border-bottom: 1px solid #eaeef5;'
+        ):
+            ui.label('Health & Temperament').style(
+                "font-family: 'Plus Jakarta Sans'; font-size: 24px; "
+                "font-weight: 600; color: #171c21;"
+            )
+
+        with ui.column().classes('p-10 gap-6'):
+            with ui.column().classes('w-full gap-1'):
+                ui.label('Temperament').style(
+                    'font-weight: 600; font-size: 14px; color: #171c21;'
+                )
+                temperament_input = ui.textarea(
+                    value=pet.temperament or '',
+                    placeholder='Friendly, shy, reactive to other dogs?',
+                ).classes('w-full').props('outlined rows=3')
+
+            with ui.column().classes('w-full gap-1'):
+                ui.label('Dietary Notes').style(
+                    'font-weight: 600; font-size: 14px; color: #171c21;'
+                )
+                dietary_input = ui.textarea(
+                    value=pet.dietary_notes or '',
+                    placeholder='Allergies or special diet requirements?',
+                ).classes('w-full').props('outlined rows=3')
+
+            with ui.row().classes('w-full gap-6'):
+                with ui.column().classes('flex-1 gap-1'):
+                    ui.label('Exercise Needs').style(
+                        'font-weight: 600; font-size: 14px; color: #171c21;'
+                    )
+                    exercise_input = ui.input(
+                        value=pet.exercise_needs or '',
+                        placeholder='e.g. 30 min walk twice daily',
+                    ).classes('w-full').props('outlined dense')
+
+                with ui.column().classes('flex-1 gap-1'):
+                    ui.label('Medical Conditions').style(
+                        'font-weight: 600; font-size: 14px; color: #171c21;'
+                    )
+                    medical_input = ui.textarea(
+                        value=pet.medical_conditions or '',
+                        placeholder='List any ongoing health issues',
+                    ).classes('w-full').props('outlined rows=3')
+
+    # ── Action buttons ──
+    with ui.row().classes('w-full justify-end items-center gap-4 pt-6').style(
+        'border-top: 1px solid #eaeef5;'
+    ):
+        ui.button(
+            'Cancel',
+            on_click=lambda: ui.navigate.to(f'/pet/{pet.id}'),
+        ).style('color: #5d5c58; font-weight: 600; padding: 12px 40px;').props(
+            'flat no-caps'
+        )
+
+        async def save_changes():
+            if not name_input.value or not name_input.value.strip():
+                ui.notify('Pet Name is required.', type='negative')
+                return
+
+            with Session(engine) as s:
+                db_pet = s.get(Pet, pet.id)
+                if not db_pet:
+                    ui.notify('Pet not found.', type='negative')
+                    return
+
+                db_pet.name = name_input.value.strip()
+                db_pet.pet_species = species_input.value
+                db_pet.breed = breed_input.value.strip() if breed_input.value else None
+                db_pet.gender = gender_input.value
+                db_pet.dob = (
+                    datetime.fromisoformat(dob_input.value)
+                    if dob_input.value else None
+                )
+                db_pet.energy_level = energy_input.value if energy_input.value else None
+                db_pet.max_alone_hours = (
+                    int(alone_input.value) if alone_input.value else None
+                )
+                db_pet.feeds_per_day = (
+                    int(feeds_input.value) if feeds_input.value else None
+                )
+                db_pet.temperament = (
+                    temperament_input.value.strip() if temperament_input.value else None
+                )
+                db_pet.dietary_notes = (
+                    dietary_input.value.strip() if dietary_input.value else None
+                )
+                db_pet.exercise_needs = (
+                    exercise_input.value.strip() if exercise_input.value else None
+                )
+                db_pet.medical_conditions = (
+                    medical_input.value.strip() if medical_input.value else None
+                )
+
+                s.add(db_pet)
+                s.commit()
+
+            ui.notify('Pet profile updated successfully!', type='positive')
+            ui.navigate.to(f'/pet/{pet.id}')
+
+        ui.button(
+            'Save All Changes', on_click=save_changes,
+        ).style(
+            'background: #a03a21; color: white; font-weight: 600; '
+            'padding: 12px 40px; border-radius: 8px; '
+            'box-shadow: 0 4px 12px rgba(160,58,33,0.2);'
+        ).props('no-caps')
+
+    # ── Info banner ──
+    with ui.row().classes('w-full items-start gap-3 mt-6 p-4 rounded-xl').style(
+        'background: #fff7ed; border: 1px solid rgba(251,191,36,0.2);'
+    ):
+        ui.icon('info').style('font-size: 20px; color: #c2410c; margin-top: 2px;')
+        ui.html(
+            '<span style="font-size: 12px; color: #57423d;">'
+            'Changes to medical identifiers like <strong>Microchip ID</strong> '
+            'cannot be modified after registration. Tag updates reflect '
+            'immediately on scan results.</span>'
+        )
 
 
 # ─────────────────────────────────────────────────────────────
@@ -886,5 +1410,40 @@ def init_pet_profile_page():
                 ).classes('mt-8').props('flat no-caps').style(
                     'color: #57423d; font-weight: 600;'
                 )
+
+        nav_footer()
+
+    @ui.page('/pet/{pet_id}/edit')
+    async def pet_edit(pet_id: str, request: Request):
+        if not try_restore_session(request):
+            ui.navigate.to('/login')
+            return
+
+        nav_header()
+
+        with Session(engine) as session:
+            pet = session.exec(
+                select(Pet).where(Pet.id == uuid.UUID(pet_id))
+            ).first()
+
+            if not pet:
+                with ui.column().classes('w-full items-center p-16'):
+                    ui.label('Pet Not Found').style(
+                        "font-family: 'Plus Jakarta Sans'; font-size: 32px; "
+                        "font-weight: 600; color: #171c21;"
+                    )
+                nav_footer()
+                return
+
+            # Only the owner can edit
+            current_user_id = app.storage.user.get('id')
+            if not current_user_id or str(pet.owner_id) != current_user_id:
+                ui.navigate.to(f'/pet/{pet_id}')
+                return
+
+            with ui.element('main').classes(
+                'w-full max-w-3xl mx-auto px-6 py-12'
+            ):
+                _render_pet_edit_page(pet, session)
 
         nav_footer()

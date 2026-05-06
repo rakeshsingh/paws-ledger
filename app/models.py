@@ -43,6 +43,7 @@ class Pet(SQLModel, table=True):
     ledger_events: List["LedgerEvent"] = Relationship(back_populates="pet")
     vaccinations: List["Vaccination"] = Relationship(back_populates="pet")
     shared_accesses: List["SharedAccess"] = Relationship(back_populates="pet")
+    tags: List["PetTag"] = Relationship(back_populates="pet")
 
 class LedgerEvent(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
@@ -83,3 +84,33 @@ class SharedAccess(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     
     pet: Pet = Relationship(back_populates="shared_accesses")
+
+
+class PetTag(SQLModel, table=True):
+    """Physical NFC or QR tag linked to a pet for quick identification."""
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    pet_id: UUID = Field(foreign_key="pet.id", index=True)
+
+    # Tag identification
+    tag_type: str = "QR"                        # QR, NFC, DUAL (both QR + NFC)
+    tag_code: str = Field(index=True, unique=True)  # Unique identifier encoded in the tag
+    serial_number: Optional[str] = None         # Manufacturer serial number on the physical tag
+    manufacturer: Optional[str] = None          # Tag hardware manufacturer
+
+    # Status & lifecycle
+    status: str = "ACTIVE"                      # ACTIVE, DEACTIVATED, LOST, REPLACED
+    activated_at: datetime = Field(default_factory=datetime.utcnow)
+    deactivated_at: Optional[datetime] = None
+
+    # NFC-specific fields
+    nfc_uid: Optional[str] = None               # NFC chip UID (hardware-level unique ID)
+    nfc_technology: Optional[str] = None        # e.g. NTAG213, NTAG215, NTAG216, Mifare
+
+    # QR-specific fields
+    qr_url: Optional[str] = None                # Full URL encoded in the QR code
+
+    # Metadata
+    label: Optional[str] = None                 # User-friendly label, e.g. "Collar tag", "Harness tag"
+    notes: Optional[str] = None                 # Free-form notes about this tag
+
+    pet: Pet = Relationship(back_populates="tags")
