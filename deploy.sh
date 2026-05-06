@@ -207,6 +207,7 @@ ExecStart=${VENV_DIR}/bin/gunicorn app.main:fastapi_app \\
     --timeout 120 \\
     --graceful-timeout 30 \\
     --keep-alive 65 \\
+    --forwarded-allow-ips="127.0.0.1" \\
     --access-logfile /var/log/${SERVICE_NAME}/access.log \\
     --error-logfile /var/log/${SERVICE_NAME}/error.log
 ExecReload=/bin/kill -s HUP \$MAINPID
