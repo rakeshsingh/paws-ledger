@@ -200,10 +200,6 @@ class GoogleAuthService:
         
         redirect_uri = self.redirect_uri
         if not redirect_uri:
-            # Try to find the NiceGUI callback route. 
-            # If we just use url_for('auth_callback'), it might pick the API one.
-            # So we'll construct it manually from the base URL to be safe,
-            # or rely on the fact that we want it to be /auth/callback.
             base_url = str(request.base_url).rstrip('/')
             redirect_uri = f"{base_url}/auth/callback"
             
@@ -211,7 +207,6 @@ class GoogleAuthService:
             if request.headers.get('x-forwarded-proto') == 'https':
                 redirect_uri = redirect_uri.replace('http://', 'https://')
         
-        print(f"DEBUG: Redirecting to Google with redirect_uri: {redirect_uri}")
         return await oauth.google.authorize_redirect(request, redirect_uri)
 
     async def authorize_access_token(self, request: Request):
