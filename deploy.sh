@@ -36,7 +36,7 @@ VENV_DIR="${APP_DIR}/.venv"
 SERVICE_NAME="pawsledger"
 APP_PORT=8080
 NGINX_PORT=8081  # Nginx listens here; cloudflared points to this
-WORKERS=2  # Uvicorn workers (NiceGUI works best with few workers due to WebSocket state)
+WORKERS=1  # Single worker required for NiceGUI WebSocket state consistency
 
 # ─── Colors ──────────────────────────────────────────────────
 RED='\033[0;31m'

@@ -1,5 +1,6 @@
 import httpx
 import os
+import re
 from typing import Optional, List, Dict
 from dotenv import load_dotenv
 
@@ -86,14 +87,18 @@ from fpdf import FPDF
 class PDFService:
     @staticmethod
     def generate_vaccination_report(pet_name: str, vaccinations: list, record_hash: str) -> str:
+        import tempfile
         pdf = FPDF()
         pdf.add_page()
         pdf.set_font("helvetica", "B", 16)
         pdf.cell(200, 10, txt="PawsLedger Vaccination Record", ln=True, align="C")
         
+        # Sanitize pet_name for display only (not used in filename)
+        safe_name = re.sub(r'[^\w\s\-]', '', pet_name)[:50]
+        
         pdf.set_font("helvetica", "", 12)
         pdf.ln(10)
-        pdf.cell(200, 10, txt=f"Pet Name: {pet_name}", ln=True)
+        pdf.cell(200, 10, txt=f"Pet Name: {safe_name}", ln=True)
         pdf.ln(5)
         
         pdf.set_font("helvetica", "B", 12)
@@ -106,8 +111,8 @@ class PDFService:
         pdf.set_font("helvetica", "", 10)
         for v in vaccinations:
             pdf.cell(40, 10, txt=str(v.date_given.date()), border=1)
-            pdf.cell(60, 10, txt=v.vaccine_name, border=1)
-            pdf.cell(50, 10, txt=v.manufacturer, border=1)
+            pdf.cell(60, 10, txt=v.vaccine_name[:30], border=1)
+            pdf.cell(50, 10, txt=(v.manufacturer or "")[:25], border=1)
             pdf.cell(40, 10, txt=str(v.expiration_date.date()), border=1)
             pdf.ln()
             
@@ -117,7 +122,9 @@ class PDFService:
         pdf.ln(5)
         pdf.multi_cell(0, 5, txt="This document is a verified digital export from PawsLedger. Authenticity can be verified at https://pawsledger.com/verify")
         
-        output_path = f"/tmp/vaccination_record_{pet_name}.pdf"
+        # Use secure temp file — no user input in path
+        fd, output_path = tempfile.mkstemp(suffix='.pdf', prefix='pawsledger_vax_')
+        os.close(fd)
         pdf.output(output_path)
         return output_path
 
@@ -132,27 +139,65 @@ class HashService:
         return hashlib.sha256(encoded_data).hexdigest()
 
 class EmailService:
+    """Email service using Resend (https://resend.com).
+    
+    Set RESEND_API_KEY in your .env file.
+    Set EMAIL_FROM to your verified sender (e.g. alerts@pawsledger.com).
+    Falls back to logging if RESEND_API_KEY is not configured.
     """
-    Mock Email Service. In production, this would use SendGrid, Mailgun, etc.
-    """
+
+    _api_key = os.getenv("RESEND_API_KEY")
+    _from_email = os.getenv("EMAIL_FROM", "PawsLedger <alerts@pawsledger.com>")
+
     @staticmethod
     async def send_email(to_email: str, subject: str, body: str):
-        print(f"DEBUG: Sending email to {to_email}")
-        print(f"DEBUG: Subject: {subject}")
-        print(f"DEBUG: Body: {body}")
-        # In a real app, this would be an async call to an email provider
-        return True
+        import logging
+        logger = logging.getLogger("pawsledger.email")
+
+        api_key = os.getenv("RESEND_API_KEY")
+        from_email = os.getenv("EMAIL_FROM", "PawsLedger <alerts@pawsledger.com>")
+
+        if not api_key:
+            logger.warning(f"RESEND_API_KEY not set — email not sent (subject: {subject})")
+            return False
+
+        try:
+            import resend
+            resend.api_key = api_key
+            resend.Emails.send({
+                "from": from_email,
+                "to": [to_email],
+                "subject": subject,
+                "text": body,
+            })
+            logger.info(f"Email sent: subject='{subject}' (recipient redacted)")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to send email: {e}")
+            return False
 
     @staticmethod
     async def notify_owner_of_scan(owner_email: str, pet_name: str):
-        subject = f"ALERT: Your pet {pet_name}'s tag was scanned!"
-        body = f"Hello,\n\nYour pet {pet_name}'s PawsLedger QR tag was recently scanned. If your pet is lost, this is a 'proof of life' event.\n\nPlease check your dashboard for more details."
+        subject = "ALERT: Your pet's tag was scanned!"
+        body = (
+            "Hello,\n\n"
+            "Your pet's PawsLedger QR/NFC tag was recently scanned. "
+            "If your pet is lost, this is a 'proof of life' event.\n\n"
+            "Please check your dashboard for more details.\n\n"
+            "— PawsLedger"
+        )
         await EmailService.send_email(owner_email, subject, body)
 
     @staticmethod
     async def notify_owner_of_access(owner_email: str, pet_name: str, accessor_info: str):
-        subject = f"Heartbeat Audit: {pet_name}'s record was accessed"
-        body = f"Hello,\n\nYour pet {pet_name}'s medical records were accessed via a shared link.\n\nAccessor: {accessor_info}\n\nThis heartbeat notification is part of PawsLedger's managed access service."
+        subject = "Heartbeat Audit: Pet records were accessed"
+        body = (
+            "Hello,\n\n"
+            "Your pet's medical records were accessed via a shared link.\n\n"
+            f"Accessor: {accessor_info}\n\n"
+            "This heartbeat notification is part of PawsLedger's managed access service.\n\n"
+            "— PawsLedger"
+        )
         await EmailService.send_email(owner_email, subject, body)
 
 from authlib.integrations.starlette_client import OAuth

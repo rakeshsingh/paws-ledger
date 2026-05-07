@@ -1,7 +1,10 @@
-from fastapi import FastAPI
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse, JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from nicegui import ui, app as nicegui_app
 from .database import create_db_and_tables
 from .api.v1.routes import router as api_router
@@ -13,8 +16,13 @@ load_dotenv()
 env = os.getenv("APP_ENV", "beta")
 load_dotenv(f".env.{env}")
 
+# Rate limiter
+limiter = Limiter(key_func=get_remote_address)
+
 # Create FastAPI app
 fastapi_app = FastAPI(title="PawsLedger API", version="1.0.0")
+fastapi_app.state.limiter = limiter
+fastapi_app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Trust proxy headers (X-Forwarded-For, X-Forwarded-Proto) from Nginx
 # This ensures request.url shows https:// when behind the reverse proxy

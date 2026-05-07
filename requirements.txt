@@ -8,6 +8,8 @@ python-dotenv
 authlib
 itsdangerous
 fpdf2
+slowapi
+resend
 pytest
 pytest-asyncio
 pytest-mock

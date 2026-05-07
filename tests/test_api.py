@@ -27,13 +27,15 @@ def test_resolve_qr_notifies_owner(client, test_pet, mocker):
     assert "emergency_contact" in response.json()
     mock_notify.assert_called_once()
 
-def test_add_vaccination(client, test_pet):
+def test_add_vaccination(client, test_pet, test_user):
+    from app.api.v1.routes import serializer
+    client.cookies.set("paws_user_id", serializer.dumps(str(test_user.id)))
     vaccination_data = {
         "vaccine_name": "Rabies",
         "manufacturer": "Zoetis",
         "serial_number": "ABC-123",
-        "date_given": datetime.utcnow().isoformat(),
-        "expiration_date": (datetime.utcnow() + timedelta(days=365)).isoformat(),
+        "date_given": datetime.utcnow().strftime('%Y-%m-%d'),
+        "expiration_date": (datetime.utcnow() + timedelta(days=365)).strftime('%Y-%m-%d'),
         "administering_vet": "Dr. Smith",
         "clinic_name": "Paws Clinic"
     }
@@ -43,14 +45,17 @@ def test_add_vaccination(client, test_pet):
     assert data["vaccine_name"] == "Rabies"
     assert data["record_hash"] is not None
 
-def test_shared_access_heartbeat(client, test_pet, mocker):
+def test_shared_access_heartbeat(client, test_pet, test_user, mocker):
+    from app.api.v1.routes import serializer
+    client.cookies.set("paws_user_id", serializer.dumps(str(test_user.id)))
     mock_notify = mocker.patch("app.api.v1.pets.email_service.notify_owner_of_access")
     
     # 1. Create access
     resp = client.post(f"/api/v1/pets/{test_pet.id}/shared-access?hours=1")
+    assert resp.status_code == 200
     token = resp.json()["access_url"].split("/")[-1]
     
-    # 2. Use access
+    # 2. Use access (no auth needed for shared links)
     resp = client.get(f"/api/v1/shared/{token}")
     assert resp.status_code == 200
     assert resp.json()["pet"]["breed"] == test_pet.breed

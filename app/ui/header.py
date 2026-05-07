@@ -57,4 +57,9 @@ def nav_header():
                                 ),
                             )
                 else:
-                    ui.link('Login', '/login').classes(link_classes)
+                    ui.button(
+                        'Login', on_click=lambda: ui.navigate.to('/login'),
+                    ).style(
+                        'background: #a03a21; color: white; font-weight: 600; '
+                        'padding: 8px 24px; border-radius: 8px;'
+                    ).props('no-caps')

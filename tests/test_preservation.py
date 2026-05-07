@@ -56,7 +56,7 @@ class TestSessionRestoration:
         )
 
         # Act
-        response = client.get("/api/v1/auth/callback", follow_redirects=False)
+        response = client.get("/api/v1/auth/callback?code=fake-code&state=fake-state", follow_redirects=False)
 
         # Assert — redirect to dashboard
         assert response.status_code == 307
@@ -209,7 +209,7 @@ class TestCookieFlagsPreservation:
         )
 
         # Act
-        response = client.get("/api/v1/auth/callback", follow_redirects=False)
+        response = client.get("/api/v1/auth/callback?code=fake-code&state=fake-state", follow_redirects=False)
         assert response.status_code == 307
 
         # Inspect raw Set-Cookie header
@@ -283,13 +283,14 @@ class TestUnauthenticatedNudge:
             return_value=True,
         )
 
-        # Act — call nudge endpoint (no auth required at API level)
+        # Act — call nudge endpoint (requires auth now)
+        client.cookies.set("paws_user_id", serializer.dumps(str(user.id)))
         response = client.post(f"/api/v1/nudge/{pet.chip_id}")
 
         # Assert — endpoint works and returns success
         assert response.status_code == 200
         data = response.json()
-        assert "Nudge sent" in data["message"]
+        assert "alerted" in data["message"].lower() or "notif" in data["message"].lower()
 
 
 # ---------------------------------------------------------------------------

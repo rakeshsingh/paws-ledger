@@ -76,17 +76,6 @@ def _render_registry_status_card():
                         )
                         ui.label(sub).style('font-size: 12px; color: #57423d;')
 
-        with ui.element('div').classes('p-4 rounded-lg mt-6').style(
-            'background: rgba(255,255,255,0.6);'
-        ):
-            ui.label('Looking for a lost pet?').style(
-                'font-size: 12px; font-weight: 500; color: #9a3412;'
-            )
-            ui.label(
-                'Nudging the owner sends an encrypted alert with your '
-                'location and contact details securely.'
-            ).style('font-size: 12px; color: #c2410c; margin-top: 4px;')
-
 
 def _render_medical_summary(pet):
     """Medical summary card (shared between views)."""
@@ -257,30 +246,47 @@ def _render_contact_location_card(pet, is_owner: bool = False):
                                     'overflow: hidden; text-overflow: ellipsis;'
                                 )
             else:
-                # Public: privacy message + relay icons
+                # Public: privacy message + email owner button
                 ui.label(
                     'Owner information is protected for privacy. '
-                    'Use the primary action to initiate a secure contact request.'
+                    'Use the button below to send a secure contact request.'
                 ).style(
                     'color: #57423d; font-size: 16px; text-align: center; '
                     'line-height: 1.5;'
                 )
-                with ui.row().classes('gap-6 justify-center'):
-                    for icon_name, label in [
-                        ('mail', 'Email Relay'),
-                    ]:
-                        with ui.column().classes('items-center gap-1'):
-                            with ui.element('div').classes(
-                                'flex items-center justify-center rounded-full'
-                            ).style(
-                                'width: 48px; height: 48px; background: #fff7ed; '
-                                'color: #c2410c;'
-                            ):
-                                ui.icon(icon_name).style('font-size: 22px;')
-                            ui.label(label).style(
-                                'font-size: 10px; font-weight: 700; color: #a8a29e; '
-                                'text-transform: uppercase;'
+
+                async def email_owner():
+                    import httpx
+                    async with httpx.AsyncClient(
+                        base_url='http://localhost:8080'
+                    ) as http_client:
+                        resp = await http_client.post(
+                            f'/api/v1/nudge/{pet.chip_id}'
+                        )
+                        if resp.status_code == 200:
+                            ui.notify(
+                                'Owner has been notified via email!',
+                                type='positive',
                             )
+                        elif resp.status_code == 401:
+                            ui.notify(
+                                'Please log in to contact the owner.',
+                                type='warning',
+                            )
+                            ui.navigate.to('/login')
+                        else:
+                            ui.notify(
+                                'Unable to send notification.',
+                                type='negative',
+                            )
+
+                ui.button(
+                    'Email Owner', icon='mail',
+                    on_click=email_owner,
+                ).classes('mt-2').style(
+                    'background: #a03a21; color: white; font-weight: 600; '
+                    'padding: 10px 32px; border-radius: 8px;'
+                ).props('no-caps')
 
 
 def _render_trust_signals():
@@ -690,82 +696,78 @@ def _render_public_view(pet, session):
 def _render_private_view(pet, session):
     """Render the full owner view with all PII and management tools."""
 
-    # ── Header ──
-    with ui.element('header').classes('mb-12'):
-        with ui.row().classes(
-            'w-full justify-between items-end flex-wrap gap-6'
-        ):
-            with ui.column().classes('gap-2'):
-                ui.label(f'Identity Ledger: {pet.chip_id}').style(
-                    "font-family: 'Plus Jakarta Sans'; font-size: 40px; "
-                    "font-weight: 700; line-height: 1.2; "
-                    "letter-spacing: -0.02em; color: #171c21;"
-                )
-                with ui.row().classes('items-center gap-3'):
-                    s_bg = '#ffc65d' if pet.identity_status == 'VERIFIED' else '#fef9c3'
-                    s_fg = '#755100' if pet.identity_status == 'VERIFIED' else '#854d0e'
-                    ui.label(pet.identity_status).style(
-                        f'background: {s_bg}; color: {s_fg}; padding: 4px 12px; '
-                        'border-radius: 9999px; font-size: 12px; font-weight: 700; '
-                        'text-transform: uppercase; letter-spacing: 0.1em;'
-                    )
-                    ui.label('Owner View — Full Access').style(
-                        'font-size: 14px; font-weight: 600; color: #16a34a;'
-                    )
+    # ── Header (Edit button only) ──
+    with ui.row().classes('w-full justify-end mb-6'):
+        ui.button(
+            'Edit Pet', icon='edit',
+            on_click=lambda: ui.navigate.to(f'/pet/{pet.id}/edit'),
+        ).style(
+            'background: #a03a21; color: white; font-weight: 600; '
+            'padding: 10px 24px; border-radius: 8px;'
+        ).props('no-caps')
 
-            # Edit button
-            ui.button(
-                'Edit Pet', icon='edit',
-                on_click=lambda: ui.navigate.to(f'/pet/{pet.id}/edit'),
-            ).style(
-                'background: #a03a21; color: white; font-weight: 600; '
-                'padding: 10px 24px; border-radius: 8px;'
-            ).props('no-caps')
-
-    # ── Row 1: Pet ID card (full) + Registry status ──
+    # ── Row 1: Pet profile header + Registry status ──
     with ui.row().classes('w-full gap-5 flex-wrap items-stretch'):
-        # Pet identification card — full details
+        # Pet profile header — similar to owner profile page
         with ui.element('div').classes('flex-1').style('min-width: 400px;'):
-            with ui.element('div').classes('h-full p-10 rounded-xl').style(
+            with ui.element('div').classes(
+                'h-full flex flex-col md:flex-row items-center gap-8 p-10 rounded-xl'
+            ).style(
                 'background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.05); '
                 'border-left: 4px solid #a03a21;'
             ):
-                with ui.row().classes('gap-8'):
-                    with ui.element('div').classes('relative flex-shrink-0'):
-                        _pet_avatar(pet, 128)
-                        with ui.element('div').classes(
-                            'absolute bottom-0 right-0 bg-white p-1 '
-                            'rounded-full shadow-sm'
-                        ).style('border: 1px solid #f5f5f4;'):
-                            ui.icon('pets').style(
-                                'font-size: 20px; color: #a03a21;'
-                            )
+                # Avatar
+                with ui.element('div').classes('relative flex-shrink-0'):
+                    _pet_avatar(pet, 128)
+                    with ui.element('div').classes(
+                        'absolute bottom-0 right-0 bg-white p-1 '
+                        'rounded-full shadow-sm'
+                    ).style('border: 1px solid #f5f5f4;'):
+                        ui.icon('pets').style(
+                            'font-size: 20px; color: #a03a21;'
+                        )
 
-                    with ui.element('div').classes('flex-grow'):
-                        with ui.row().classes(
-                            'w-full gap-x-12 gap-y-6 flex-wrap'
-                        ):
-                            for label, value in [
-                                ('PET NAME', pet.name),
-                                ('SPECIES / BREED',
-                                 f'{pet.pet_species} • {pet.breed or "Unknown"}'),
-                                ('GENDER', pet.gender or 'Unknown'),
-                                ('MANUFACTURER', pet.manufacturer or 'Unknown'),
-                                ('DATE OF BIRTH',
-                                 pet.dob.strftime('%b %d, %Y') if pet.dob else 'Not set'),
-                                ('OWNER',
-                                 pet.owner.name if pet.owner else 'Unassigned'),
-                            ]:
-                                with ui.column().classes('gap-1'):
-                                    ui.label(label).style(
-                                        'font-weight: 600; font-size: 10px; '
-                                        'color: #57423d; text-transform: uppercase; '
-                                        'letter-spacing: 0.1em;'
-                                    )
-                                    ui.label(value).style(
-                                        'font-size: 16px; font-weight: 500; '
-                                        'color: #171c21;'
-                                    )
+                # Name, species, chip, status
+                with ui.column().classes('text-center md:text-left gap-1'):
+                    ui.label(pet.name).style(
+                        "font-family: 'Plus Jakarta Sans'; font-size: 36px; "
+                        "font-weight: 700; line-height: 1.2; "
+                        "letter-spacing: -0.02em; color: #171c21;"
+                    )
+                    ui.label(
+                        f'{pet.pet_species} • {pet.breed or "Unknown"}'
+                    ).style(
+                        'font-size: 18px; color: #57423d; line-height: 1.6;'
+                    )
+                    ui.label(f'Chip ID: {pet.chip_id}').style(
+                        'font-family: monospace; font-size: 14px; '
+                        'color: #8a716c; margin-top: 0.5rem;'
+                    )
+                    with ui.row().classes(
+                        'gap-2 mt-2 justify-center md:justify-start'
+                    ):
+                        s_bg = '#dcfce7' if pet.identity_status == 'VERIFIED' else '#fef9c3'
+                        s_fg = '#166534' if pet.identity_status == 'VERIFIED' else '#854d0e'
+                        s_txt = 'Verified' if pet.identity_status == 'VERIFIED' else 'Unverified'
+                        ui.label(s_txt).style(
+                            f'padding: 4px 12px; background: {s_bg}; '
+                            f'color: {s_fg}; font-size: 12px; '
+                            'font-weight: 600; border-radius: 9999px;'
+                        )
+                        if pet.gender and pet.gender != 'Unknown':
+                            ui.label(pet.gender).style(
+                                'padding: 4px 12px; background: #f5f5f4; '
+                                'color: #57423d; font-size: 12px; '
+                                'font-weight: 500; border-radius: 9999px;'
+                            )
+                        if pet.dob:
+                            ui.label(
+                                f'Born {pet.dob.strftime("%b %Y")}'
+                            ).style(
+                                'padding: 4px 12px; background: #f5f5f4; '
+                                'color: #57423d; font-size: 12px; '
+                                'font-weight: 500; border-radius: 9999px;'
+                            )
 
         # Registry status card (same as public)
         with ui.element('div').style('width: 320px; flex-shrink: 0;'):
@@ -778,55 +780,15 @@ def _render_private_view(pet, session):
         with ui.element('div').classes('flex-1').style('min-width: 360px;'):
             _render_contact_location_card(pet, is_owner=True)
 
-    # ── Row 3: Managed access + Care info ──
-    with ui.row().classes('w-full gap-5 flex-wrap items-stretch mt-5'):
-        # Managed access card
-        with ui.element('div').style('width: 320px; flex-shrink: 0;'):
-            with ui.element('div').classes('h-full p-6 rounded-xl').style(
-                'background: #fff7ed; border: 1px solid rgba(251,191,36,0.2);'
-            ):
-                with ui.row().classes('items-center gap-2 mb-4'):
-                    ui.icon('share').style('font-size: 24px; color: #9a3412;')
-                    ui.label('Managed Access').style(
-                        "font-family: 'Plus Jakarta Sans'; font-size: 20px; "
-                        "font-weight: 600; color: #9a3412;"
-                    )
-                ui.label(
-                    'Generate a time-bound care link for sitters or vets.'
-                ).style(
-                    'font-size: 12px; color: #57423d; margin-bottom: 1rem;'
-                )
+    # ── Care info + Shared access ──
+    with ui.element('div').classes('w-full mt-5 p-6 rounded-xl').style(
+        'background: #f0f4fb;'
+    ):
+        ui.label('Care Info').style(
+            "font-family: 'Plus Jakarta Sans'; font-size: 20px; "
+            "font-weight: 600; color: #171c21; margin-bottom: 1rem;"
+        )
 
-                async def create_link():
-                    with Session(engine) as s:
-                        access = SharedAccess(
-                            pet_id=pet.id,
-                            expires_at=datetime.utcnow() + timedelta(hours=24),
-                        )
-                        s.add(access)
-                        s.commit()
-                        s.refresh(access)
-                        url = f"/shared/{access.token}"
-                    with ui.dialog() as dialog, ui.card():
-                        ui.label('Shared Access Link Created').classes(
-                            'font-bold'
-                        )
-                        ui.label('Valid for 24 hours.').classes(
-                            'text-xs text-stone-500'
-                        )
-                        ui.input(value=url).classes('w-full mt-2').props(
-                            'readonly outlined'
-                        )
-                        ui.button('Close', on_click=dialog.close).classes(
-                            'mt-4'
-                        )
-                    dialog.open()
-
-                ui.button(
-                    'Create 24h Link', icon='share', on_click=create_link,
-                ).classes('w-full').props('outline no-caps')
-
-        # Care info card
         care_items = [
             ('bolt', 'Energy Level', pet.energy_level),
             ('schedule', 'Max Alone Hours',
@@ -838,34 +800,49 @@ def _render_private_view(pet, session):
         ]
         visible_care = [(i, l, v) for i, l, v in care_items if v]
 
-        with ui.element('div').classes('flex-1').style('min-width: 360px;'):
-            with ui.element('div').classes('h-full p-6 rounded-xl').style(
-                'background: #f0f4fb;'
-            ):
-                ui.label('Care Info').style(
-                    "font-family: 'Plus Jakarta Sans'; font-size: 20px; "
-                    "font-weight: 600; color: #171c21; margin-bottom: 1rem;"
-                )
-                if visible_care:
-                    for icon_name, label, value in visible_care:
-                        with ui.row().classes(
-                            'items-center justify-between py-2'
-                        ).style('border-bottom: 1px solid #e7e5e4;'):
-                            with ui.row().classes('items-center gap-2'):
-                                ui.icon(icon_name).style(
-                                    'font-size: 18px; color: #57423d;'
-                                )
-                                ui.label(label).style(
-                                    'font-size: 14px; color: #57423d;'
-                                )
-                            ui.label(value).style(
-                                'font-size: 14px; font-weight: 600; '
-                                'color: #171c21;'
-                            )
-                else:
-                    ui.label('No care information recorded yet.').style(
-                        'color: #57423d; font-style: italic;'
+        if visible_care:
+            for icon_name, label, value in visible_care:
+                with ui.row().classes(
+                    'items-center justify-between py-2'
+                ).style('border-bottom: 1px solid #e7e5e4;'):
+                    with ui.row().classes('items-center gap-2'):
+                        ui.icon(icon_name).style(
+                            'font-size: 18px; color: #57423d;'
+                        )
+                        ui.label(label).style(
+                            'font-size: 14px; color: #57423d;'
+                        )
+                    ui.label(value).style(
+                        'font-size: 14px; font-weight: 600; color: #171c21;'
                     )
+        else:
+            ui.label('No care information recorded yet.').style(
+                'color: #57423d; font-style: italic;'
+            )
+
+        # Shared access link generator
+        ui.separator().classes('my-4')
+
+        async def create_link():
+            with Session(engine) as s:
+                access = SharedAccess(
+                    pet_id=pet.id,
+                    expires_at=datetime.utcnow() + timedelta(hours=24),
+                )
+                s.add(access)
+                s.commit()
+                s.refresh(access)
+                url = f"/shared/{access.token}"
+            with ui.dialog() as dialog, ui.card():
+                ui.label('Shared Access Link Created').classes('font-bold')
+                ui.label('Valid for 24 hours.').classes('text-xs text-stone-500')
+                ui.input(value=url).classes('w-full mt-2').props('readonly outlined')
+                ui.button('Close', on_click=dialog.close).classes('mt-4')
+            dialog.open()
+
+        ui.button(
+            'Create 24h Care Link', icon='share', on_click=create_link,
+        ).classes('w-full').props('outline no-caps')
 
     # ── NFC/QR Tag Management ──
     _render_tag_management(pet, session)

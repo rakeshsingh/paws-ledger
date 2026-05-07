@@ -2,6 +2,8 @@
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlmodel import Session, select
 from ...database import get_session
 from ...models import User
@@ -11,15 +13,18 @@ import httpx
 import os
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get("/auth/login")
+@limiter.limit("5/minute")
 async def auth_login(request: Request):
     """Redirect to Google OAuth. Uses Authlib to build the authorization URL."""
     return await google_auth.authorize_redirect(request)
 
 
 @router.get("/auth/callback")
+@limiter.limit("10/minute")
 async def auth_callback(request: Request, session: Session = Depends(get_session)):
     """Handle Google OAuth callback.
     
@@ -60,7 +65,7 @@ async def auth_callback(request: Request, session: Session = Depends(get_session
             if token_resp.status_code != 200:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Token exchange failed: {token_resp.text}",
+                    detail="Authentication failed. Please try signing in again.",
                 )
             token_data = token_resp.json()
 
@@ -99,11 +104,14 @@ async def auth_callback(request: Request, session: Session = Depends(get_session
 
     # Set cookie for session restoration on NiceGUI pages
     response = RedirectResponse(url="/dashboard")
+    is_prod = os.getenv("APP_ENV") == "prod"
     response.set_cookie(
         "paws_user_id",
         serializer.dumps(str(user.id)),
         httponly=True,
         samesite="lax",
+        secure=is_prod,
+        max_age=7 * 24 * 3600,  # 7 days
     )
     return response
 

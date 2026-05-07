@@ -13,8 +13,8 @@ async def test_auth_callback_redirects_to_dashboard(client, session, mocker):
     mocker.patch("app.api.v1.auth.google_auth.authorize_access_token", return_value=mock_token)
     mocker.patch("app.api.v1.auth.google_auth.get_user_info", return_value=mock_token["userinfo"])
 
-    # Call the callback endpoint
-    response = client.get("/api/v1/auth/callback", follow_redirects=False)
+    # Call the callback endpoint (must include code param)
+    response = client.get("/api/v1/auth/callback?code=fake-auth-code&state=fake-state", follow_redirects=False)
 
     # Verify redirection
     assert response.status_code == 307  # RedirectResponse default status code in Starlette

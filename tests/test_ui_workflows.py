@@ -151,14 +151,14 @@ class TestTagManagement:
         assert tags[0]["status"] == "ACTIVE"
         assert tags[0]["label"] == "Collar Tag"
 
-    def test_create_qr_tag(self, client, test_pet):
+    def test_create_qr_tag(self, authenticated_client, test_pet):
         payload = {
             "tag_type": "QR",
             "tag_code": "MYQR2024",
             "label": "Backpack Tag",
             "notes": "Attached to hiking backpack",
         }
-        response = client.post(
+        response = authenticated_client.post(
             f"/api/v1/pets/{test_pet.id}/tags", json=payload
         )
         assert response.status_code == 200
@@ -169,7 +169,7 @@ class TestTagManagement:
         assert data["label"] == "Backpack Tag"
         assert data["qr_url"] == "/qr/tag/MYQR2024"
 
-    def test_create_nfc_tag(self, client, test_pet):
+    def test_create_nfc_tag(self, authenticated_client, test_pet):
         payload = {
             "tag_type": "NFC",
             "tag_code": "NFCTAG001",
@@ -178,7 +178,7 @@ class TestTagManagement:
             "manufacturer": "PawTag",
             "label": "Collar NFC",
         }
-        response = client.post(
+        response = authenticated_client.post(
             f"/api/v1/pets/{test_pet.id}/tags", json=payload
         )
         assert response.status_code == 200
@@ -186,9 +186,9 @@ class TestTagManagement:
         assert data["tag_type"] == "NFC"
         assert data["tag_code"] == "NFCTAG001"
 
-    def test_create_tag_auto_generates_code(self, client, test_pet):
+    def test_create_tag_auto_generates_code(self, authenticated_client, test_pet):
         payload = {"tag_type": "QR", "label": "Auto-code tag"}
-        response = client.post(
+        response = authenticated_client.post(
             f"/api/v1/pets/{test_pet.id}/tags", json=payload
         )
         assert response.status_code == 200
@@ -196,28 +196,28 @@ class TestTagManagement:
         assert len(data["tag_code"]) == 12  # auto-generated 12-char code
         assert data["tag_code"].isupper()
 
-    def test_create_tag_duplicate_code_rejected(self, client, test_pet, test_tag):
+    def test_create_tag_duplicate_code_rejected(self, authenticated_client, test_pet, test_tag):
         payload = {"tag_type": "QR", "tag_code": "TESTQR001"}
-        response = client.post(
+        response = authenticated_client.post(
             f"/api/v1/pets/{test_pet.id}/tags", json=payload
         )
         assert response.status_code == 409
 
-    def test_create_tag_pet_not_found(self, client):
+    def test_create_tag_pet_not_found(self, authenticated_client):
         fake_id = str(uuid4())
         payload = {"tag_type": "QR", "label": "Ghost tag"}
-        response = client.post(f"/api/v1/pets/{fake_id}/tags", json=payload)
+        response = authenticated_client.post(f"/api/v1/pets/{fake_id}/tags", json=payload)
         assert response.status_code == 404
 
-    def test_deactivate_tag(self, client, test_pet, test_tag):
+    def test_deactivate_tag(self, authenticated_client, test_pet, test_tag):
         payload = {"status": "DEACTIVATED"}
-        response = client.put(
+        response = authenticated_client.put(
             f"/api/v1/pets/{test_pet.id}/tags/{test_tag.id}", json=payload
         )
         assert response.status_code == 200
         assert response.json()["status"] == "DEACTIVATED"
 
-    def test_reactivate_tag(self, client, test_pet, test_tag, session):
+    def test_reactivate_tag(self, authenticated_client, test_pet, test_tag, session):
         # First deactivate
         test_tag.status = "DEACTIVATED"
         test_tag.deactivated_at = datetime.utcnow()
@@ -226,15 +226,15 @@ class TestTagManagement:
 
         # Then reactivate
         payload = {"status": "ACTIVE"}
-        response = client.put(
+        response = authenticated_client.put(
             f"/api/v1/pets/{test_pet.id}/tags/{test_tag.id}", json=payload
         )
         assert response.status_code == 200
         assert response.json()["status"] == "ACTIVE"
 
-    def test_update_tag_label_and_notes(self, client, test_pet, test_tag):
+    def test_update_tag_label_and_notes(self, authenticated_client, test_pet, test_tag):
         payload = {"label": "New Label", "notes": "Updated notes"}
-        response = client.put(
+        response = authenticated_client.put(
             f"/api/v1/pets/{test_pet.id}/tags/{test_tag.id}", json=payload
         )
         assert response.status_code == 200
@@ -242,29 +242,29 @@ class TestTagManagement:
         assert data["label"] == "New Label"
         assert data["notes"] == "Updated notes"
 
-    def test_delete_tag(self, client, test_pet, test_tag):
-        response = client.delete(
+    def test_delete_tag(self, authenticated_client, test_pet, test_tag):
+        response = authenticated_client.delete(
             f"/api/v1/pets/{test_pet.id}/tags/{test_tag.id}"
         )
         assert response.status_code == 200
         assert "removed" in response.json()["message"].lower()
 
         # Verify it's gone
-        response = client.get(f"/api/v1/pets/{test_pet.id}/tags")
+        response = authenticated_client.get(f"/api/v1/pets/{test_pet.id}/tags")
         assert response.json() == []
 
-    def test_delete_tag_not_found(self, client, test_pet):
+    def test_delete_tag_not_found(self, authenticated_client, test_pet):
         fake_id = str(uuid4())
-        response = client.delete(
+        response = authenticated_client.delete(
             f"/api/v1/pets/{test_pet.id}/tags/{fake_id}"
         )
         assert response.status_code == 404
 
-    def test_tag_lifecycle_creates_ledger_events(self, client, test_pet, session):
+    def test_tag_lifecycle_creates_ledger_events(self, authenticated_client, test_pet, session):
         """Creating and deactivating a tag should log audit events."""
         # Create
         payload = {"tag_type": "QR", "tag_code": "AUDIT001", "label": "Audit Tag"}
-        client.post(f"/api/v1/pets/{test_pet.id}/tags", json=payload)
+        authenticated_client.post(f"/api/v1/pets/{test_pet.id}/tags", json=payload)
 
         events = session.exec(
             select(LedgerEvent).where(
