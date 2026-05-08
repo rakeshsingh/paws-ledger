@@ -25,13 +25,13 @@ def init_pages():
     ga_id = os.getenv('GA_MEASUREMENT_ID', 'G-VQSSWXZFKL')
     if ga_id:
         ui.add_head_html(
-            f'<script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>'
-            '<script>'
-            '  window.dataLayer = window.dataLayer || [];'
-            '  function gtag(){dataLayer.push(arguments);}'
-            '  gtag("js", new Date());'
-            f'  gtag("config", "{ga_id}");'
-            '</script>'
+            f'<script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>\n'
+            f'<script>\n'
+            f'  window.dataLayer = window.dataLayer || [];\n'
+            f'  function gtag(){{dataLayer.push(arguments);}}\n'
+            f'  gtag("js", new Date());\n'
+            f'  gtag("config", "{ga_id}");\n'
+            f'</script>'
         )
     init_index_page()
     init_about_page()

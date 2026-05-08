@@ -13,13 +13,6 @@ PET_IMAGES = {
     'CAT': 'https://lh3.googleusercontent.com/aida-public/AB6AXuCPTH8vESvvcGO9mILxsC4a8w1o5z4iSLguhf7VqSYvtF6CT8WPnNE1vyADGkm8OqBw-hUubvMY1CIK2LYqOKY1sg1DtR5nCOPa_k4YbmTjnu345GZ00J876zQsD2p8QFZeRlzfvrl58VuC-6GnyrjHItxbtRvXzCFr41UwlFlMo02mdSd2lblevkaTyhxEW6fRGShq4SvldBVW18kJQVvW79_xYP3AGAPdeVmGT3X7onRq24rZTkWmxZAPx4hSyRhPz_7JmqPd5RYR',
 }
 
-PROFILE_AVATAR = (
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuCLh2YGd7788t1PK81ptMF0xlwQ1RBldy2GOBSa3AJivhNOzth-'
-    'QsjyS1bDJvyqqCQvtdU8HijMJEtinnJiVf38yv4NNIRu5K3FK3LQ16aOBbF2ttoYtogNkypnYSSZxnEGVz6rUJgG6CgIQuUbHPGDQR49'
-    'KNocy09Q-rhXdl4KBY3xLXJangcnIBW6myqnP21zhzaj_AjIP8z7gkksx9CxRqAQOBuS5ybXemjQxFZ1UKWgz3RpaORFHTulCpoiDsTcx'
-    'vIMsPybwxn0'
-)
-
 
 def _build_profile_header(user_name: str, user_role: str, pet_count: int):
     """Profile header section with avatar, name, role, and badges."""
@@ -29,12 +22,15 @@ def _build_profile_header(user_name: str, user_role: str, pet_count: int):
         'background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.05); '
         'border-left: 4px solid #a03a21;'
     ):
-        # Avatar
+        # Unisex avatar icon
         with ui.element('div').classes('relative'):
-            ui.image(PROFILE_AVATAR).classes('rounded-full').style(
-                'width: 128px; height: 128px; object-fit: cover; '
+            with ui.element('div').classes(
+                'flex items-center justify-center rounded-full'
+            ).style(
+                'width: 128px; height: 128px; background: #ffdad2; '
                 'border: 4px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.1);'
-            )
+            ):
+                ui.icon('person').style('font-size: 64px; color: #a03a21;')
 
         # Name and info
         with ui.column().classes('text-center md:text-left gap-1'):
