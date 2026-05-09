@@ -17,8 +17,10 @@ from datetime import datetime, timedelta
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
-# ISO 11784/11785 chip ID pattern: exactly 15 digits
-CHIP_ID_PATTERN = re.compile(r'^\d{15}$')
+# Microchip ID patterns:
+# - ISO 11784/11785: exactly 15 digits (e.g. 985000123456789)
+# - Non-ISO (125 kHz / 128 kHz): 9 or 10 alphanumeric characters (e.g. 0A0757738, 070285035)
+CHIP_ID_PATTERN = re.compile(r'^[A-Za-z0-9]{9,15}$')
 
 
 # ─── Auth Dependency ─────────────────────────────────────────
@@ -45,12 +47,17 @@ def _verify_pet_ownership(pet: Pet, user: User):
 
 
 def _validate_chip_id(chip_id: str) -> str:
-    """Validate chip ID format. Returns cleaned chip_id or raises 400."""
-    chip_id = chip_id.strip()
+    """Validate chip ID format. Returns cleaned chip_id or raises 400.
+    
+    Supports:
+    - ISO 11784/11785: 15 digits (e.g. 985000123456789)
+    - Non-ISO (125 kHz): 9-10 alphanumeric characters (e.g. 0A0757738)
+    """
+    chip_id = chip_id.strip().upper()
     if not CHIP_ID_PATTERN.match(chip_id):
         raise HTTPException(
             status_code=400,
-            detail="Invalid chip ID format. Must be exactly 15 digits (ISO 11784/11785)."
+            detail="Invalid chip ID format. Must be 9-15 alphanumeric characters with no spaces or dashes."
         )
     return chip_id
 

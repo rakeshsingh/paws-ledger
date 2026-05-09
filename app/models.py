@@ -20,7 +20,7 @@ class Pet(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     name: str = Field(index=True)
     gender: str = "Unknown" # Male, Female, Unknown
-    chip_id: str = Field(index=True, unique=True, max_length=15)
+    chip_id: str = Field(index=True, unique=True, max_length=15)  # 9-15 alphanumeric
     manufacturer: Optional[str] = None
     identity_status: str = "UNVERIFIED"  # VERIFIED, UNVERIFIED
     owner_id: Optional[UUID] = Field(default=None, foreign_key="user.id")

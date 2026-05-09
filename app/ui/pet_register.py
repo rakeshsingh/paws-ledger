@@ -306,10 +306,10 @@ def init_register_page():
                     if not name_input.value or not name_input.value.strip():
                         ui.notify('Pet Name is required.', type='negative')
                         return
-                    chip_val = chip_input.value.strip() if chip_input.value else ''
-                    if not chip_val or len(chip_val) != 15 or not chip_val.isdigit():
+                    chip_val = chip_input.value.strip().upper() if chip_input.value else ''
+                    if not chip_val or len(chip_val) < 9 or len(chip_val) > 15 or not chip_val.isalnum():
                         ui.notify(
-                            'Invalid Chip ID. Must be exactly 15 numeric digits.',
+                            'Invalid Chip ID. Must be 9-15 alphanumeric characters with no spaces or dashes.',
                             type='negative',
                         )
                         return

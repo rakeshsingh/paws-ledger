@@ -294,6 +294,13 @@ server {
         expires 7d;
         add_header Cache-Control "public, immutable";
     }
+
+    # SEO: Serve static landing page to search engine crawlers
+    # This ensures crawlers get full HTML content without WebSocket dependency
+    location = /landing {
+        alias ${APP_DIR}/app/ui/static/index.html;
+        add_header Cache-Control "public, max-age=3600";
+    }
 }
 EOF
 

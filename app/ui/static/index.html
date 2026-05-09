@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PawsLedger — Universal Pet Microchip Registry & Recovery Network</title>
+
+    <!-- SEO Meta -->
+    <meta name="description" content="PawsLedger is the universal microchip registry and pet recovery network. Register your pet's microchip, manage vaccination records, and enable instant identification with NFC/QR tags. Free forever.">
+    <meta name="keywords" content="pet microchip registry, pet recovery, microchip lookup, pet identification, NFC pet tag, QR pet tag, vaccination records, lost pet, found pet, AAHA, microchip search">
+    <meta name="author" content="PawsLedger">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://www.pawsledger.com/">
+    <meta name="google-site-verification" content="tVpTG1skwcyW0gOUWbWUS50-MtKx0mYu86mlUmP4ePA">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="PawsLedger">
+    <meta property="og:title" content="PawsLedger — Universal Pet Microchip Registry">
+    <meta property="og:description" content="Register your pet's microchip for free. Enable instant identification with NFC/QR tags. Secure medical records and emergency alerts.">
+    <meta property="og:url" content="https://www.pawsledger.com/">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="PawsLedger — Universal Pet Microchip Registry">
+    <meta name="twitter:description" content="Register your pet's microchip. Enable instant identification with NFC/QR tags. Free forever.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-VQSSWXZFKL"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-VQSSWXZFKL');
+    </script>
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "PawsLedger",
+      "url": "https://www.pawsledger.com",
+      "description": "Universal pet microchip registry and recovery network"
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "PawsLedger",
+      "url": "https://www.pawsledger.com",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://www.pawsledger.com/?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #f7f9ff; color: #171c21; -webkit-font-smoothing: antialiased; }
+        a { text-decoration: none; color: inherit; }
+
+        /* Header */
+        .header { background: rgba(250,250,249,0.8); backdrop-filter: blur(12px); border-bottom: 1px solid #e7e5e4; padding: 1rem 1.5rem; position: sticky; top: 0; z-index: 50; }
+        .header-inner { max-width: 80rem; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.5rem; font-weight: 800; color: #c24112; }
+        .nav-links { display: flex; gap: 2rem; align-items: center; }
+        .nav-link { color: #57423d; font-weight: 500; font-size: 0.9rem; }
+        .nav-link:hover { color: #a03a21; }
+        .btn-login { background: #a03a21; color: white; font-weight: 600; padding: 0.5rem 1.5rem; border-radius: 0.5rem; border: none; cursor: pointer; font-size: 0.9rem; }
+        .btn-login:hover { opacity: 0.9; }
+
+        /* Hero */
+        .hero { padding: 5rem 1.5rem; background: radial-gradient(circle at top right, rgba(255,218,210,0.5), transparent), radial-gradient(circle at bottom left, rgba(234,238,245,0.5), transparent); }
+        .hero-inner { max-width: 80rem; margin: 0 auto; display: flex; gap: 3rem; align-items: center; flex-wrap: wrap; }
+        .hero-content { flex: 1; min-width: 320px; }
+        .hero-badge { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0.75rem; border-radius: 9999px; background: rgba(193,82,55,0.1); border: 1px solid rgba(193,82,55,0.2); font-size: 0.75rem; font-weight: 600; color: #c15237; margin-bottom: 2rem; }
+        .hero h1 { font-family: 'Plus Jakarta Sans', sans-serif; font-size: clamp(2.5rem, 5vw, 4rem); line-height: 1.15; font-weight: 700; color: #171c21; margin-bottom: 1.5rem; }
+        .hero h1 .accent1 { color: #a03a21; }
+        .hero h1 .accent2 { color: #7d5800; }
+        .hero-subtitle { font-size: 1.125rem; line-height: 1.6; color: #57423d; max-width: 32rem; margin-bottom: 2rem; }
+        .search-row { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .search-input { flex: 1; min-width: 200px; padding: 0.75rem 1rem; border: 1px solid #dec0b9; border-radius: 0.5rem; font-size: 1rem; outline: none; }
+        .search-input:focus { border-color: #a03a21; box-shadow: 0 0 0 2px rgba(160,58,33,0.1); }
+        .btn-search { background: #7d5800; color: white; font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 0.5rem; border: none; cursor: pointer; }
+        .btn-protect { background: #a03a21; color: white; font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 0.5rem; border: none; cursor: pointer; }
+        .social-proof { display: flex; align-items: center; gap: 1rem; }
+        .avatars { display: flex; }
+        .avatars img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #f7f9ff; margin-right: -0.75rem; object-fit: cover; }
+        .social-text { font-weight: 600; color: #57423d; font-size: 0.875rem; }
+
+        /* Hero image */
+        .hero-image { flex: 1; min-width: 300px; display: flex; justify-content: center; }
+        .hero-img-wrapper { position: relative; width: 100%; aspect-ratio: 1; border-radius: 2rem; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); border: 8px solid rgba(255,255,255,0.5); }
+        .hero-img-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+        .glass-card { position: absolute; bottom: 1.5rem; left: 1.5rem; right: 1.5rem; display: flex; align-items: center; gap: 1rem; padding: 1rem; border-radius: 1rem; background: rgba(255,255,255,0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3); }
+        .glass-icon { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: #c15237; color: white; }
+        .glass-title { font-weight: 600; font-size: 0.875rem; color: #171c21; }
+        .glass-sub { font-size: 0.75rem; color: #57423d; }
+
+        /* Trust bar */
+        .trust-bar { padding: 1.5rem; background: white; border-top: 1px solid #e7e5e4; border-bottom: 1px solid #e7e5e4; }
+        .trust-inner { max-width: 80rem; margin: 0 auto; display: flex; align-items: center; gap: 2rem; flex-wrap: wrap; }
+        .trust-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 1.125rem; font-weight: 700; color: #171c21; white-space: nowrap; }
+        .trust-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 600; color: #171c21; }
+        .trust-item .material-icons { font-size: 20px; }
+
+        /* Footer */
+        .footer { padding: 1rem 1.5rem; background: #f5f5f4; border-top: 1px solid #e7e5e4; font-size: 0.75rem; }
+        .footer-inner { max-width: 80rem; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+        .footer-brand { font-weight: 700; font-size: 0.875rem; color: #1c1917; }
+        .footer-copy { color: #78716c; }
+        .footer-links { display: flex; gap: 1.5rem; }
+        .footer-links a { color: #78716c; }
+        .footer-links a:hover { color: #a03a21; }
+
+        @media (max-width: 768px) {
+            .hero-inner { flex-direction: column; }
+            .nav-links { gap: 1rem; }
+            .trust-inner { justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-inner">
+            <a href="/" class="logo">PawsLedger</a>
+            <nav class="nav-links">
+                <a href="/" class="nav-link">Home</a>
+                <a href="/dashboard" class="nav-link">Dashboard</a>
+                <a href="/faq" class="nav-link">Support</a>
+                <a href="/login"><button class="btn-login">Login</button></a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-inner">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span class="material-icons" style="font-size:16px;">verified_user</span>
+                    Every Pet Deserves a Home
+                </div>
+
+                <h1>
+                    Found a pet? <span class="accent1">Reconnect them.</span><br>
+                    Love a pet? <span class="accent2">Protect them.</span>
+                </h1>
+
+                <p class="hero-subtitle">
+                    The universal microchip registry and recovery network.
+                    We provide finders with the tools to scan and contact owners instantly,
+                    and pet parents with the peace of mind they deserve.
+                </p>
+
+                <form class="search-row" action="/" method="get">
+                    <input type="text" name="q" class="search-input" placeholder="Enter Microchip Number" aria-label="Microchip number search">
+                    <button type="submit" class="btn-search">Search</button>
+                    <a href="/login"><button type="button" class="btn-protect">Protect</button></a>
+                </form>
+
+                <div class="social-proof">
+                    <div class="avatars">
+                        <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDC_u-pLQN_9ELbNpRQc2wcKEpFxsSgBXSl1f5H2DekqHId9VWWxfwo2irG3Duz-x00Mf3xQa0okbayR1K8c3SMJ-2jmArBdJKzQKSBhQUeGqBWbXzmPJP3UWUvmePGD3RQyg9JhvvaEpbwoU1dMdsvCnzmn_XOSJns0FwXcJviaCQRrMZBxQzhBYZUf5JGdMCQWVzsG0s8OMs59NOXExLvthqFfqO9GYaEKv5CgEXJhLj840uUU_kXWXHIXZpOBNFPtn8fWeaP0KDq" alt="User" width="40" height="40">
+                        <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnz47nE9O4bTIt-6TujxWMe9xipN_9YLnp-OGGXji5YZUjC9NgWM8b_UgN6Cde6vsAqBCtRnOap2KOnbUJP0PdAzsYIfnwrmQi7-XU37xSXgzGDA-D6AWs0BvuV2zQ_nWoTArEAujx2MqZD5HJ4vm7Q3pulZBQVHM7rKCaplUxlAG8oj-kRIVd9zZnnsJDOBjVDev7bnhUT7lZO8nSSJqoBnbVFhmfFhcIozt0yWCWrNwkdihTD_oNrC1cQh9yqaiIfUC6OC0tjvb3" alt="User" width="40" height="40">
+                        <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuD45l7ug8S4bO--zSKW9GFzKnsZHeV0wiLk2Xds0q51lyCuHBe3NxImd5GsDTfgKBH6NN7P4vCuDsVhyY_4qn5pWRsgyxwnFvG3Dwdm9OsyL8dhqUDsJathvq-hRd7OPpD7yhj3mWkW2AzofjUR2Wof1fxujldmtVZV2jfssrummSVpX8hn0tfkoiU1JWg3EhPn3akPnNs3QaqC9nwwKFtKnZZ0lB9ALjk7BEHWZRPf4iRTZWHVqlv8iOjJ5efRMsFmgMJFt4M4UAkc" alt="User" width="40" height="40">
+                    </div>
+                    <span class="social-text">Joined by 50,000+ responsible owners</span>
+                </div>
+            </div>
+
+            <div class="hero-image">
+                <div class="hero-img-wrapper">
+                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDOvgen58Uso2VUVVvFepK3xJ7zY0sAjCMDLZ3_gnMw9cVS9Ps1QXWxtOc1qyz_kE4_gVpcls0DrAOWN0Ly6c2PAHSN0UTMmn6TOKA74p7ANhFbJ-x0bMEZnqotilt3xWQRVg1-3uAO_fC4mjJhWJXSEN4hmhZ0vJU6yKg_cSAsjPxSv2IcfPBE2NB3f27YckVsQRUq44x-uXv6Yu4cHtahDqha_7J3-pgL6HFQXwtchhd-nKkIpFF-0fyU8ex_zKzbRmEalkpiCFQJ" alt="Happy pet reunited with owner through PawsLedger microchip registry" width="600" height="600" loading="eager">
+                    <div class="glass-card">
+                        <div class="glass-icon"><span class="material-icons">pets</span></div>
+                        <div>
+                            <div class="glass-title">Reunited in 15 mins</div>
+                            <div class="glass-sub">"Luna was found thanks to her chip."</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Trust Bar -->
+    <section class="trust-bar">
+        <div class="trust-inner">
+            <span class="trust-title">Why Trust PawsLedger?</span>
+            <div class="trust-item"><span class="material-icons" style="color:#a03a21;">hub</span> Global Connection</div>
+            <div class="trust-item"><span class="material-icons" style="color:#7d5800;">encrypted</span> Privacy First</div>
+            <div class="trust-item"><span class="material-icons" style="color:#171c21;">volunteer_activism</span> Peace of Mind</div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <div>
+                <span class="footer-brand">PawsLedger</span>
+                <span class="footer-copy">© 2026 PawsLedger. Nurturing Professionalism in Pet Care.</span>
+            </div>
+            <nav class="footer-links">
+                <a href="/pricing">Pricing</a>
+                <a href="/faq">FAQ</a>
+                <a href="/login">Login</a>
+            </nav>
+        </div>
+    </footer>
+
+    <!-- Redirect search form to NiceGUI app -->
+    <script>
+        document.querySelector('.search-row').addEventListener('submit', function(e) {
+            e.preventDefault();
+            var q = this.querySelector('input[name="q"]').value;
+            if (q && q.length === 15) {
+                window.location.href = '/?q=' + encodeURIComponent(q);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -65,21 +65,50 @@ class AAHAClient:
     Mock client for the AAHA Universal Pet Microchip Lookup.
     In a production environment, this would use a web scraper or an official API.
     """
+
+    # Known ISO microchip prefixes and their manufacturers
+    _MANUFACTURERS = {
+        "900": "Shared/Unassigned",
+        "985": "Datamars / HomeAgain",
+        "981": "Datamars / PetLink",
+        "977": "Trovan",
+        "956": "AVID",
+        "939": "Animal ID",
+        "982": "Allflex",
+    }
+
     async def lookup(self, chip_id: str) -> Optional[Dict]:
         # Simulate network latency
         import asyncio
-        await asyncio.sleep(0.5)
-        
-        # Mock logic: if chip starts with 985, it's "found" in AAHA but not in our DB
-        if chip_id.startswith("985"):
+        await asyncio.sleep(0.3)
+
+        if not chip_id or len(chip_id) < 9:
+            return None
+
+        # ISO chips: 15 digits starting with 9
+        if len(chip_id) == 15 and chip_id[0] == '9' and chip_id.isdigit():
+            prefix = chip_id[:3]
+            manufacturer = self._MANUFACTURERS.get(prefix, f"ISO Registered ({prefix})")
             return {
                 "chip_id": chip_id,
                 "found_in_aaha": True,
-                "manufacturer": "HomeAgain (via AAHA Network)",
-                "status": "Registered with HomeAgain",
+                "manufacturer": f"{manufacturer} (via AAHA Network)",
+                "status": "Registered",
                 "last_seen": "2024-01-15",
                 "message": "This chip is registered in the AAHA network but not yet claimed on PawsLedger."
             }
+
+        # Non-ISO chips: 9-10 alphanumeric characters (125 kHz / 128 kHz)
+        if len(chip_id) in (9, 10):
+            return {
+                "chip_id": chip_id,
+                "found_in_aaha": True,
+                "manufacturer": "Non-ISO (125/128 kHz) via AAHA Network",
+                "status": "Registered",
+                "last_seen": "2024-01-15",
+                "message": "This non-ISO chip is registered in the AAHA network but not yet claimed on PawsLedger."
+            }
+
         return None
 
 from fpdf import FPDF
