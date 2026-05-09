@@ -21,6 +21,19 @@ def init_pages():
     app.add_static_files('/static', _STATIC_DIR)
     ui.add_head_html(GLOBAL_CSS_LINK)
 
+    # Auto-reload fallback: if NiceGUI WebSocket doesn't connect within 5s,
+    # reload the page (fixes blank page after navigation through proxies)
+    ui.add_head_html(
+        '<script>\n'
+        'setTimeout(function() {\n'
+        '  if (!document.querySelector(".nicegui-content") || '
+        'document.querySelector(".nicegui-content").children.length === 0) {\n'
+        '    window.location.reload();\n'
+        '  }\n'
+        '}, 5000);\n'
+        '</script>\n'
+    )
+
     # ── SEO: Global meta tags ──
     ui.add_head_html(
         '<meta name="google-site-verification" content="tVpTG1skwcyW0gOUWbWUS50-MtKx0mYu86mlUmP4ePA">\n'
