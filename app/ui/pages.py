@@ -21,6 +21,26 @@ def init_pages():
     app.add_static_files('/static', _STATIC_DIR)
     ui.add_head_html(GLOBAL_CSS_LINK)
 
+    # ── SEO: Global meta tags ──
+    ui.add_head_html(
+        '<meta name="google-site-verification" content="tVpTG1skwcyW0gOUWbWUS50-MtKx0mYu86mlUmP4ePA">\n'
+        '<meta name="description" content="PawsLedger — The universal microchip registry and pet recovery network. Register your pet\'s microchip, manage vaccination records, and enable instant identification with NFC/QR tags.">\n'
+        '<meta name="keywords" content="pet microchip registry, pet recovery, microchip lookup, pet identification, NFC pet tag, QR pet tag, vaccination records, lost pet, found pet, AAHA">\n'
+        '<meta name="author" content="PawsLedger">\n'
+        '<meta name="robots" content="index, follow">\n'
+        '<link rel="canonical" href="https://www.pawsledger.com">\n'
+        '<!-- Open Graph -->\n'
+        '<meta property="og:type" content="website">\n'
+        '<meta property="og:site_name" content="PawsLedger">\n'
+        '<meta property="og:title" content="PawsLedger — Universal Pet Microchip Registry">\n'
+        '<meta property="og:description" content="Secure medical records, emergency alerts, and verified ownership. Register your pet\'s microchip for free.">\n'
+        '<meta property="og:url" content="https://www.pawsledger.com">\n'
+        '<!-- Twitter Card -->\n'
+        '<meta name="twitter:card" content="summary">\n'
+        '<meta name="twitter:title" content="PawsLedger — Universal Pet Microchip Registry">\n'
+        '<meta name="twitter:description" content="Register your pet\'s microchip. Enable instant identification with NFC/QR tags. Free forever.">\n'
+    )
+
     # Google Analytics (gtag.js)
     ga_id = os.getenv('GA_MEASUREMENT_ID', 'G-VQSSWXZFKL')
     if ga_id:
@@ -33,6 +53,33 @@ def init_pages():
             f'  gtag("config", "{ga_id}");\n'
             f'</script>'
         )
+
+    # JSON-LD Structured Data (Organization + WebSite)
+    ui.add_head_html(
+        '<script type="application/ld+json">\n'
+        '{\n'
+        '  "@context": "https://schema.org",\n'
+        '  "@type": "Organization",\n'
+        '  "name": "PawsLedger",\n'
+        '  "url": "https://www.pawsledger.com",\n'
+        '  "description": "Universal pet microchip registry and recovery network",\n'
+        '  "sameAs": []\n'
+        '}\n'
+        '</script>\n'
+        '<script type="application/ld+json">\n'
+        '{\n'
+        '  "@context": "https://schema.org",\n'
+        '  "@type": "WebSite",\n'
+        '  "name": "PawsLedger",\n'
+        '  "url": "https://www.pawsledger.com",\n'
+        '  "potentialAction": {\n'
+        '    "@type": "SearchAction",\n'
+        '    "target": "https://www.pawsledger.com/?q={search_term_string}",\n'
+        '    "query-input": "required name=search_term_string"\n'
+        '  }\n'
+        '}\n'
+        '</script>'
+    )
     init_index_page()
     init_about_page()
     init_faq_page()

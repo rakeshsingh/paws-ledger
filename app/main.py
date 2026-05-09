@@ -48,6 +48,35 @@ from .api.v1.auth import auth_callback as _auth_callback
 fastapi_app.add_api_route("/auth/callback", _auth_callback, methods=["GET"])
 
 
+# ── SEO: robots.txt and sitemap.xml ──
+from fastapi.responses import PlainTextResponse
+
+@fastapi_app.get("/robots.txt", response_class=PlainTextResponse)
+async def robots_txt():
+    return (
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Disallow: /dashboard\n"
+        "Disallow: /owner/\n"
+        "Disallow: /register\n"
+        "Disallow: /api/\n"
+        "\n"
+        "Sitemap: https://www.pawsledger.com/sitemap.xml\n"
+    )
+
+
+@fastapi_app.get("/sitemap.xml", response_class=PlainTextResponse)
+async def sitemap_xml():
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        '  <url><loc>https://www.pawsledger.com/</loc><priority>1.0</priority><changefreq>weekly</changefreq></url>\n'
+        '  <url><loc>https://www.pawsledger.com/faq</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>\n'
+        '  <url><loc>https://www.pawsledger.com/pricing</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>\n'
+        '  <url><loc>https://www.pawsledger.com/login</loc><priority>0.6</priority><changefreq>monthly</changefreq></url>\n'
+        '</urlset>\n'
+    )
+
 
 @fastapi_app.on_event("startup")
 def on_startup():
