@@ -9,20 +9,108 @@ env = os.getenv("APP_ENV", "beta")
 load_dotenv(f".env.{env}")
 
 MANUFACTURER_MAP = {
+    # ISO 134.2 kHz — 15-digit chips starting with these 3-digit prefixes
     "900": "Shared/Unassigned",
-    "985": "Datamars / HomeAgain",
-    "981": "Datamars / PetLink",
-    "977": "Trovan",
-    "956": "AVID",
     "939": "Animal ID",
+    "941": "AVID Europe",
+    "943": "AVID Europe",
+    "945": "Sokymat / EIDAP",
+    "953": "Datamars",
+    "956": "AVID",
+    "965": "Microfindr",
+    "968": "AKC Reunite / Trovan",
+    "972": "Planet ID",
+    "977": "Trovan",
+    "978": "Allflex / Digital Angel",
+    "981": "Datamars / PetLink",
     "982": "Allflex",
+    "984": "Nedap",
+    "985": "Datamars / HomeAgain",
+    "986": "Microchip ID",
+    "988": "Virbac / BackHome",
+    "990": "Indexel",
+    "991": "Destron Fearing",
+    "992": "Cromwell",
+    "998": "Microchip4Solutions",
+    "999": "Test / Development",
 }
 
+# Extended info for the "aha" moment — includes country of origin and registry
+MANUFACTURER_DETAILS = {
+    "900": {"name": "Shared/Unassigned", "registry": "Various", "country": "International"},
+    "939": {"name": "Animal ID", "registry": "Animal ID Systems", "country": "USA"},
+    "956": {"name": "AVID", "registry": "PETtrac", "country": "USA"},
+    "968": {"name": "AKC Reunite / Trovan", "registry": "AKC Reunite", "country": "USA"},
+    "977": {"name": "Trovan", "registry": "Trovan Ltd", "country": "UK"},
+    "981": {"name": "Datamars / PetLink", "registry": "PetLink", "country": "USA"},
+    "982": {"name": "Allflex", "registry": "Allflex / Destron", "country": "USA"},
+    "985": {"name": "Datamars / HomeAgain", "registry": "HomeAgain", "country": "USA"},
+    "988": {"name": "Virbac / BackHome", "registry": "BackHome", "country": "Australia"},
+}
+
+
 def get_manufacturer_from_chip(chip_id: str) -> str:
+    """Get manufacturer name from chip ID prefix."""
     if not chip_id or len(chip_id) < 3:
         return "Unknown"
     prefix = chip_id[:3]
     return MANUFACTURER_MAP.get(prefix, f"Generic ({prefix})")
+
+
+def get_chip_prefix_info(partial_chip: str) -> dict:
+    """Get real-time prefix info as the user types.
+    
+    Returns manufacturer details for the first 3+ digits entered,
+    providing instant "aha" feedback about the chip's origin.
+    """
+    if not partial_chip:
+        return {"identified": False, "hint": "Enter a microchip number"}
+
+    cleaned = partial_chip.strip().upper()
+
+    # Non-ISO chips (9-10 alphanumeric) — can't identify by prefix
+    if not cleaned.isdigit():
+        return {
+            "identified": True,
+            "type": "non-iso",
+            "hint": "Non-ISO chip (125/128 kHz)",
+            "manufacturer": None,
+        }
+
+    # Need at least 3 digits for ISO prefix identification
+    if len(cleaned) < 3:
+        if cleaned[0] == '9':
+            return {"identified": False, "hint": "ISO chip detected — keep typing for manufacturer ID..."}
+        return {"identified": False, "hint": "Enter at least 3 digits for identification"}
+
+    prefix = cleaned[:3]
+    manufacturer = MANUFACTURER_MAP.get(prefix)
+    details = MANUFACTURER_DETAILS.get(prefix)
+
+    if manufacturer:
+        result = {
+            "identified": True,
+            "type": "iso",
+            "prefix": prefix,
+            "manufacturer": manufacturer,
+            "hint": f"Chip by {manufacturer}",
+        }
+        if details:
+            result["registry"] = details.get("registry")
+            result["country"] = details.get("country")
+        return result
+
+    # Valid ISO format but unknown prefix
+    if cleaned[0] == '9':
+        return {
+            "identified": True,
+            "type": "iso",
+            "prefix": prefix,
+            "manufacturer": f"ISO Registered ({prefix})",
+            "hint": f"ISO chip with prefix {prefix}",
+        }
+
+    return {"identified": False, "hint": "Unrecognized chip format"}
 
 class DogAPIClient:
     """Client for the Dog CEO API (dog.ceo) — free, no API key required."""

@@ -25,7 +25,7 @@ def init_index_page():
             'background: radial-gradient(circle at top right, rgba(255,218,210,0.5), transparent),'
             'radial-gradient(circle at bottom left, rgba(234,238,245,0.5), transparent);'
         ):
-            with ui.row().classes('max-w-7xl mx-auto px-6 gap-12 items-center'):
+            with ui.row().classes('max-w-7xl mx-auto px-6 gap-12 items-center flex-wrap'):
                 # Left column
                 with ui.column().classes('flex-1 gap-8'):
                     # Badge
@@ -52,7 +52,7 @@ def init_index_page():
                         'and pet parents with the peace of mind they deserve.'
                     ).style('font-size: 18px; line-height: 1.6; color: #57423d; max-width: 32rem;')
 
-                    # Search input
+                    # Search input with real-time prefix identification
                     with ui.row().classes('w-full gap-2 items-center'):
                         chip_input = ui.input(
                             placeholder='Enter Microchip Number'
@@ -68,6 +68,51 @@ def init_index_page():
                         ).style(
                             'background-color: #a03a21; color: white; font-weight: 600;'
                         ).classes('px-6 py-2 rounded-lg')
+
+                    # Prefix identification hint (shows manufacturer as user types)
+                    prefix_hint = ui.label('').style(
+                        'font-size: 13px; font-weight: 600; color: #7d5800; '
+                        'padding: 4px 12px; border-radius: 6px; '
+                        'background: rgba(125,88,0,0.08); display: none;'
+                    )
+
+                    def on_chip_input_change(e):
+                        from ..services.integrations import get_chip_prefix_info
+                        value = e.value.strip() if e.value else ''
+                        if len(value) >= 3:
+                            info = get_chip_prefix_info(value)
+                            if info.get('identified') and info.get('manufacturer'):
+                                hint_text = f'🔍 {info["manufacturer"]}'
+                                if info.get('registry'):
+                                    hint_text += f' • Registry: {info["registry"]}'
+                                prefix_hint.text = hint_text
+                                prefix_hint.style(
+                                    'font-size: 13px; font-weight: 600; color: #7d5800; '
+                                    'padding: 4px 12px; border-radius: 6px; '
+                                    'background: rgba(125,88,0,0.08); display: inline-block;'
+                                )
+                            elif info.get('hint'):
+                                prefix_hint.text = info['hint']
+                                prefix_hint.style(
+                                    'font-size: 13px; font-weight: 500; color: #57423d; '
+                                    'padding: 4px 12px; border-radius: 6px; '
+                                    'background: rgba(0,0,0,0.03); display: inline-block;'
+                                )
+                            else:
+                                prefix_hint.style('display: none;')
+                        elif len(value) >= 1:
+                            info = get_chip_prefix_info(value)
+                            if info.get('hint'):
+                                prefix_hint.text = info['hint']
+                                prefix_hint.style(
+                                    'font-size: 13px; font-weight: 500; color: #8a716c; '
+                                    'padding: 4px 12px; border-radius: 6px; '
+                                    'background: transparent; display: inline-block;'
+                                )
+                        else:
+                            prefix_hint.style('display: none;')
+
+                    chip_input.on('update:model-value', on_chip_input_change)
 
                     # Search results area
                     results_card = ui.column().classes('w-full mt-4').style('display: none')

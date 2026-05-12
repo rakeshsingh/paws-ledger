@@ -32,10 +32,11 @@ TIERS = [
     {
         'name': 'Verified',
         'subtitle': 'Official Protection',
-        'price': '$1',
+        'price': '$2',
         'period': '/ year',
         'border_color': '#7d5800',
         'badge': 'Upcoming',
+        'beta_offer': 'Beta offer: $1/year forever (until end of 2026)',
         'col_index': 2,
         'button_text': 'Go Verified',
         'button_style': 'background: #a03a21; color: white;',
@@ -44,7 +45,7 @@ TIERS = [
     {
         'name': 'Guardian',
         'subtitle': 'Total Peace of Mind',
-        'price': '$1',
+        'price': '$2',
         'period': '/ month',
         'border_color': '#a03a21',
         'badge': 'Upcoming',
@@ -125,6 +126,14 @@ def _render_pricing_card(tier):
                 )
                 ui.label(tier['period']).style(
                     'font-size: 12px; color: #57423d;'
+                )
+
+            # Beta offer banner
+            if tier.get('beta_offer'):
+                ui.label(tier['beta_offer']).style(
+                    'font-size: 12px; font-weight: 600; color: #166534; '
+                    'background: #dcfce7; padding: 6px 12px; border-radius: 6px; '
+                    'border: 1px solid #bbf7d0; margin-top: 0.5rem;'
                 )
 
         # Features with check/dash/detail

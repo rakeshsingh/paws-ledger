@@ -122,6 +122,17 @@ class VaccinationCreate(BaseModel):
         return v.strip()
 
 
+@router.get("/chip-prefix/{partial_chip}")
+async def identify_chip_prefix(partial_chip: str):
+    """Real-time chip prefix identification as the user types.
+    
+    Returns manufacturer info for the entered digits, providing
+    instant feedback about the chip's origin (e.g., "985" → HomeAgain).
+    """
+    from ...services.integrations import get_chip_prefix_info
+    return get_chip_prefix_info(partial_chip)
+
+
 @router.get("/lookup/{chip_id}")
 @limiter.limit("30/minute")
 async def lookup_pet(chip_id: str, request: Request, session: Session = Depends(get_session)):

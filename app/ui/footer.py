@@ -10,7 +10,7 @@ def nav_footer():
             # Left — brand + copyright
             with ui.row().classes('items-center gap-3'):
                 ui.label('PawsLedger').style(
-                    'font-weight: 700; font-size: 14px; color: #1c1917;'
+                    'font-weight: 700; font-size: 14px; color: #c24112;'
                 )
                 ui.label('© 2026 PawsLedger. Nurturing Professionalism in Pet Care.').style(
                     'color: #78716c;'

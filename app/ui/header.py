@@ -18,6 +18,7 @@ def nav_header():
                 ui.link('Home', '/').classes(link_classes)
                 ui.link('Dashboard', '/dashboard').classes(link_classes)
                 ui.link('Support', '/faq').classes(link_classes)
+                ui.link('Contact', 'https://forms.gle/6Mc2JWHbjitPKNZD6').classes(link_classes).props('target=_blank')
 
                 if app.storage.user.get('email'):
                     full_name = app.storage.user.get('name', '')
