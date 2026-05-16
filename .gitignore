@@ -13,7 +13,8 @@ __pycache__/
 *.so
 
 # SqliteDB 
-*.db 
+*.db
+*.db*
 
 # Distribution / packaging
 .Python

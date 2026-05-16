@@ -6,7 +6,7 @@ from ..models import Pet, LedgerEvent, Vaccination, SharedAccess, User, PetTag, 
 from .header import nav_header
 from .footer import nav_footer
 from .common import (
-    try_restore_session, hash_service, pdf_service,
+    try_restore_session, hash_service, pdf_service, email_service,
     SPECIES_ICONS, SPECIES_ICON_DEFAULT, SPECIES_BG, SPECIES_BG_DEFAULT,
     SPECIES_FG, SPECIES_FG_DEFAULT,
 )
@@ -255,31 +255,27 @@ def _render_contact_location_card(pet, is_owner: bool = False):
                 )
 
                 async def email_owner():
-                    from nicegui import run
-                    import httpx
-                    base = os.getenv('BASE_URL', 'http://localhost:8080')
-                    async with httpx.AsyncClient(
-                        base_url=base
-                    ) as http_client:
-                        resp = await http_client.post(
-                            f'/api/v1/nudge/{pet.chip_id}'
+                    if not app.storage.user.get('email'):
+                        ui.notify(
+                            'Please log in to contact the owner.',
+                            type='warning',
                         )
-                        if resp.status_code == 200:
-                            ui.notify(
-                                'Owner has been notified via email!',
-                                type='positive',
-                            )
-                        elif resp.status_code == 401:
-                            ui.notify(
-                                'Please log in to contact the owner.',
-                                type='warning',
-                            )
-                            ui.navigate.to('/login')
+                        ui.navigate.to('/login')
+                        return
+                    if pet.owner and pet.owner.email:
+                        sent = await email_service.send_email(
+                            pet.owner.email,
+                            f"Nudge: Someone found your pet!",
+                            f"Hello,\n\nA registered PawsLedger user has found a pet with "
+                            f"microchip {pet.chip_id} and is nudging you to get in touch.\n\n"
+                            f"Please check your PawsLedger dashboard."
+                        )
+                        if sent:
+                            ui.notify('Owner has been notified via email!', type='positive')
                         else:
-                            ui.notify(
-                                'Unable to send notification.',
-                                type='negative',
-                            )
+                            ui.notify('Unable to send notification.', type='negative')
+                    else:
+                        ui.notify('Owner contact info not available.', type='negative')
 
                 ui.button(
                     'Email Owner', icon='mail',
@@ -569,18 +565,20 @@ def _render_public_view(pet, session):
 
             if is_logged_in:
                 async def nudge_owner():
-                    import httpx
-                    base = os.getenv('BASE_URL', 'http://localhost:8080')
-                    async with httpx.AsyncClient(
-                        base_url=base
-                    ) as http_client:
-                        resp = await http_client.post(
-                            f'/api/v1/nudge/{pet.chip_id}'
+                    if pet.owner and pet.owner.email:
+                        sent = await email_service.send_email(
+                            pet.owner.email,
+                            f"Nudge: Someone found your pet!",
+                            f"Hello,\n\nA registered PawsLedger user has found a pet with "
+                            f"microchip {pet.chip_id} and is nudging you to get in touch.\n\n"
+                            f"Please check your PawsLedger dashboard."
                         )
-                        if resp.status_code == 200:
+                        if sent:
                             ui.notify('Nudge sent to owner!', type='positive')
                         else:
                             ui.notify('Failed to send nudge.', type='negative')
+                    else:
+                        ui.notify('Owner contact info not available.', type='negative')
 
                 ui.button(
                     'Nudge Owner', icon='notifications',
