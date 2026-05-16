@@ -1,3 +1,5 @@
+"""Shared fixtures: session (in-memory SQLite), client (TestClient), test_user, test_pet, mock_google_auth."""
+
 import pytest
 from sqlmodel import SQLModel, Session, create_engine
 from fastapi.testclient import TestClient

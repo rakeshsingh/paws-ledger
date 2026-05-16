@@ -2,20 +2,17 @@ from nicegui import ui, app
 from starlette.requests import Request
 from sqlmodel import Session, select
 from ..database import engine
-from ..models import Pet, LedgerEvent, Vaccination, SharedAccess, User, PetTag
+from ..models import Pet, LedgerEvent, Vaccination, SharedAccess, User, PetTag, _utc_now
 from .header import nav_header
 from .footer import nav_footer
-from .common import try_restore_session, hash_service, pdf_service
+from .common import (
+    try_restore_session, hash_service, pdf_service,
+    SPECIES_ICONS, SPECIES_ICON_DEFAULT, SPECIES_BG, SPECIES_BG_DEFAULT,
+    SPECIES_FG, SPECIES_FG_DEFAULT,
+)
 from datetime import datetime, timedelta
+import os
 import uuid
-
-# Species icon mapping (shared with dashboard)
-SPECIES_ICONS = {'DOG': 'pets', 'CAT': 'emoji_nature'}
-SPECIES_ICON_DEFAULT = 'pets'
-SPECIES_BG = {'DOG': '#ffdad2', 'CAT': '#ffdea9'}
-SPECIES_BG_DEFAULT = '#eaeef5'
-SPECIES_FG = {'DOG': '#a03a21', 'CAT': '#7d5800'}
-SPECIES_FG_DEFAULT = '#57423d'
 
 
 def _obfuscate(value: str) -> str:
@@ -89,7 +86,7 @@ def _render_medical_summary(pet):
         )
         if pet.vaccinations:
             for v in pet.vaccinations:
-                is_current = v.expiration_date > datetime.utcnow()
+                is_current = v.expiration_date > _utc_now()
                 with ui.row().classes(
                     'w-full items-center justify-between p-4 rounded-lg mb-3'
                 ).style('background: #f0f4fb;'):
@@ -145,7 +142,8 @@ def _render_contact_location_card(pet, is_owner: bool = False):
                     'width: 100%; height: 220px;'
                 )
                 # Inject Leaflet CSS/JS and initialize the map via Nominatim geocoding
-                safe_query = location_query.replace("'", "\\'").replace('"', '\\"')
+                import json as _json
+                safe_query_json = _json.dumps(location_query)
                 ui.add_head_html(
                     '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>'
                 )
@@ -154,6 +152,7 @@ def _render_contact_location_card(pet, is_owner: bool = False):
                 )
                 ui.run_javascript(f'''
                     (function() {{
+                        var query = {safe_query_json};
                         function initMap() {{
                             var container = document.getElementById("{map_div_id}");
                             if (!container) return setTimeout(initMap, 100);
@@ -171,7 +170,7 @@ def _render_contact_location_card(pet, is_owner: bool = False):
                             L.tileLayer("https://{{s}}.tile.openstreetmap.org/{{z}}/{{x}}/{{y}}.png", {{
                                 maxZoom: 18,
                             }}).addTo(map);
-                            fetch("https://nominatim.openstreetmap.org/search?format=json&q={safe_query}&limit=1")
+                            fetch("https://nominatim.openstreetmap.org/search?format=json&q=" + encodeURIComponent(query) + "&limit=1")
                                 .then(r => r.json())
                                 .then(data => {{
                                     if (data && data.length > 0) {{
@@ -256,9 +255,11 @@ def _render_contact_location_card(pet, is_owner: bool = False):
                 )
 
                 async def email_owner():
+                    from nicegui import run
                     import httpx
+                    base = os.getenv('BASE_URL', 'http://localhost:8080')
                     async with httpx.AsyncClient(
-                        base_url='http://localhost:8080'
+                        base_url=base
                     ) as http_client:
                         resp = await http_client.post(
                             f'/api/v1/nudge/{pet.chip_id}'
@@ -473,7 +474,7 @@ def _render_tag_row(tag, pet):
                         db_tag = s.get(PetTag, t.id)
                         if db_tag:
                             db_tag.status = 'DEACTIVATED'
-                            db_tag.deactivated_at = datetime.utcnow()
+                            db_tag.deactivated_at = _utc_now()
                             s.add(LedgerEvent(
                                 pet_id=pet.id,
                                 event_type="TAG_DEACTIVATED",
@@ -569,8 +570,9 @@ def _render_public_view(pet, session):
             if is_logged_in:
                 async def nudge_owner():
                     import httpx
+                    base = os.getenv('BASE_URL', 'http://localhost:8080')
                     async with httpx.AsyncClient(
-                        base_url='http://localhost:8080'
+                        base_url=base
                     ) as http_client:
                         resp = await http_client.post(
                             f'/api/v1/nudge/{pet.chip_id}'
@@ -827,12 +829,14 @@ def _render_private_view(pet, session):
             with Session(engine) as s:
                 access = SharedAccess(
                     pet_id=pet.id,
-                    expires_at=datetime.utcnow() + timedelta(hours=24),
+                    expires_at=_utc_now() + timedelta(hours=24),
                 )
                 s.add(access)
                 s.commit()
                 s.refresh(access)
-                url = f"/shared/{access.token}"
+            import os
+            base_url = os.getenv('BASE_URL', 'https://www.pawsledger.com')
+            url = f"{base_url}/shared/{access.token}"
             with ui.dialog() as dialog, ui.card():
                 ui.label('Shared Access Link Created').classes('font-bold')
                 ui.label('Valid for 24 hours.').classes('text-xs text-stone-500')
@@ -894,7 +898,7 @@ def _render_private_view(pet, session):
                 ui.label('Expires').style('width: 100px;')
 
             for v in pet.vaccinations:
-                is_current = v.expiration_date > datetime.utcnow()
+                is_current = v.expiration_date > _utc_now()
                 row_bg = '#f7f9ff' if is_current else '#fef2f2'
                 exp_color = '#16a34a' if is_current else '#dc2626'
                 with ui.row().classes('w-full items-center px-4 py-3').style(
@@ -1336,9 +1340,9 @@ def _render_pet_edit_page(pet, session):
 # PAGE INIT — route handler with owner detection
 # ─────────────────────────────────────────────────────────────
 
-def init_pet_profile_page():
+def init_pet_profile_page() -> None:
     @ui.page('/pet/{pet_id}')
-    async def pet_profile(pet_id: str, request: Request):
+    async def pet_profile(pet_id: str, request: Request) -> None:
         try_restore_session(request)
         nav_header()
 

@@ -257,7 +257,7 @@ class HashService:
 
 class EmailService:
     """Email service using Resend (https://resend.com).
-    
+
     Set RESEND_API_KEY in your .env file.
     Set EMAIL_FROM to your verified sender (e.g. alerts@pawsledger.com).
     Falls back to logging if RESEND_API_KEY is not configured.

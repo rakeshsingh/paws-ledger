@@ -3,9 +3,9 @@ from .header import nav_header
 from .footer import nav_footer
 
 
-def init_about_page():
+def init_about_page() -> None:
     @ui.page('/about')
-    async def about_page():
+    async def about_page() -> None:
         nav_header()
         with ui.column().classes('w-full items-center p-8 max-w-4xl mx-auto'):
             ui.label('About PawsLedger').classes('pl-page-title mb-6')

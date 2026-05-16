@@ -1,7 +1,12 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID, uuid4
 from sqlmodel import Field, SQLModel, Relationship
+
+
+def _utc_now() -> datetime:
+    """Return current UTC time as a naive datetime (for SQLite compatibility)."""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 class User(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
@@ -50,7 +55,7 @@ class LedgerEvent(SQLModel, table=True):
     pet_id: UUID = Field(foreign_key="pet.id")
     event_type: str  # VACCINATION, WEIGHT_CHECK, OWNERSHIP_CHANGE, EMERGENCY_SCAN, HEARTBEAT_ACCESS
     description: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=_utc_now)
 
     pet: Pet = Relationship(back_populates="ledger_events")
 
@@ -81,7 +86,7 @@ class SharedAccess(SQLModel, table=True):
     pet_id: UUID = Field(foreign_key="pet.id")
     token: str = Field(default_factory=lambda: str(uuid4()), index=True, unique=True)
     expires_at: datetime
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=_utc_now)
     
     pet: Pet = Relationship(back_populates="shared_accesses")
 
@@ -99,7 +104,7 @@ class PetTag(SQLModel, table=True):
 
     # Status & lifecycle
     status: str = "ACTIVE"                      # ACTIVE, DEACTIVATED, LOST, REPLACED
-    activated_at: datetime = Field(default_factory=datetime.utcnow)
+    activated_at: datetime = Field(default_factory=_utc_now)
     deactivated_at: Optional[datetime] = None
 
     # NFC-specific fields

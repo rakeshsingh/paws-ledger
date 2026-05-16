@@ -11,9 +11,9 @@ from datetime import datetime
 import uuid
 
 
-def init_register_page():
+def init_register_page() -> None:
     @ui.page('/register')
-    async def register(request: Request):
+    async def register(request: Request) -> None:
         if not try_restore_session(request):
             ui.navigate.to('/login')
             return

@@ -57,9 +57,9 @@ TIERS = [
 ]
 
 
-def init_pricing_page():
+def init_pricing_page() -> None:
     @ui.page('/pricing')
-    async def pricing_page():
+    async def pricing_page() -> None:
         nav_header()
 
         with ui.element('main').classes('w-full max-w-7xl mx-auto px-6 py-16'):

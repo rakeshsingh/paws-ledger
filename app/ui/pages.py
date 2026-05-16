@@ -21,16 +21,22 @@ def init_pages():
     app.add_static_files('/static', _STATIC_DIR)
     ui.add_head_html(GLOBAL_CSS_LINK)
 
-    # Auto-reload fallback: if NiceGUI WebSocket doesn't connect within 5s,
-    # reload the page (fixes blank page after navigation through proxies)
+    # Auto-reload fallback: if NiceGUI WebSocket doesn't connect within 3s,
+    # clear stale storage and reload (fixes blank page from corrupt session state)
     ui.add_head_html(
         '<script>\n'
         'setTimeout(function() {\n'
-        '  if (!document.querySelector(".nicegui-content") || '
-        'document.querySelector(".nicegui-content").children.length === 0) {\n'
+        '  var content = document.querySelector(".nicegui-content");\n'
+        '  if (!content || content.children.length === 0) {\n'
+        '    // Clear NiceGUI localStorage that may hold stale state\n'
+        '    try {\n'
+        '      Object.keys(localStorage).forEach(function(key) {\n'
+        '        if (key.startsWith("nicegui")) localStorage.removeItem(key);\n'
+        '      });\n'
+        '    } catch(e) {}\n'
         '    window.location.reload();\n'
         '  }\n'
-        '}, 5000);\n'
+        '}, 3000);\n'
         '</script>\n'
     )
 

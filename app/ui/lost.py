@@ -3,9 +3,9 @@ from .header import nav_header
 from .footer import nav_footer
 
 
-def init_lost_page():
+def init_lost_page() -> None:
     @ui.page('/lost')
-    async def lost_pets_page():
+    async def lost_pets_page() -> None:
         nav_header()
         with ui.column().classes('w-full items-center p-8 max-w-4xl mx-auto'):
             ui.label('Public Safety & Recovery').classes('pl-page-title mb-4')

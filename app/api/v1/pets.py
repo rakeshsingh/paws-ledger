@@ -8,8 +8,8 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlmodel import Session, select
 from ...database import get_session
-from ...models import Pet, LedgerEvent, Vaccination, SharedAccess, PetTag, User
-from .common import aaha_client, email_service, hash_service, pdf_service, serializer, IS_PRODUCTION
+from ...models import Pet, LedgerEvent, Vaccination, SharedAccess, PetTag, User, _utc_now
+from .common import aaha_client, email_service, hash_service, pdf_service, serializer, IS_PRODUCTION, get_current_user
 from typing import Optional
 from uuid import UUID, uuid4
 from datetime import datetime, timedelta
@@ -26,18 +26,8 @@ CHIP_ID_PATTERN = re.compile(r'^[A-Za-z0-9]{9,15}$')
 # ─── Auth Dependency ─────────────────────────────────────────
 
 def _get_current_user(request: Request, session: Session = Depends(get_session)) -> User:
-    """Extract authenticated user from cookie. Raises 401 if not authenticated."""
-    raw_cookie = request.cookies.get("paws_user_id")
-    if not raw_cookie:
-        raise HTTPException(status_code=401, detail="Authentication required")
-    try:
-        user_id = serializer.loads(raw_cookie)
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid session")
-    user = session.get(User, UUID(user_id))
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
-    return user
+    """Delegate to shared auth dependency."""
+    return get_current_user(request, session)
 
 
 def _verify_pet_ownership(pet: Pet, user: User):
@@ -240,6 +230,9 @@ async def add_vaccination(
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
 
+    if expiration_date <= date_given:
+        raise HTTPException(status_code=400, detail="Expiration date must be after date given.")
+
     vaccination = Vaccination(
         pet_id=pet_id,
         vaccine_name=payload.vaccine_name,
@@ -267,10 +260,12 @@ async def add_vaccination(
 
 
 @router.get("/pets/{pet_id}/vaccinations/export")
-async def export_vaccinations(pet_id: UUID, session: Session = Depends(get_session)):
+async def export_vaccinations(pet_id: UUID, request: Request, session: Session = Depends(get_session)):
+    user = _get_current_user(request, session)
     pet = session.get(Pet, pet_id)
     if not pet:
         raise HTTPException(status_code=404, detail="Pet not found")
+    _verify_pet_ownership(pet, user)
 
     vaccinations = pet.vaccinations
     if not vaccinations:
@@ -301,7 +296,7 @@ async def create_shared_access(
 
     shared_access = SharedAccess(
         pet_id=pet_id,
-        expires_at=datetime.utcnow() + timedelta(hours=hours)
+        expires_at=_utc_now() + timedelta(hours=hours)
     )
     session.add(shared_access)
     session.commit()
@@ -318,7 +313,7 @@ async def get_shared_access(token: str, session: Session = Depends(get_session))
     statement = select(SharedAccess).where(SharedAccess.token == token)
     shared_access = session.exec(statement).first()
 
-    if not shared_access or shared_access.expires_at < datetime.utcnow():
+    if not shared_access or shared_access.expires_at < _utc_now():
         raise HTTPException(status_code=403, detail="Access link expired or invalid")
 
     pet = shared_access.pet
@@ -487,7 +482,7 @@ async def update_tag(
         old_status = tag.status
         tag.status = payload.status
         if payload.status == "DEACTIVATED" and old_status != "DEACTIVATED":
-            tag.deactivated_at = datetime.utcnow()
+            tag.deactivated_at = _utc_now()
             session.add(LedgerEvent(
                 pet_id=pet_id,
                 event_type="TAG_DEACTIVATED",

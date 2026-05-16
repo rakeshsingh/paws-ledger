@@ -210,9 +210,9 @@ FAQ_SECTIONS = [
 ]
 
 
-def init_faq_page():
+def init_faq_page() -> None:
     @ui.page('/faq')
-    async def faq_page():
+    async def faq_page() -> None:
         nav_header()
 
         with ui.element('main').classes('w-full max-w-4xl mx-auto px-6 py-16'):

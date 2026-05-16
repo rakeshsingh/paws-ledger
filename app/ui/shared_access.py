@@ -1,22 +1,21 @@
 from nicegui import ui
 from sqlmodel import Session, select
 from ..database import engine
-from ..models import LedgerEvent, SharedAccess
+from ..models import LedgerEvent, SharedAccess, _utc_now
 from .header import nav_header
 from .footer import nav_footer
 from .common import email_service
-from datetime import datetime
 
 
-def init_shared_access_page():
+def init_shared_access_page() -> None:
     @ui.page('/shared/{token}')
-    async def shared_profile(token: str):
+    async def shared_profile(token: str) -> None:
         nav_header()
         with Session(engine) as session:
             statement = select(SharedAccess).where(SharedAccess.token == token)
             shared_access = session.exec(statement).first()
 
-            if not shared_access or shared_access.expires_at < datetime.utcnow():
+            if not shared_access or shared_access.expires_at < _utc_now():
                 with ui.column().classes('w-full items-center p-8'):
                     ui.label('Access Expired or Invalid').classes('pl-page-title').style('color: var(--pl-primary)')
                     ui.label('This shared link is no longer active.').classes('pl-text-hint')

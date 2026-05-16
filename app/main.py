@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
@@ -19,8 +20,15 @@ load_dotenv(f".env.{env}")
 # Rate limiter
 limiter = Limiter(key_func=get_remote_address)
 
+
+@asynccontextmanager
+async def lifespan(app):
+    create_db_and_tables()
+    yield
+
+
 # Create FastAPI app
-fastapi_app = FastAPI(title="PawsLedger API", version="1.0.0")
+fastapi_app = FastAPI(title="PawsLedger API", version="1.0.0", lifespan=lifespan)
 fastapi_app.state.limiter = limiter
 fastapi_app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
@@ -77,10 +85,6 @@ async def sitemap_xml():
         '</urlset>\n'
     )
 
-
-@fastapi_app.on_event("startup")
-def on_startup():
-    create_db_and_tables()
 
 # Initialize NiceGUI pages
 init_pages()

@@ -7,9 +7,9 @@ from .common import email_service
 import uuid
 
 
-def init_qr_profile_page():
+def init_qr_profile_page() -> None:
     @ui.page('/qr/{tag_id}')
-    async def public_profile(tag_id: str):
+    async def public_profile(tag_id: str) -> None:
         with Session(engine) as session:
             pet = None
 
@@ -64,22 +64,27 @@ def init_qr_profile_page():
                         ui.separator().classes('my-4')
                         ui.label('No vaccination records on file').classes('pl-text-xs italic text-center mb-2')
 
-                    async def contact_owner():
+                    async def nudge_owner():
                         if pet.owner and pet.owner.email:
-                            await email_service.send_email(
+                            sent = await email_service.send_email(
                                 pet.owner.email,
-                                f"URGENT: Someone found your pet ({pet.breed})",
-                                f"Hello,\n\nSomeone scanned the QR tag of your pet {pet.breed} and is trying to contact you.\n\nPlease check your phone/dashboard."
+                                f"Nudge: Someone found your pet ({pet.breed})",
+                                f"Hello,\n\nA person scanned the QR/NFC tag of your pet {pet.breed} "
+                                f"and is trying to reach you.\n\n"
+                                f"Please check your PawsLedger dashboard for details."
                             )
-                            ui.notify('Owner has been notified!', type='positive')
+                            if sent:
+                                ui.notify('Owner has been nudged!', type='positive')
+                            else:
+                                ui.notify('Unable to send notification. Please try again later.', type='negative')
                         else:
                             ui.notify('Owner contact info not available.', type='negative')
 
-                    ui.button('CONTACT OWNER', icon='email', on_click=contact_owner).classes(
+                    ui.button('NUDGE OWNER', icon='notifications_active', on_click=nudge_owner).classes(
                         'w-full py-4 text-xl mb-4'
                     ).style('background-color: #16a34a; color: white;')
                     ui.label(
-                        'Owner PII is hidden for privacy. Clicking the button above sends an instant alert to the owner.'
+                        'Owner PII is hidden for privacy. Nudging sends an anonymous alert to the owner.'
                     ).classes('pl-text-xs text-center')
 
                 ui.label('Information on this page is provided for emergency recovery only.').classes('pl-text-xs mt-8')

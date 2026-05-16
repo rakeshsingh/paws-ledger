@@ -167,6 +167,16 @@ if [[ ! -f "${ENV_FILE}" ]]; then
     read -rp "Google Callback URL [${DEFAULT_CALLBACK}]: " GOOGLE_CALLBACK_URL
     GOOGLE_CALLBACK_URL="${GOOGLE_CALLBACK_URL:-${DEFAULT_CALLBACK}}"
 
+    echo ""
+    echo "─── Email Configuration (Resend) ───"
+    echo "Resend uses HTTPS (port 443), works on Hetzner without SMTP unblocking."
+    echo "Get your API key at: https://resend.com/api-keys"
+    echo ""
+
+    read -rp "Resend API Key (leave blank to skip): " RESEND_API_KEY
+    read -rp "Email From [PawsLedger <alerts@${DOMAIN}>]: " EMAIL_FROM
+    EMAIL_FROM="${EMAIL_FROM:-PawsLedger <alerts@${DOMAIN}>}"
+
     cat > "${ENV_FILE}" <<EOF
 # PawsLedger Environment Configuration
 # Generated on $(date -u +"%Y-%m-%d %H:%M:%S UTC")
@@ -180,6 +190,10 @@ STORAGE_SECRET=${STORAGE_SECRET}
 GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
 GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
 GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL}
+
+# Email (Resend — uses HTTPS, not SMTP)
+RESEND_API_KEY=${RESEND_API_KEY}
+EMAIL_FROM=${EMAIL_FROM}
 EOF
 
     chown "${APP_USER}:${APP_USER}" "${ENV_FILE}"

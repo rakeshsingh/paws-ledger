@@ -1,13 +1,16 @@
 """Owner profile routes — view and update profile."""
 
+import re
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel
-from sqlmodel import Session
+from pydantic import BaseModel, field_validator
+from sqlmodel import Session, select
 from typing import Optional
 from uuid import UUID
 from ...database import get_session
 from ...models import User
-from .common import serializer
+from .common import serializer, get_current_user
+
+_EMAIL_RE = re.compile(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$')
 
 router = APIRouter()
 
@@ -24,22 +27,38 @@ class ProfileUpdate(BaseModel):
     city: Optional[str] = None
     country: Optional[str] = None
 
+    @field_validator('name')
+    @classmethod
+    def validate_name(cls, v):
+        if v is not None and (len(v.strip()) == 0 or len(v) > 200):
+            raise ValueError('Name must be 1-200 characters')
+        return v.strip() if v else v
+
+    @field_validator('email')
+    @classmethod
+    def validate_email(cls, v):
+        if v is not None and not _EMAIL_RE.match(v):
+            raise ValueError('Invalid email format')
+        return v
+
+    @field_validator('phone')
+    @classmethod
+    def validate_phone(cls, v):
+        if v is not None and len(v) > 30:
+            raise ValueError('Phone must be 30 characters or less')
+        return v
+
+    @field_validator('address', 'city', 'country')
+    @classmethod
+    def validate_length(cls, v):
+        if v is not None and len(v) > 255:
+            raise ValueError('Field must be 255 characters or less')
+        return v
+
 
 def _get_current_user(request: Request, session: Session = Depends(get_session)) -> User:
-    """Extract the authenticated user from the session cookie."""
-    raw_cookie = request.cookies.get("paws_user_id")
-    if not raw_cookie:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
-    try:
-        user_id = serializer.loads(raw_cookie)
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid session")
-
-    user = session.get(User, UUID(user_id))
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+    """Delegate to shared auth dependency."""
+    return get_current_user(request, session)
 
 
 @router.get("/owner/profile")
@@ -82,6 +101,13 @@ async def update_owner_profile(
     session: Session = Depends(get_session),
 ):
     user = _get_current_user(request, session)
+
+    if payload.email is not None and payload.email != user.email:
+        existing = session.exec(
+            select(User).where(User.email == payload.email)
+        ).first()
+        if existing:
+            raise HTTPException(status_code=409, detail="Email already in use")
 
     if payload.name is not None:
         user.name = payload.name

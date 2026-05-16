@@ -13,9 +13,9 @@ GOOGLE_G_SVG = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" wi
 </svg>'''
 
 
-def init_login_pages():
+def init_login_pages() -> None:
     @ui.page('/login')
-    async def login_page(request: Request):
+    async def login_page(request: Request) -> None:
         if app.storage.user.get('email'):
             ui.navigate.to('/dashboard')
             return

@@ -3,9 +3,9 @@ from .header import nav_header
 from .footer import nav_footer
 
 
-def init_contact_page():
+def init_contact_page() -> None:
     @ui.page('/contact')
-    async def contact_page():
+    async def contact_page() -> None:
         nav_header()
         with ui.column().classes('w-full items-center p-8 max-w-4xl mx-auto'):
             ui.label('Contact Us').classes('pl-page-title mb-6')

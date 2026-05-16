@@ -348,9 +348,9 @@ def _rebuild_content(container, name, email, phone, address, city, country, user
             )
 
 
-def init_owner_profile_page():
+def init_owner_profile_page() -> None:
     @ui.page('/owner/profile')
-    async def owner_profile(request: Request):
+    async def owner_profile(request: Request) -> None:
         if not try_restore_session(request):
             ui.navigate.to('/login')
             return

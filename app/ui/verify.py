@@ -6,9 +6,9 @@ from .header import nav_header
 from .footer import nav_footer
 
 
-def init_verify_page():
+def init_verify_page() -> None:
     @ui.page('/verify')
-    async def verify_page():
+    async def verify_page() -> None:
         nav_header()
         with ui.column().classes('w-full items-center p-8 max-w-2xl mx-auto'):
             ui.label('Verify Vaccination Record').classes('pl-page-title mb-4')

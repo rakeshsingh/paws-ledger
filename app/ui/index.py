@@ -15,9 +15,9 @@ AVATAR_IMGS = [
 ]
 
 
-def init_index_page():
+def init_index_page() -> None:
     @ui.page('/')
-    async def index_page():
+    async def index_page() -> None:
         nav_header()
 
         # ── Hero Section ──

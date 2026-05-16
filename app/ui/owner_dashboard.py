@@ -2,38 +2,21 @@ from nicegui import ui, app
 from starlette.requests import Request
 from sqlmodel import Session, select
 from ..database import engine
-from ..models import Pet, User, LedgerEvent
+from ..models import Pet, User, LedgerEvent, _utc_now
 from .header import nav_header
 from .footer import nav_footer
-from .common import try_restore_session
-
-# Species icon mapping for placeholder avatars
-SPECIES_ICONS = {
-    'DOG': 'pets',       # paw icon — dogs
-    'CAT': 'emoji_nature',  # nature icon — cats
-}
-SPECIES_ICON_DEFAULT = 'pets'
-
-# Background tints per species for the icon placeholder
-SPECIES_BG = {
-    'DOG': '#ffdad2',
-    'CAT': '#ffdea9',
-}
-SPECIES_BG_DEFAULT = '#eaeef5'
-
-# Icon foreground color per species
-SPECIES_FG = {
-    'DOG': '#a03a21',
-    'CAT': '#7d5800',
-}
-SPECIES_FG_DEFAULT = '#57423d'
+from .common import (
+    try_restore_session,
+    SPECIES_ICONS, SPECIES_ICON_DEFAULT, SPECIES_BG, SPECIES_BG_DEFAULT,
+    SPECIES_FG, SPECIES_FG_DEFAULT,
+)
 
 BORDER_COLORS = ['#a03a21', '#7d5800', '#5d5c58', '#a03a21', '#7d5800']
 
 
-def init_dashboard_page():
+def init_dashboard_page() -> None:
     @ui.page('/dashboard')
-    async def dashboard(request: Request):
+    async def dashboard(request: Request) -> None:
         if not try_restore_session(request):
             ui.navigate.to('/login')
             return
@@ -75,11 +58,10 @@ def init_dashboard_page():
             # Calculate vaccination health score
             total_vax = 0
             current_vax = 0
-            from datetime import datetime
             for pet in pets:
                 for v in pet.vaccinations:
                     total_vax += 1
-                    if v.expiration_date > datetime.utcnow():
+                    if v.expiration_date > _utc_now():
                         current_vax += 1
             health_pct = round((current_vax / total_vax) * 100) if total_vax > 0 else 0
             health_label = 'Optimal Health' if health_pct >= 80 else ('Needs Attention' if health_pct >= 50 else 'Action Required')

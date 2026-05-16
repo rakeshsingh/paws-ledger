@@ -14,6 +14,14 @@ email_service = EmailService()
 hash_service = HashService()
 pdf_service = PDFService()
 
+# Species display constants — shared across UI modules
+SPECIES_ICONS = {'DOG': 'pets', 'CAT': 'emoji_nature'}
+SPECIES_ICON_DEFAULT = 'pets'
+SPECIES_BG = {'DOG': '#ffdad2', 'CAT': '#ffdea9'}
+SPECIES_BG_DEFAULT = '#eaeef5'
+SPECIES_FG = {'DOG': '#a03a21', 'CAT': '#7d5800'}
+SPECIES_FG_DEFAULT = '#57423d'
+
 # Path to the global stylesheet served at /static
 _STATIC_DIR = os.path.join(os.path.dirname(__file__), 'static')
 
