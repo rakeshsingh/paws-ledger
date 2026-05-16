@@ -88,7 +88,6 @@ def init_dashboard_page() -> None:
                     with ui.row().classes('w-full gap-6 flex-wrap'):
                         for idx, pet in enumerate(pets):
                             border_color = BORDER_COLORS[idx % len(BORDER_COLORS)]
-                            badge_text = 'Verified Identity' if pet.identity_status == 'VERIFIED' else 'Unverified'
                             has_photo = bool(pet.photo_url)
 
                             with ui.card().classes(
@@ -98,45 +97,50 @@ def init_dashboard_page() -> None:
                                 'box-shadow: 0 4px 12px rgba(0,0,0,0.05); width: calc(50% - 0.75rem); '
                                 'min-width: 260px; transition: box-shadow 0.3s;'
                             ).on('click', lambda p=pet: ui.navigate.to(f'/pet/{p.id}')):
-                                # Pet photo or species icon placeholder
-                                with ui.element('div').style(
-                                    'height: 192px; overflow: hidden; position: relative;'
-                                ):
-                                    if has_photo:
-                                        ui.image(pet.photo_url).style(
-                                            'width: 100%; height: 100%; object-fit: cover;'
-                                        )
-                                    else:
-                                        # Icon-based placeholder
-                                        species = pet.pet_species or 'DOG'
-                                        bg = SPECIES_BG.get(species, SPECIES_BG_DEFAULT)
-                                        fg = SPECIES_FG.get(species, SPECIES_FG_DEFAULT)
-                                        icon_name = SPECIES_ICONS.get(species, SPECIES_ICON_DEFAULT)
-                                        with ui.element('div').classes(
-                                            'flex items-center justify-center w-full h-full'
-                                        ).style(f'background: {bg};'):
-                                            ui.icon(icon_name).style(
-                                                f'font-size: 72px; color: {fg}; opacity: 0.7;'
+                                with ui.column().classes('p-6 gap-3 items-center'):
+                                    # Circular avatar (matching pet details page)
+                                    with ui.element('div').classes('relative'):
+                                        if has_photo:
+                                            ui.image(pet.photo_url).classes('rounded-full').style(
+                                                'width: 96px; height: 96px; object-fit: cover; '
+                                                'border: 4px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.1);'
                                             )
-                                    # Badge
-                                    ui.label(badge_text).style(
-                                        'position: absolute; top: 1rem; right: 1rem; '
-                                        'background: #ffc65d; color: #755100; font-size: 10px; '
-                                        'text-transform: uppercase; letter-spacing: 0.1em; '
-                                        'font-weight: 700; padding: 4px 12px; border-radius: 9999px;'
-                                    )
+                                        else:
+                                            species = pet.pet_species or 'DOG'
+                                            bg = SPECIES_BG.get(species, SPECIES_BG_DEFAULT)
+                                            fg = SPECIES_FG.get(species, SPECIES_FG_DEFAULT)
+                                            icon_name = SPECIES_ICONS.get(species, SPECIES_ICON_DEFAULT)
+                                            with ui.element('div').classes(
+                                                'flex items-center justify-center rounded-full'
+                                            ).style(
+                                                f'width: 96px; height: 96px; background: {bg}; '
+                                                'border: 4px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.1);'
+                                            ):
+                                                ui.icon(icon_name).style(
+                                                    f'font-size: 48px; color: {fg};'
+                                                )
 
-                                # Info
-                                with ui.column().classes('p-6 gap-1'):
+                                    # Info
                                     ui.label(pet.name or 'Unnamed').style(
                                         "font-family: 'Plus Jakarta Sans'; font-size: 24px; "
-                                        "font-weight: 600; color: #171c21;"
+                                        "font-weight: 600; color: #171c21; text-align: center;"
                                     )
                                     ui.label(
                                         f'{pet.pet_species}, {pet.breed or "Unknown"}'
-                                    ).style('color: #57423d; font-size: 16px;')
+                                    ).style('color: #57423d; font-size: 16px; text-align: center;')
 
-                                    with ui.row().classes('items-center gap-2 pt-4'):
+                                    # Status badge (matching pet profile page style)
+                                    with ui.row().classes('gap-2 justify-center'):
+                                        s_bg = '#dcfce7' if pet.identity_status == 'VERIFIED' else '#fef9c3'
+                                        s_fg = '#166534' if pet.identity_status == 'VERIFIED' else '#854d0e'
+                                        s_txt = 'Verified' if pet.identity_status == 'VERIFIED' else 'Unverified'
+                                        ui.label(s_txt).style(
+                                            f'padding: 4px 12px; background: {s_bg}; '
+                                            f'color: {s_fg}; font-size: 12px; '
+                                            'font-weight: 600; border-radius: 9999px;'
+                                        )
+
+                                    with ui.row().classes('items-center gap-2 pt-2'):
                                         ui.label('View Records').style(
                                             'color: #a03a21; font-weight: 600; font-size: 14px;'
                                         )
