@@ -1,6 +1,7 @@
 """Shared service instances and utilities used across API route modules."""
 
 import os
+import re
 import sys
 from uuid import UUID
 from fastapi import Depends, HTTPException, Request
@@ -9,6 +10,19 @@ from sqlmodel import Session
 from ...database import get_session
 from ...models import User
 from ...services.integrations import AAHAClient, GoogleAuthService, EmailService, HashService, PDFService
+
+# Microchip ID patterns:
+# - ISO 11784/11785: exactly 15 digits (e.g. 985000123456789)
+# - Non-ISO (125 kHz / 128 kHz): 9 or 10 alphanumeric characters (e.g. 0A0757738, 070285035)
+CHIP_ID_PATTERN = re.compile(r'^[A-Za-z0-9]{9,15}$')
+
+
+def validate_chip_id(chip_id: str) -> str:
+    """Validate and normalize a microchip ID. Raises 400 if invalid."""
+    chip_id = chip_id.strip().upper()
+    if not CHIP_ID_PATTERN.match(chip_id):
+        raise HTTPException(status_code=400, detail="Invalid microchip ID format")
+    return chip_id
 
 aaha_client = AAHAClient()
 google_auth = GoogleAuthService()

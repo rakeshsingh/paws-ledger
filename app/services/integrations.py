@@ -317,6 +317,25 @@ class EmailService:
         )
         await EmailService.send_email(owner_email, subject, body)
 
+    @staticmethod
+    async def send_nudge_alert(owner_email: str, pet_name: str, sanitized_message: str, dashboard_url: str) -> bool:
+        subject = "PawsLedger Alert: Someone found your pet!"
+        body = (
+            "Hello,\n\n"
+            "Great news — a verified PawsLedger user has found a pet registered to your "
+            "account and sent you the following message:\n\n"
+            "---\n"
+            f"{sanitized_message}\n"
+            "---\n\n"
+            f"Please visit your PawsLedger dashboard to view this nudge:\n"
+            f"{dashboard_url}\n\n"
+            "IMPORTANT: PawsLedger will never ask for your password in this email. "
+            "If you did not expect this alert, please ignore it or contact "
+            "support@pawsledger.com.\n\n"
+            "— PawsLedger (alerts@pawsledger.com)\n"
+        )
+        return await EmailService.send_email(owner_email, subject, body)
+
 from authlib.integrations.starlette_client import OAuth
 from starlette.requests import Request
 from nicegui import app as nicegui_app

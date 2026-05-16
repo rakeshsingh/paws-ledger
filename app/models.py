@@ -20,6 +20,10 @@ class User(SQLModel, table=True):
     role: str = "Guardian"  # Guardian, Caregiver, Vet
 
     pets: List["Pet"] = Relationship(back_populates="owner")
+    sent_nudges: List["NudgeSession"] = Relationship(
+        back_populates="finder",
+        sa_relationship_kwargs={"foreign_keys": "[NudgeSession.finder_id]"},
+    )
 
 class Pet(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
@@ -49,6 +53,7 @@ class Pet(SQLModel, table=True):
     vaccinations: List["Vaccination"] = Relationship(back_populates="pet")
     shared_accesses: List["SharedAccess"] = Relationship(back_populates="pet")
     tags: List["PetTag"] = Relationship(back_populates="pet")
+    nudge_sessions: List["NudgeSession"] = Relationship(back_populates="pet")
 
 class LedgerEvent(SQLModel, table=True):
     id: UUID = Field(default_factory=uuid4, primary_key=True)
@@ -119,3 +124,22 @@ class PetTag(SQLModel, table=True):
     notes: Optional[str] = None                 # Free-form notes about this tag
 
     pet: Pet = Relationship(back_populates="tags")
+
+
+class NudgeSession(SQLModel, table=True):
+    """Secure nudge record between a finder and a pet owner."""
+    id: UUID = Field(default_factory=uuid4, primary_key=True)
+    pet_id: UUID = Field(foreign_key="pet.id", index=True)
+    finder_id: UUID = Field(foreign_key="user.id", index=True)
+    message: str = Field(max_length=500)
+    response_token: str = Field(index=True, unique=True)
+    created_at: datetime = Field(default_factory=_utc_now)
+    expires_at: datetime
+    is_resolved: bool = Field(default=False)
+    resolved_at: Optional[datetime] = None
+
+    pet: Pet = Relationship(back_populates="nudge_sessions")
+    finder: User = Relationship(
+        back_populates="sent_nudges",
+        sa_relationship_kwargs={"foreign_keys": "[NudgeSession.finder_id]"},
+    )

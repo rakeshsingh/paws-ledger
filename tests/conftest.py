@@ -5,7 +5,7 @@ from sqlmodel import SQLModel, Session, create_engine
 from fastapi.testclient import TestClient
 from app.main import fastapi_app
 from app.database import get_session
-from app.models import User, Pet
+from app.models import User, Pet, NudgeSession  # noqa: F401
 import os
 
 from sqlalchemy.pool import StaticPool

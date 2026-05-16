@@ -1,15 +1,19 @@
-from nicegui import ui
+from nicegui import ui, app
+from starlette.requests import Request
 from sqlmodel import Session, select
 from ..database import engine
 from ..models import Pet, PetTag, LedgerEvent
 from .footer import nav_footer
-from .common import email_service
+from .common import email_service, try_restore_session
+from .pet_profile import _render_nudge_form
 import uuid
 
 
 def init_qr_profile_page() -> None:
     @ui.page('/qr/{tag_id}')
-    async def public_profile(tag_id: str) -> None:
+    async def public_profile(request: Request, tag_id: str) -> None:
+        try_restore_session(request)
+
         with Session(engine) as session:
             pet = None
 
@@ -64,28 +68,7 @@ def init_qr_profile_page() -> None:
                         ui.separator().classes('my-4')
                         ui.label('No vaccination records on file').classes('pl-text-xs italic text-center mb-2')
 
-                    async def nudge_owner():
-                        if pet.owner and pet.owner.email:
-                            sent = await email_service.send_email(
-                                pet.owner.email,
-                                f"Nudge: Someone found your pet ({pet.breed})",
-                                f"Hello,\n\nA person scanned the QR/NFC tag of your pet {pet.breed} "
-                                f"and is trying to reach you.\n\n"
-                                f"Please check your PawsLedger dashboard for details."
-                            )
-                            if sent:
-                                ui.notify('Owner has been nudged!', type='positive')
-                            else:
-                                ui.notify('Unable to send notification. Please try again later.', type='negative')
-                        else:
-                            ui.notify('Owner contact info not available.', type='negative')
-
-                    ui.button('NUDGE OWNER', icon='notifications_active', on_click=nudge_owner).classes(
-                        'w-full py-4 text-xl mb-4'
-                    ).style('background-color: #16a34a; color: white;')
-                    ui.label(
-                        'Owner PII is hidden for privacy. Nudging sends an anonymous alert to the owner.'
-                    ).classes('pl-text-xs text-center')
+                    _render_nudge_form(pet)
 
                 ui.label('Information on this page is provided for emergency recovery only.').classes('pl-text-xs mt-8')
         nav_footer()

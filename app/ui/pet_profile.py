@@ -6,7 +6,7 @@ from ..models import Pet, LedgerEvent, Vaccination, SharedAccess, User, PetTag, 
 from .header import nav_header
 from .footer import nav_footer
 from .common import (
-    try_restore_session, hash_service, pdf_service, email_service,
+    try_restore_session, hash_service, pdf_service,
     SPECIES_ICONS, SPECIES_ICON_DEFAULT, SPECIES_BG, SPECIES_BG_DEFAULT,
     SPECIES_FG, SPECIES_FG_DEFAULT,
 )
@@ -248,47 +248,15 @@ def _render_contact_location_card(pet, is_owner: bool = False):
                                     'overflow: hidden; text-overflow: ellipsis;'
                                 )
             else:
-                # Public: privacy message + email owner button
+                # Public: privacy message + secure nudge form
                 ui.label(
                     'Owner information is protected for privacy. '
-                    'Use the button below to send a secure contact request.'
+                    'Use the form below to send a secure nudge.'
                 ).style(
                     'color: #57423d; font-size: 16px; text-align: center; '
                     'line-height: 1.5;'
                 )
-
-                async def email_owner():
-                    if not app.storage.user.get('email'):
-                        ui.notify(
-                            'Please log in to contact the owner.',
-                            type='warning',
-                        )
-                        ui.navigate.to('/login')
-                        return
-                    if pet.owner and pet.owner.email:
-                        sent = await email_service.send_email(
-                            pet.owner.email,
-                            f"Nudge: Someone found your pet!",
-                            f"Hello,\n\nA registered PawsLedger user has found a pet with "
-                            f"microchip {pet.chip_id} and is nudging you to get in touch.\n\n"
-                            f"Please check your PawsLedger dashboard."
-                        )
-                        if sent:
-                            ui.notify('Owner has been notified via email!', type='positive')
-                        else:
-                            logger.error("Nudge Owner email failed for chip_id=%s", pet.chip_id)
-                            ui.notify('Unable to send notification.', type='negative')
-                    else:
-                        logger.warning("Nudge Owner attempted but no owner email on file for chip_id=%s", pet.chip_id)
-                        ui.notify('Owner contact info not available.', type='negative')
-
-                ui.button(
-                    'Email Owner', icon='mail',
-                    on_click=email_owner,
-                ).classes('mt-2').style(
-                    'background: #a03a21; color: white; font-weight: 600; '
-                    'padding: 10px 32px; border-radius: 8px;'
-                ).props('no-caps')
+                _render_nudge_form(pet)
 
 
 def _render_trust_signals():
@@ -530,6 +498,107 @@ def _render_tag_row(tag, pet):
 
 
 # ─────────────────────────────────────────────────────────────
+# SECURE NUDGE FORM — reusable component for public/QR views
+# ─────────────────────────────────────────────────────────────
+
+def _render_nudge_form(pet):
+    """Render the Secure Nudge form with auth/ownership/orphan checks."""
+    is_logged_in = bool(app.storage.user.get('email'))
+    current_user_id = app.storage.user.get('id')
+
+    with ui.card().classes('w-full p-6 mt-4').style(
+        'border-radius: 12px; background: #f0f4fb; '
+        'border: 1px solid rgba(160,58,33,0.15);'
+    ):
+        with ui.row().classes('items-center gap-2 mb-3'):
+            ui.icon('send').style('color: #a03a21; font-size: 20px;')
+            ui.label('Send Secure Nudge to Owner').style(
+                'font-weight: 700; font-size: 16px; color: #171c21;'
+            )
+
+        if not is_logged_in:
+            ui.label(
+                'Sign in with Google to send a secure nudge to the pet owner.'
+            ).style('color: #57423d; font-size: 14px; margin-bottom: 8px;')
+            ui.button(
+                'Sign In to Nudge', icon='login',
+                on_click=lambda: ui.navigate.to('/login'),
+            ).style(
+                'background: #a03a21; color: white; font-weight: 600; '
+                'padding: 10px 24px; border-radius: 8px;'
+            ).props('no-caps')
+            return
+
+        if not pet.owner_id:
+            ui.label(
+                'This pet has no registered owner — nudge unavailable.'
+            ).style('color: #57423d; font-size: 14px; font-style: italic;')
+            return
+
+        if current_user_id and str(pet.owner_id) == current_user_id:
+            ui.label(
+                'You are the owner of this pet.'
+            ).style('color: #57423d; font-size: 14px; font-style: italic;')
+            return
+
+        ui.label(
+            'Your identity is verified but your email will not be shared with the owner.'
+        ).style('color: #57423d; font-size: 13px; margin-bottom: 8px;')
+
+        message_input = ui.textarea(
+            label='Your message (10–500 characters)',
+            placeholder='Describe where you found the pet and how the owner can reach you...',
+        ).props('outlined counter maxlength=500').classes('w-full')
+
+        with ui.row().classes('items-center gap-2 mt-1'):
+            ui.icon('location_off').style('font-size: 16px; color: #7d5800;')
+            ui.label('Upgrade to Verified to share your location with the owner').style(
+                'font-size: 12px; color: #7d5800; font-style: italic;'
+            )
+
+        async def submit_nudge():
+            msg = message_input.value or ''
+            if len(msg.strip()) < 10:
+                ui.notify('Message must be at least 10 characters.', type='warning')
+                return
+            if len(msg.strip()) > 500:
+                ui.notify('Message must be at most 500 characters.', type='warning')
+                return
+
+            import httpx
+            from starlette.requests import Request as StarletteRequest
+            from nicegui import context
+            base = os.getenv('BASE_URL', 'http://localhost:8080')
+            cookies = context.client.request.cookies
+            async with httpx.AsyncClient(base_url=base) as http_client:
+                resp = await http_client.post(
+                    f'/api/v1/nudge/{pet.chip_id}',
+                    json={'message': msg.strip()},
+                    cookies={'paws_user_id': cookies.get('paws_user_id', '')},
+                )
+                if resp.status_code == 200:
+                    ui.notify('Your nudge has been sent. The owner has been notified.', type='positive')
+                    message_input.value = ''
+                elif resp.status_code == 429:
+                    ui.notify('Rate limit reached: maximum 3 nudges per pet per 24 hours.', type='warning')
+                elif resp.status_code == 409:
+                    ui.notify(resp.json().get('detail', 'Cannot send nudge.'), type='warning')
+                else:
+                    detail = resp.json().get('detail', 'Failed to send nudge.')
+                    logger.error("Nudge API error for chip_id=%s: %s", pet.chip_id, detail)
+                    ui.notify(detail, type='negative')
+
+        ui.button(
+            'Send Secure Nudge', icon='send',
+            on_click=submit_nudge,
+        ).classes('mt-3').style(
+            'background: #a03a21; color: white; font-weight: 600; '
+            'padding: 12px 32px; border-radius: 8px; '
+            'box-shadow: 0 4px 12px rgba(160,58,33,0.2);'
+        ).props('no-caps')
+
+
+# ─────────────────────────────────────────────────────────────
 # PUBLIC VIEW — privacy-obfuscated, for non-owners / anonymous
 # ─────────────────────────────────────────────────────────────
 
@@ -567,34 +636,6 @@ def _render_public_view(pet, session):
                         ui.label('AAHA Universal Lookup Verified').style(
                             'font-size: 14px; font-weight: 600; color: #57423d;'
                         )
-
-            if is_logged_in:
-                async def nudge_owner():
-                    if pet.owner and pet.owner.email:
-                        sent = await email_service.send_email(
-                            pet.owner.email,
-                            f"Nudge: Someone found your pet!",
-                            f"Hello,\n\nA registered PawsLedger user has found a pet with "
-                            f"microchip {pet.chip_id} and is nudging you to get in touch.\n\n"
-                            f"Please check your PawsLedger dashboard."
-                        )
-                        if sent:
-                            ui.notify('Nudge sent to owner!', type='positive')
-                        else:
-                            logger.error("Nudge Owner email failed for chip_id=%s", pet.chip_id)
-                            ui.notify('Failed to send nudge.', type='negative')
-                    else:
-                        logger.warning("Nudge Owner attempted but no owner email on file for chip_id=%s", pet.chip_id)
-                        ui.notify('Owner contact info not available.', type='negative')
-
-                ui.button(
-                    'Nudge Owner', icon='notifications',
-                    on_click=nudge_owner,
-                ).style(
-                    'background: #a03a21; color: white; font-weight: 600; '
-                    'padding: 12px 40px; border-radius: 12px; '
-                    'box-shadow: 0 4px 12px rgba(160,58,33,0.2);'
-                ).props('no-caps')
 
     # ── Row 1: Pet ID card + Registry status ──
     with ui.row().classes('w-full gap-5 flex-wrap items-stretch'):

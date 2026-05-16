@@ -127,37 +127,6 @@ class TestQRScan:
         assert "QR tag scanned" in event.description
 
 
-# ─────────────────────────────────────────────────────────────
-# Nudge
-# ─────────────────────────────────────────────────────────────
-
-class TestNudge:
-
-    def test_nudge_endpoint_callable(self, client, session, mocker):
-        user = User(sub="nudge-sub", email="nudge@example.com", name="Nudge User")
-        session.add(user)
-        session.commit()
-        session.refresh(user)
-
-        pet = Pet(
-            name="NudgeDog", chip_id="985000000000077", breed="Poodle",
-            owner_id=user.id, identity_status="VERIFIED",
-        )
-        session.add(pet)
-        session.commit()
-        session.refresh(pet)
-
-        mocker.patch(
-            "app.api.v1.pets.email_service.send_email",
-            new_callable=AsyncMock, return_value=True,
-        )
-
-        client.cookies.set("paws_user_id", serializer.dumps(str(user.id)))
-        response = client.post(f"/api/v1/nudge/{pet.chip_id}")
-
-        assert response.status_code == 200
-        assert "message" in response.json()
-
 
 # ─────────────────────────────────────────────────────────────
 # Vaccinations

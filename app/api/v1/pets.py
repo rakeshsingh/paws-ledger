@@ -1,6 +1,5 @@
-"""Pet routes — lookup, QR, nudge, transfer, vaccinations, shared access, tags."""
+"""Pet routes — lookup, QR, transfer, vaccinations, shared access, tags."""
 
-import re
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, field_validator
@@ -9,19 +8,13 @@ from slowapi.util import get_remote_address
 from sqlmodel import Session, select
 from ...database import get_session
 from ...models import Pet, LedgerEvent, Vaccination, SharedAccess, PetTag, User, _utc_now
-from .common import aaha_client, email_service, hash_service, pdf_service, serializer, IS_PRODUCTION, get_current_user
+from .common import aaha_client, email_service, hash_service, pdf_service, serializer, IS_PRODUCTION, get_current_user, validate_chip_id
 from typing import Optional
 from uuid import UUID, uuid4
 from datetime import datetime, timedelta
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
-
-# Microchip ID patterns:
-# - ISO 11784/11785: exactly 15 digits (e.g. 985000123456789)
-# - Non-ISO (125 kHz / 128 kHz): 9 or 10 alphanumeric characters (e.g. 0A0757738, 070285035)
-CHIP_ID_PATTERN = re.compile(r'^[A-Za-z0-9]{9,15}$')
-
 
 # ─── Auth Dependency ─────────────────────────────────────────
 
@@ -37,19 +30,8 @@ def _verify_pet_ownership(pet: Pet, user: User):
 
 
 def _validate_chip_id(chip_id: str) -> str:
-    """Validate chip ID format. Returns cleaned chip_id or raises 400.
-    
-    Supports:
-    - ISO 11784/11785: 15 digits (e.g. 985000123456789)
-    - Non-ISO (125 kHz): 9-10 alphanumeric characters (e.g. 0A0757738)
-    """
-    chip_id = chip_id.strip().upper()
-    if not CHIP_ID_PATTERN.match(chip_id):
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid chip ID format. Must be 9-15 alphanumeric characters with no spaces or dashes."
-        )
-    return chip_id
+    """Delegate to shared chip_id validator."""
+    return validate_chip_id(chip_id)
 
 
 # ─── Tag Schemas ─────────────────────────────────────────────
@@ -340,33 +322,6 @@ async def get_shared_access(token: str, session: Session = Depends(get_session))
         "vaccinations": pet.vaccinations
     }
 
-
-@router.post("/nudge/{chip_id}")
-@limiter.limit("3/hour")
-async def nudge_owner(chip_id: str, request: Request, session: Session = Depends(get_session)):
-    """Nudge a pet owner. Requires authentication. Returns consistent response."""
-    chip_id = _validate_chip_id(chip_id)
-    # Require authentication to nudge
-    _get_current_user(request, session)
-
-    statement = select(Pet).where(Pet.chip_id == chip_id)
-    pet = session.exec(statement).first()
-    if not pet:
-        raise HTTPException(status_code=404, detail="Pet not found")
-
-    # Send notification if possible, but always return the same response
-    # to prevent email existence oracle attacks
-    if pet.owner and pet.owner.email:
-        await email_service.send_email(
-            pet.owner.email,
-            f"Nudge: Someone found your pet!",
-            f"Hello,\n\nA registered PawsLedger user has found a pet with microchip "
-            f"{chip_id} and is nudging you to get in touch.\n\n"
-            f"Please check your PawsLedger dashboard."
-        )
-
-    # Always return success — don't reveal whether owner has email
-    return {"message": "If the owner has notifications enabled, they have been alerted."}
 
 
 # ─── Tag Management Endpoints ────────────────────────────────

@@ -2,7 +2,7 @@ from nicegui import ui, app
 from starlette.requests import Request
 from sqlmodel import Session, select
 from ..database import engine
-from ..models import Pet, User, LedgerEvent, _utc_now
+from ..models import Pet, User, LedgerEvent, NudgeSession, _utc_now
 from .header import nav_header
 from .footer import nav_footer
 from .common import (
@@ -66,6 +66,21 @@ def init_dashboard_page() -> None:
             health_pct = round((current_vax / total_vax) * 100) if total_vax > 0 else 0
             health_label = 'Optimal Health' if health_pct >= 80 else ('Needs Attention' if health_pct >= 50 else 'Action Required')
             health_sub = 'All shots current' if health_pct >= 80 else f'{current_vax}/{total_vax} vaccinations current'
+
+            # Gather most recent nudge per pet
+            recent_nudges = []
+            if pet_ids:
+                from sqlmodel import col
+                for pid in pet_ids:
+                    nudge = session.exec(
+                        select(NudgeSession)
+                        .where(NudgeSession.pet_id == pid)
+                        .order_by(NudgeSession.created_at.desc())
+                        .limit(1)
+                    ).first()
+                    if nudge:
+                        pet_for_nudge = next((p for p in pets if p.id == pid), None)
+                        recent_nudges.append((nudge, pet_for_nudge))
 
         # ── Main content ──
         with ui.element('main').classes('w-full max-w-7xl mx-auto px-6 py-10'):
@@ -258,6 +273,53 @@ def init_dashboard_page() -> None:
                             'font-size: 160px; opacity: 0.1; color: #171c21;'
                         )
 
-              
+                    # Recovery Alerts Widget
+                    with ui.card().classes('w-full p-6').style(
+                        'border-radius: 0.75rem; background: #fff7ed; '
+                        'border: 1px solid rgba(160,58,33,0.2);'
+                    ):
+                        with ui.row().classes('items-center gap-2 mb-4'):
+                            ui.icon('notifications_active').style('color: #a03a21;')
+                            ui.label('Recovery Alerts').style(
+                                "font-family: 'Plus Jakarta Sans'; font-size: 24px; "
+                                "font-weight: 600; color: #171c21;"
+                            )
+
+                        if recent_nudges:
+                            with ui.column().classes('gap-4'):
+                                for nudge, nudge_pet in recent_nudges:
+                                    with ui.row().classes('gap-3'):
+                                        with ui.element('div').classes(
+                                            'flex items-center justify-center rounded-full flex-shrink-0'
+                                        ).style(
+                                            'width: 32px; height: 32px; background: #ffdad2; color: #a03a21;'
+                                        ):
+                                            ui.icon('person_search').style('font-size: 16px;')
+                                        with ui.column().classes('gap-0 min-w-0'):
+                                            pet_name = nudge_pet.name if nudge_pet else 'Unknown'
+                                            ui.label(f'{pet_name}').style(
+                                                'font-weight: 600; font-size: 14px; color: #171c21;'
+                                            )
+                                            preview = nudge.message[:80] + ('...' if len(nudge.message) > 80 else '')
+                                            ui.label(f'"{preview}"').style(
+                                                'font-size: 13px; color: #57423d; font-style: italic; '
+                                                'overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'
+                                            )
+                                            ui.label(
+                                                nudge.created_at.strftime('%b %d, %Y • %H:%M')
+                                            ).style('font-size: 11px; color: #a8a29e;')
+                        else:
+                            ui.label('No recovery alerts.').style(
+                                'color: #57423d; font-style: italic; font-size: 14px;'
+                            )
+
+                        # Upsell prompt
+                        with ui.row().classes('items-center gap-2 mt-4 pt-3').style(
+                            'border-top: 1px solid rgba(160,58,33,0.1);'
+                        ):
+                            ui.icon('verified').style('font-size: 16px; color: #7d5800;')
+                            ui.label('Upgrade to reply securely without revealing your email').style(
+                                'font-size: 12px; color: #7d5800; font-style: italic;'
+                            )
 
         nav_footer()
