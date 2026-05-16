@@ -11,8 +11,11 @@ from .common import (
     SPECIES_FG, SPECIES_FG_DEFAULT,
 )
 from datetime import datetime, timedelta
+import logging
 import os
 import uuid
+
+logger = logging.getLogger("pawsledger.ui.pet_profile")
 
 
 def _obfuscate(value: str) -> str:
@@ -273,8 +276,10 @@ def _render_contact_location_card(pet, is_owner: bool = False):
                         if sent:
                             ui.notify('Owner has been notified via email!', type='positive')
                         else:
+                            logger.error("Nudge Owner email failed for chip_id=%s", pet.chip_id)
                             ui.notify('Unable to send notification.', type='negative')
                     else:
+                        logger.warning("Nudge Owner attempted but no owner email on file for chip_id=%s", pet.chip_id)
                         ui.notify('Owner contact info not available.', type='negative')
 
                 ui.button(
@@ -576,8 +581,10 @@ def _render_public_view(pet, session):
                         if sent:
                             ui.notify('Nudge sent to owner!', type='positive')
                         else:
+                            logger.error("Nudge Owner email failed for chip_id=%s", pet.chip_id)
                             ui.notify('Failed to send nudge.', type='negative')
                     else:
+                        logger.warning("Nudge Owner attempted but no owner email on file for chip_id=%s", pet.chip_id)
                         ui.notify('Owner contact info not available.', type='negative')
 
                 ui.button(

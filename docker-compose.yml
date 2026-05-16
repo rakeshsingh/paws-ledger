@@ -16,6 +16,7 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL}
+      - RESEND_API_KEY=${RESEND_API_KEY}
     restart: always
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/"]
