@@ -15,6 +15,8 @@ from .lost import init_lost_page
 from .verify import init_verify_page
 from .owner_profile import init_owner_profile_page
 from .pricing import init_pricing_page
+from .privacy import init_privacy_page
+from .terms import init_terms_page
 
 
 def init_pages():
@@ -113,3 +115,5 @@ def init_pages():
     init_verify_page()
     init_owner_profile_page()
     init_pricing_page()
+    init_privacy_page()
+    init_terms_page()

@@ -91,7 +91,9 @@ init_pages()
 
 # Integrate NiceGUI with FastAPI
 storage_secret = os.getenv("STORAGE_SECRET", "paws_secret_key")
-ui.run_with(fastapi_app, title="PawsLedger", storage_secret=storage_secret, favicon="/static/favicon.svg")
+import pathlib
+_favicon_path = pathlib.Path(__file__).parent / "ui" / "static" / "favicon.svg"
+ui.run_with(fastapi_app, title="PawsLedger", storage_secret=storage_secret, favicon=_favicon_path)
 
 if __name__ == "__main__":
     import uvicorn
