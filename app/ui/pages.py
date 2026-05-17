@@ -21,6 +21,21 @@ from .terms import init_terms_page
 
 def init_pages():
     app.add_static_files('/static', _STATIC_DIR)
+
+    # Google Analytics (gtag.js) — shared=True ensures it's in every page's initial HTML response
+    ga_id = os.getenv('GA_MEASUREMENT_ID', 'G-VQSSWXZFKL')
+    if ga_id:
+        ui.add_head_html(
+            f'<script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>\n'
+            f'<script>\n'
+            f'  window.dataLayer = window.dataLayer || [];\n'
+            f'  function gtag(){{dataLayer.push(arguments);}}\n'
+            f'  gtag(\'js\', new Date());\n'
+            f'  gtag(\'config\', \'{ga_id}\');\n'
+            f'</script>',
+            shared=True,
+        )
+
     ui.add_head_html(GLOBAL_CSS_LINK)
 
     # Auto-reload fallback: if NiceGUI WebSocket doesn't connect within 3s,
@@ -61,19 +76,6 @@ def init_pages():
         '<meta name="twitter:title" content="PawsLedger — Universal Pet Microchip Registry">\n'
         '<meta name="twitter:description" content="Register your pet\'s microchip. Enable instant identification with NFC/QR tags. Free forever.">\n'
     )
-
-    # Google Analytics (gtag.js)
-    ga_id = os.getenv('GA_MEASUREMENT_ID', 'G-VQSSWXZFKL')
-    if ga_id:
-        ui.add_head_html(
-            f'<script async src="https://www.googletagmanager.com/gtag/js?id={ga_id}"></script>\n'
-            f'<script>\n'
-            f'  window.dataLayer = window.dataLayer || [];\n'
-            f'  function gtag(){{dataLayer.push(arguments);}}\n'
-            f'  gtag("js", new Date());\n'
-            f'  gtag("config", "{ga_id}");\n'
-            f'</script>'
-        )
 
     # JSON-LD Structured Data (Organization + WebSite)
     ui.add_head_html(
