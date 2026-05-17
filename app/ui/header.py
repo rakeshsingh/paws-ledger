@@ -5,20 +5,18 @@ def nav_header():
     with ui.header().classes(
         'bg-stone-50/80 backdrop-blur-md border-b border-stone-200 shadow-sm px-6 md:px-12 py-4'
     ).style("font-family: 'Plus Jakarta Sans', sans-serif;"):
-        with ui.row().classes('w-full max-w-7xl mx-auto justify-between items-center'):
+        with ui.row().classes('w-full max-w-7xl mx-auto justify-between items-center flex-nowrap'):
             # Brand (left)
-            ui.link('PawsLedger', '/').classes(
-                'text-2xl font-bold tracking-tight no-underline'
-            ).style('color: #a03a21;')
+            with ui.link('', '/').classes('no-underline shrink-0'):
+                ui.html('<img src="/static/logo.svg" style="height: 40px; width: auto;">')
 
             # Nav links + auth (right-aligned together)
-            with ui.row().classes('gap-8 items-center'):
+            with ui.row().classes('gap-4 md:gap-8 items-center flex-nowrap'):
                 link_classes = 'text-stone-600 font-medium no-underline'
 
                 ui.link('Home', '/').classes(link_classes)
                 ui.link('Dashboard', '/dashboard').classes(link_classes)
                 ui.link('Support', '/faq').classes(link_classes)
-                ui.link('Contact', 'https://forms.gle/6Mc2JWHbjitPKNZD6').classes(link_classes).props('target=_blank')
 
                 if app.storage.user.get('email'):
                     full_name = app.storage.user.get('name', '')
@@ -27,7 +25,7 @@ def nav_header():
                     # User avatar + name button with dropdown
                     with ui.button(on_click=lambda: None).props(
                         'flat no-caps no-wrap'
-                    ).classes('text-stone-600 font-medium'):
+                    ).classes('text-stone-600 font-medium shrink-0'):
                         with ui.row().classes('items-center gap-2'):
                             with ui.element('div').classes(
                                 'flex items-center justify-center rounded-full'

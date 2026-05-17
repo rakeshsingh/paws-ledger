@@ -84,10 +84,10 @@ def init_dashboard_page() -> None:
 
         # ── Main content ──
         with ui.element('main').classes('w-full max-w-7xl mx-auto px-6 py-10'):
-            with ui.row().classes('w-full gap-10 items-start'):
+            with ui.row().classes('w-full gap-10 items-start').style('flex-wrap: wrap;'):
 
                 # ── Left: Pet Cards (8/12) ──
-                with ui.column().classes('flex-1 gap-6').style('min-width: 0;'):
+                with ui.column().classes('gap-6').style('flex: 1 1 60%; min-width: 300px;'):
                     # Header row
                     with ui.row().classes('w-full justify-between items-center'):
                         with ui.column().classes('gap-1'):
@@ -185,7 +185,7 @@ def init_dashboard_page() -> None:
                             )
 
                 # ── Right: Sidebar Widgets (4/12) ──
-                with ui.column().classes('gap-6').style('width: 340px; flex-shrink: 0;'):
+                with ui.column().classes('gap-6').style('flex: 1 0 340px; max-width: 100%;'):
 
                     # Recent Activity Widget
                     with ui.card().classes('w-full p-6').style(

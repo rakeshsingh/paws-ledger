@@ -33,11 +33,8 @@
     <path d="M 72 24 A 24 24 0 0 1 72 0" fill="none" stroke="url(#chipGrad)" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
   </g>
 
-  <!-- Text: Paws -->
-  <text x="115" y="62" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="42" font-weight="700" fill="#B5452A" letter-spacing="-1">Paws</text>
-
-  <!-- Text: Ledger -->
-  <text x="237" y="62" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="42" font-weight="700" fill="#4A3728" letter-spacing="-1">Ledger</text>
+  <!-- Text: PawsLedger -->
+  <text x="115" y="62" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="42" font-weight="700" letter-spacing="-1"><tspan fill="#B5452A">Paws</tspan><tspan fill="#4A3728">Ledger</tspan></text>
 
   <!-- Tagline -->
   <text x="116" y="82" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="12" font-weight="400" fill="#8B7355" letter-spacing="2">MICROCHIP REGISTRY &amp; RECOVERY</text>
