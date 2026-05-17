@@ -6,55 +6,6 @@ from .footer import nav_footer
 # FAQ data organized by category
 FAQ_SECTIONS = [
     {
-        'title': 'About Microchipping',
-        'icon': 'pets',
-        'items': [
-            (
-                'What is a microchip?',
-                'A microchip is a tiny transponder about the size of a grain of rice that uses '
-                'radio frequency waves to transmit a unique ID number associated with your pet. '
-                "It's implanted just under the skin, between the shoulder blades by a veterinary professional."
-            ),
-            (
-                'How does a microchip work?',
-                'The microchip is passive — it has no battery or power supply. It is activated only when '
-                'it comes in contact with a handheld scanner used by a trained animal professional. '
-                'The scanner reads the radio frequency and displays your pet\'s unique 15-digit ID number, '
-                'which is then searched in a registry like PawsLedger to find your contact information.'
-            ),
-            (
-                'Will the microchip ever wear out or need to be replaced?',
-                "Since there's no battery and no moving parts, there's nothing to wear out or replace. "
-                "Microchips are designed to last your pet's entire lifetime."
-            ),
-            (
-                'Does a microchip have GPS tracking?',
-                'No. A microchip cannot provide location data. It is only when your lost pet is found, '
-                'scanned, and searched in an online registry that someone will be able to contact you. '
-                'This is why keeping your contact information current in PawsLedger is critical.'
-            ),
-            (
-                'Can a microchip replace my pet\'s collar and tags?',
-                'No. A microchip is a backup to collar tags, not a replacement. Your pet should continue '
-                'to wear collar tags. The most important information on your pet\'s collar tag is your '
-                'telephone number. PawsLedger also supports NFC and QR physical tags for instant digital identification.'
-            ),
-            (
-                'Are there different kinds of microchips?',
-                'Yes. There are three pet identification microchip frequencies: 125 kHz, 128 kHz, and 134.2 kHz. '
-                'The 134.2 kHz ISO standard is the primary frequency used worldwide and is recommended by the '
-                'AVMA, AAHA, HSUS, and ASPCA. If your pet does not have an ISO 134.2 kHz microchip, you may '
-                'need one for international travel.'
-            ),
-            (
-                'What does a microchip number look like?',
-                'ISO microchips always contain exactly 15 digits, start with the number 9, and cannot contain '
-                'letters, spaces, or dashes (e.g. 985000123456789). Non-ISO microchips have 9-10 characters '
-                'and may contain a mix of numbers and letters. PawsLedger validates the format when you register.'
-            ),
-        ],
-    },
-    {
         'title': 'About PawsLedger',
         'icon': 'verified_user',
         'items': [
@@ -181,29 +132,61 @@ FAQ_SECTIONS = [
         ],
     },
     {
-        'title': 'Why Microchip Your Pet?',
-        'icon': 'favorite',
+        'title': 'Microchipping Your Pet',
+        'icon': 'pets',
         'items': [
             (
                 'Why should I microchip my pet?',
                 'Every year thousands of lost pets are taken in by shelters and never make it home '
                 'because they cannot be identified. Microchipping is the only truly permanent method '
                 'of identification — collar tags can break or become illegible, but a microchip lasts '
-                "your pet's lifetime."
+                "your pet's lifetime. It's recommended by the AVMA, AAHA, ASPCA, and the Humane Society."
             ),
             (
-                'Top 5 reasons to microchip your pet',
-                '1) Only true permanent method of pet identification. '
-                "2) Lasts for the lifetime of your pet. "
-                '3) Quick and painless procedure, just like a vaccination. '
-                '4) Best chance of your pet returning to you if they go missing. '
-                '5) Recommended by the AVMA, AAHA, ASPCA, the Humane Society, and others.'
+                'What is a microchip and how does it work?',
+                'A microchip is a tiny transponder about the size of a grain of rice that uses '
+                'radio frequency waves to transmit a unique ID number associated with your pet. '
+                "It's implanted just under the skin, between the shoulder blades. "
+                'The chip is passive — it has no battery or power supply. It is activated only when '
+                'it comes in contact with a handheld scanner used by a trained animal professional. '
+                'The scanner reads the radio frequency and displays your pet\'s unique 15-digit ID number, '
+                'which is then searched in a registry like PawsLedger to find your contact information.'
             ),
             (
                 'How are pets microchipped?',
                 'A veterinary professional implants the microchip using a sterile applicator — similar '
                 'to administering a routine vaccination. The process takes only a few seconds, requires '
                 'no anesthetic, and your pet will not react any more than they would to a standard shot.'
+            ),
+            (
+                'Will the microchip ever wear out or need to be replaced?',
+                "Since there's no battery and no moving parts, there's nothing to wear out or replace. "
+                "Microchips are designed to last your pet's entire lifetime."
+            ),
+            (
+                'Does a microchip have GPS tracking?',
+                'No. A microchip cannot provide location data. It is only when your lost pet is found, '
+                'scanned, and searched in an online registry that someone will be able to contact you. '
+                'This is why keeping your contact information current in PawsLedger is critical.'
+            ),
+            (
+                'Can a microchip replace my pet\'s collar and tags?',
+                'No. A microchip is a backup to collar tags, not a replacement. Your pet should continue '
+                'to wear collar tags. The most important information on your pet\'s collar tag is your '
+                'telephone number. PawsLedger also supports NFC and QR physical tags for instant digital identification.'
+            ),
+            (
+                'Are there different kinds of microchips?',
+                'Yes. There are three pet identification microchip frequencies: 125 kHz, 128 kHz, and 134.2 kHz. '
+                'The 134.2 kHz ISO standard is the primary frequency used worldwide and is recommended by the '
+                'AVMA, AAHA, HSUS, and ASPCA. If your pet does not have an ISO 134.2 kHz microchip, you may '
+                'need one for international travel.'
+            ),
+            (
+                'What does a microchip number look like?',
+                'ISO microchips always contain exactly 15 digits, start with the number 9, and cannot contain '
+                'letters, spaces, or dashes (e.g. 985000123456789). Non-ISO microchips have 9-10 characters '
+                'and may contain a mix of numbers and letters. PawsLedger validates the format when you register.'
             ),
         ],
     },

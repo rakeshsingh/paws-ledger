@@ -219,7 +219,7 @@ def init_index_page() -> None:
                                     'width: 40px; height: 40px; object-fit: cover; '
                                     'border: 2px solid #f7f9ff; margin-right: -0.75rem;'
                                 )
-                        ui.label('Joined by 50,000+ responsible owners').style(
+                        ui.label('Joined by responsible pet owners').style(
                             'font-weight: 600; color: #57423d; font-size: 14px;'
                         )
 
