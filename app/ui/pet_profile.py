@@ -52,7 +52,7 @@ def _pet_avatar(pet, size: int = 128):
 
 def _render_registry_status_card():
     """Registry status sidebar card (shared between views)."""
-    with ui.element('div').classes('h-full p-6 rounded-xl flex flex-col justify-between').style(
+    with ui.element('div').classes('w-full p-6 rounded-xl flex flex-col justify-between').style(
         'background: #fff7ed; border: 1px solid rgba(251,191,36,0.2);'
     ):
         with ui.column().classes('gap-4'):
@@ -286,16 +286,15 @@ def _render_trust_signals():
 
 def _render_tag_management(pet, session):
     """Tag management card for the owner's private view."""
-    with ui.element('div').classes('w-full mt-5 p-10 rounded-xl').style(
-        'background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.05); '
-        'border-left: 4px solid #7d5800;'
+    with ui.element('div').classes('w-full p-6 rounded-xl').style(
+        'background: #fff7ed; border: 1px solid rgba(251,191,36,0.2);'
     ):
         with ui.row().classes('w-full justify-between items-center mb-6'):
-            with ui.row().classes('items-center gap-3'):
-                ui.icon('nfc').style('font-size: 28px; color: #7d5800;')
+            with ui.row().classes('items-center gap-2'):
+                ui.icon('nfc').style('font-size: 24px; color: #9a3412;')
                 ui.label('NFC / QR Tags').style(
                     "font-family: 'Plus Jakarta Sans'; font-size: 24px; "
-                    "font-weight: 600; color: #171c21;"
+                    "font-weight: 600; color: #9a3412;"
                 )
             tag_count = len(pet.tags)
             if tag_count > 0:
@@ -433,7 +432,7 @@ def _render_tag_row(tag, pet):
                 )
                 if tag.nfc_uid:
                     ui.label(f'NFC UID: {tag.nfc_uid}').style(
-                        'font-family: monospace; font-size: 11px; color: #78716c;'
+                        'font-family: monospace; font-size: 11px; color: #8a716c;'
                     )
 
         with ui.row().classes('items-center gap-2'):
@@ -673,7 +672,7 @@ def _render_public_view(pet, session):
                                     "color: #171c21;"
                                 )
                                 ui.label('(Privacy Obfuscated)').style(
-                                    'font-size: 12px; color: #78716c; '
+                                    'font-size: 12px; color: #8a716c; '
                                     'font-style: italic;'
                                 )
                             # Manufacturer
@@ -692,7 +691,7 @@ def _render_public_view(pet, session):
                                 )
                                 prefix = pet.chip_id[:3] if pet.chip_id else ''
                                 ui.label(f'Based on Prefix {prefix}').style(
-                                    'font-size: 12px; color: #78716c;'
+                                    'font-size: 12px; color: #8a716c;'
                                 )
                             # Status
                             with ui.column().classes('gap-1'):
@@ -817,9 +816,10 @@ def _render_private_view(pet, session):
                                 'font-weight: 500; border-radius: 9999px;'
                             )
 
-        # Registry status card (same as public)
-        with ui.element('div').style('width: 320px; flex-shrink: 0;'):
+        # Registry status card + Tag management (same column)
+        with ui.column().classes('gap-5').style('width: 320px; flex-shrink: 0;'):
             _render_registry_status_card()
+            _render_tag_management(pet, session)
 
     # ── Row 2: Medical summary + Contact/Location (owner view) ──
     with ui.row().classes('w-full gap-5 flex-wrap items-stretch mt-5'):
@@ -893,9 +893,6 @@ def _render_private_view(pet, session):
         ui.button(
             'Create 24h Care Link', icon='share', on_click=create_link,
         ).classes('w-full').props('outline no-caps')
-
-    # ── NFC/QR Tag Management ──
-    _render_tag_management(pet, session)
 
     # ── Vaccination ledger (owner-only: full detail + add form) ──
     with ui.element('div').classes('w-full mt-5 p-10 rounded-xl').style(
@@ -1111,7 +1108,7 @@ def _render_pet_edit_page(pet, session):
         )
         ui.label(
             "Update your companion's care and identification details."
-        ).style('font-size: 18px; line-height: 1.6; color: #5d5c58; margin-top: 4px;')
+        ).style('font-size: 18px; line-height: 1.6; color: #57423d; margin-top: 4px;')
 
     # ── Section tabs ──
     section_ids = ['edit-basic', 'edit-care', 'edit-health']
@@ -1127,7 +1124,7 @@ def _render_pet_edit_page(pet, session):
                 'margin-bottom: -17px; cursor: pointer;'
             )
             inactive_style = (
-                'color: #5d5c58; font-weight: 600; font-size: 14px; '
+                'color: #57423d; font-weight: 600; font-size: 14px; '
                 'padding-bottom: 16px; margin-bottom: -17px; cursor: pointer;'
             )
             sid = section_ids[i]
@@ -1312,7 +1309,7 @@ def _render_pet_edit_page(pet, session):
         ui.button(
             'Cancel',
             on_click=lambda: ui.navigate.to(f'/pet/{pet.id}'),
-        ).style('color: #5d5c58; font-weight: 600; padding: 12px 40px;').props(
+        ).style('color: #57423d; font-weight: 600; padding: 12px 40px;').props(
             'flat no-caps'
         )
 

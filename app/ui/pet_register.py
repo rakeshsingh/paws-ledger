@@ -34,7 +34,7 @@ def init_register_page() -> None:
                 ui.label(
                     "Add your companion's identification and care details to PawsLedger."
                 ).style(
-                    'font-size: 18px; line-height: 1.6; color: #5d5c58; margin-top: 4px;'
+                    'font-size: 18px; line-height: 1.6; color: #57423d; margin-top: 4px;'
                 )
 
             # ── Section tabs (clickable navigation) ──
@@ -51,7 +51,7 @@ def init_register_page() -> None:
                         'margin-bottom: -17px; cursor: pointer;'
                     )
                     inactive_style = (
-                        'color: #5d5c58; font-weight: 600; font-size: 14px; '
+                        'color: #57423d; font-weight: 600; font-size: 14px; '
                         'padding-bottom: 16px; margin-bottom: -17px; cursor: pointer;'
                     )
                     sid = section_ids[i]
@@ -251,7 +251,7 @@ def init_register_page() -> None:
                         "font-weight: 600; color: #171c21;"
                     )
                     ui.label('(Optional — can be added later)').style(
-                        'font-size: 12px; color: #5d5c58;'
+                        'font-size: 12px; color: #57423d;'
                     )
 
                 with ui.column().classes('p-10 gap-6'):
@@ -298,7 +298,7 @@ def init_register_page() -> None:
                     'Cancel',
                     on_click=lambda: ui.navigate.to('/dashboard'),
                 ).style(
-                    'color: #5d5c58; font-weight: 600; padding: 12px 40px;'
+                    'color: #57423d; font-weight: 600; padding: 12px 40px;'
                 ).props('flat no-caps')
 
                 async def submit():

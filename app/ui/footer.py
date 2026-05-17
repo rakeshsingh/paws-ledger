@@ -10,16 +10,16 @@ def nav_footer():
             # Left — brand + copyright
             with ui.row().classes('items-center gap-3'):
                 ui.label('PawsLedger').style(
-                    'font-weight: 700; font-size: 14px; color: #c24112;'
+                    'font-weight: 700; font-size: 14px; color: #a03a21;'
                 )
                 ui.label('© 2026 PawsLedger. Nurturing Professionalism in Pet Care.').style(
-                    'color: #78716c;'
+                    'color: #8a716c;'
                 )
 
             # Right — inline links
             with ui.row().classes('items-center gap-6'):
-                ui.link('Pricing', '/pricing').style('color: #78716c; text-decoration: none;')
-                ui.link('Privacy', '#').style('color: #78716c; text-decoration: none;')
-                ui.link('Terms', '#').style('color: #78716c; text-decoration: none;')
-                ui.link('Contact', '/contact').style('color: #78716c; text-decoration: none;')
-                ui.link('FAQ', '/faq').style('color: #78716c; text-decoration: none;')
+                ui.link('Pricing', '/pricing').style('color: #8a716c; text-decoration: none;')
+                ui.link('Privacy', '#').style('color: #8a716c; text-decoration: none;')
+                ui.link('Terms', '#').style('color: #8a716c; text-decoration: none;')
+                ui.link('Contact', '/contact').style('color: #8a716c; text-decoration: none;')
+                ui.link('FAQ', '/faq').style('color: #8a716c; text-decoration: none;')

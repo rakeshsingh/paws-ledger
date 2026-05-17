@@ -9,7 +9,7 @@ def nav_header():
             # Brand (left)
             ui.link('PawsLedger', '/').classes(
                 'text-2xl font-bold tracking-tight no-underline'
-            ).style('color: #c24112;')
+            ).style('color: #a03a21;')
 
             # Nav links + auth (right-aligned together)
             with ui.row().classes('gap-8 items-center'):

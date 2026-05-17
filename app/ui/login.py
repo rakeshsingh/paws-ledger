@@ -20,30 +20,87 @@ def init_login_pages() -> None:
             ui.navigate.to('/dashboard')
             return
         nav_header()
-        with ui.column().classes('w-full items-center p-8'):
-            with ui.card().classes('w-full max-w-sm p-6 items-center'):
-                ui.label('Welcome Back').classes('text-2xl font-bold mb-4')
-                ui.label('Secure login for PawsLedger').style(
-                    'color: #78716c; font-size: 14px; margin-bottom: 1.5rem; text-align: center;'
-                )
 
-                def login_google():
-                    ui.navigate.to('/api/v1/auth/login')
+        with ui.element('main').classes(
+            'w-full flex items-center justify-center'
+        ).style(
+            'min-height: calc(100vh - 200px); '
+            'background: radial-gradient(circle at top right, rgba(255,218,210,0.4), transparent), '
+            'radial-gradient(circle at bottom left, rgba(234,238,245,0.4), transparent);'
+        ):
+            with ui.column().classes('items-center gap-8').style(
+                'width: 100%; max-width: 400px; padding: 3rem 1.5rem;'
+            ):
+                # Brand header
+                with ui.column().classes('items-center gap-3'):
+                    with ui.element('div').classes(
+                        'flex items-center justify-center rounded-full'
+                    ).style(
+                        'width: 64px; height: 64px; background: #ffdad2;'
+                    ):
+                        ui.icon('pets').style('font-size: 32px; color: #a03a21;')
+                    ui.label('Welcome to PawsLedger').style(
+                        "font-family: 'Plus Jakarta Sans'; font-size: 28px; "
+                        "font-weight: 700; color: #171c21; text-align: center;"
+                    )
+                    ui.label(
+                        'Sign in to manage your pets, vaccinations, and recovery tags.'
+                    ).style(
+                        'font-size: 14px; color: #57423d; text-align: center; '
+                        'max-width: 320px;'
+                    )
 
-                with ui.button(on_click=login_google) \
-                    .classes('w-full google-signin-btn mb-4') \
-                    .style(
+                # Login card
+                with ui.element('div').classes('w-full p-8 rounded-xl').style(
+                    'background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.05); '
+                    'border: 1px solid rgba(222,192,185,0.3);'
+                ):
+                    def login_google():
+                        ui.navigate.to('/api/v1/auth/login')
+
+                    with ui.button(on_click=login_google).classes('w-full mb-4').style(
                         'background: #fff; color: #3c4043; border: 1px solid #dadce0; '
                         'border-radius: 4px; height: 44px; padding: 0 12px; '
                         'font-family: Roboto, arial, sans-serif; font-size: 14px; '
                         'font-weight: 500; text-transform: none; letter-spacing: 0.25px; '
-                        'box-shadow: 0 1px 2px 0 rgba(60,64,67,.30), 0 1px 3px 1px rgba(60,64,67,.15);'
+                        'box-shadow: 0 1px 2px 0 rgba(60,64,67,.30), '
+                        '0 1px 3px 1px rgba(60,64,67,.15);'
                     ):
-                    ui.html(GOOGLE_G_SVG)
-                    ui.label('Sign in with Google')
+                        ui.html(GOOGLE_G_SVG)
+                        ui.label('Sign in with Google')
 
-                ui.separator().classes('mb-4')
-                ui.label('Authorized Identity Provider Only').style(
-                    'font-size: 12px; color: #9ca3af;'
-                )
+                    with ui.row().classes(
+                        'w-full items-center gap-3 my-4'
+                    ):
+                        ui.element('div').classes('flex-1').style(
+                            'height: 1px; background: #e7e5e4;'
+                        )
+                        ui.label('Secure Authentication').style(
+                            'font-size: 11px; color: #8a716c; white-space: nowrap;'
+                        )
+                        ui.element('div').classes('flex-1').style(
+                            'height: 1px; background: #e7e5e4;'
+                        )
+
+                    with ui.row().classes('items-center gap-2'):
+                        ui.icon('lock').style('font-size: 14px; color: #8a716c;')
+                        ui.label(
+                            'Authorized Identity Provider Only'
+                        ).style('font-size: 12px; color: #8a716c;')
+
+                # Trust signals
+                with ui.row().classes('items-center gap-6 mt-2'):
+                    for icon_name, label in [
+                        ('verified_user', 'Encrypted'),
+                        ('visibility_off', 'Private'),
+                        ('speed', 'Instant'),
+                    ]:
+                        with ui.row().classes('items-center gap-1'):
+                            ui.icon(icon_name).style(
+                                'font-size: 14px; color: #8a716c;'
+                            )
+                            ui.label(label).style(
+                                'font-size: 12px; color: #8a716c; font-weight: 500;'
+                            )
+
         nav_footer()

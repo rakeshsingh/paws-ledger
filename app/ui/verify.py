@@ -10,39 +10,133 @@ def init_verify_page() -> None:
     @ui.page('/verify')
     async def verify_page() -> None:
         nav_header()
-        with ui.column().classes('w-full items-center p-8 max-w-2xl mx-auto'):
-            ui.label('Verify Vaccination Record').classes('pl-page-title mb-4')
-            ui.label(
-                'Enter the SHA-256 hash found at the bottom of a PawsLedger PDF export to verify its authenticity.'
-            ).classes('pl-text-hint mb-8 text-center')
 
-            hash_input = ui.input('Verification Hash').classes('w-full mb-4').props('outlined')
+        with ui.element('main').classes('w-full max-w-4xl mx-auto px-6 py-12'):
+            # Page header
+            with ui.column().classes('w-full items-center mb-10'):
+                ui.label('Verify Vaccination Record').style(
+                    "font-family: 'Plus Jakarta Sans'; font-size: 40px; "
+                    "font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; "
+                    "color: #171c21; text-align: center;"
+                )
+                ui.label(
+                    'Enter the SHA-256 hash found at the bottom of a '
+                    'PawsLedger PDF export to verify its authenticity.'
+                ).style(
+                    'font-size: 18px; line-height: 1.6; color: #57423d; '
+                    'text-align: center; margin-top: 4px; max-width: 600px;'
+                )
 
-            results = ui.column().classes('w-full mt-4')
+            # Verification form
+            with ui.element('div').classes('w-full max-w-2xl mx-auto p-8 rounded-xl').style(
+                'background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.05); '
+                'border-left: 4px solid #7d5800;'
+            ):
+                with ui.column().classes('w-full gap-1 mb-6'):
+                    ui.label('Verification Hash').style(
+                        'font-weight: 600; font-size: 14px; color: #171c21;'
+                    )
+                    hash_input = ui.input(
+                        placeholder='e.g. a3f2b8c91d4e5f6...'
+                    ).classes('w-full').props('outlined dense')
+                    ui.label(
+                        'Paste the full SHA-256 hash string from the PDF footer.'
+                    ).style('font-size: 12px; color: #8a716c; margin-top: 4px;')
 
-            async def verify():
-                results.clear()
-                if not hash_input.value:
-                    return
+                results = ui.column().classes('w-full')
 
-                with Session(engine) as session:
-                    vax = session.exec(select(Vaccination).where(Vaccination.record_hash == hash_input.value)).first()
+                async def verify():
+                    results.clear()
+                    if not hash_input.value or not hash_input.value.strip():
+                        ui.notify('Please enter a hash value.', type='warning')
+                        return
 
-                    if vax:
-                        with results, ui.card().classes('w-full p-6').style('background: #f0fdf4; border-color: #bbf7d0;'):
-                            with ui.row().classes('items-center gap-2 mb-2'):
-                                ui.icon('verified').style('color: #16a34a')
-                                ui.label('RECORD VERIFIED').classes('font-bold').style('color: #15803d')
-                            ui.label(f"Vaccine: {vax.vaccine_name}")
-                            ui.label(f"Pet ID: {vax.pet_id}")
-                            ui.label(f"Date Given: {vax.date_given.date()}")
-                            ui.label(f"Clinic: {vax.clinic_name}")
-                    else:
-                        with results, ui.card().classes('w-full p-6').style('background: #fef2f2; border-color: #fecaca;'):
-                            with ui.row().classes('items-center gap-2 mb-2'):
-                                ui.icon('error').style('color: #dc2626')
-                                ui.label('VERIFICATION FAILED').classes('font-bold').style('color: #b91c1c')
-                            ui.label('The provided hash does not match any records in our ledger.')
+                    with Session(engine) as session:
+                        vax = session.exec(
+                            select(Vaccination).where(
+                                Vaccination.record_hash == hash_input.value.strip()
+                            )
+                        ).first()
 
-            ui.button('Verify Record', on_click=verify).classes('w-full pl-btn-primary')
+                        if vax:
+                            with results:
+                                with ui.element('div').classes(
+                                    'w-full p-6 rounded-xl mt-4'
+                                ).style(
+                                    'background: white; border-left: 4px solid #16a34a; '
+                                    'box-shadow: 0 4px 12px rgba(0,0,0,0.05);'
+                                ):
+                                    with ui.row().classes('items-center gap-3 mb-4'):
+                                        ui.icon('verified').style(
+                                            'font-size: 28px; color: #16a34a;'
+                                        )
+                                        ui.label('Record Verified').style(
+                                            "font-family: 'Plus Jakarta Sans'; "
+                                            "font-size: 20px; font-weight: 600; "
+                                            "color: #166534;"
+                                        )
+                                    for label, value in [
+                                        ('Vaccine', vax.vaccine_name),
+                                        ('Date Given', str(vax.date_given.date())),
+                                        ('Clinic', vax.clinic_name or 'Not specified'),
+                                        ('Manufacturer', vax.manufacturer or 'Not specified'),
+                                    ]:
+                                        with ui.row().classes(
+                                            'w-full items-center justify-between py-2'
+                                        ).style('border-bottom: 1px solid #f0fdf4;'):
+                                            ui.label(label).style(
+                                                'font-size: 14px; color: #57423d;'
+                                            )
+                                            ui.label(value).style(
+                                                'font-size: 14px; font-weight: 600; '
+                                                'color: #171c21;'
+                                            )
+                        else:
+                            with results:
+                                with ui.element('div').classes(
+                                    'w-full p-6 rounded-xl mt-4'
+                                ).style(
+                                    'background: white; border-left: 4px solid #dc2626; '
+                                    'box-shadow: 0 4px 12px rgba(0,0,0,0.05);'
+                                ):
+                                    with ui.row().classes('items-center gap-3 mb-2'):
+                                        ui.icon('error').style(
+                                            'font-size: 28px; color: #dc2626;'
+                                        )
+                                        ui.label('Verification Failed').style(
+                                            "font-family: 'Plus Jakarta Sans'; "
+                                            "font-size: 20px; font-weight: 600; "
+                                            "color: #b91c1c;"
+                                        )
+                                    ui.label(
+                                        'The provided hash does not match any records '
+                                        'in our ledger. The document may have been '
+                                        'tampered with or the hash was entered incorrectly.'
+                                    ).style(
+                                        'font-size: 14px; color: #57423d; '
+                                        'line-height: 1.5;'
+                                    )
+
+                ui.button(
+                    'Verify Record', icon='fingerprint', on_click=verify,
+                ).classes('w-full mt-4').style(
+                    'background: #7d5800; color: white; font-weight: 600; '
+                    'padding: 12px 24px; border-radius: 8px;'
+                ).props('no-caps')
+
+            # Info banner
+            with ui.row().classes(
+                'w-full max-w-2xl mx-auto items-start gap-3 mt-6 p-4 rounded-xl'
+            ).style(
+                'background: #fff7ed; border: 1px solid rgba(251,191,36,0.2);'
+            ):
+                ui.icon('info').style(
+                    'font-size: 20px; color: #9a3412; margin-top: 2px;'
+                )
+                ui.label(
+                    'Each PawsLedger vaccination PDF contains a unique SHA-256 hash '
+                    'computed from the record data. This ensures tamper-evident, '
+                    'cryptographically verifiable medical documentation.'
+                ).style('font-size: 12px; color: #57423d; line-height: 1.5;')
+
         nav_footer()
