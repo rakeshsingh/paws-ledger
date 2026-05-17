@@ -113,37 +113,36 @@ def _render_pricing_card(tier):
 
         # Header
         with ui.column().classes('gap-2 mb-6'):
-            ui.label(tier['name']).style(
-                "font-family: 'Plus Jakarta Sans'; font-size: 24px; "
-                "font-weight: 600; color: #171c21;"
-            )
-            if tier['badge']:
-                ui.label(tier['badge']).style(
-                    'display: inline-block; padding: 2px 8px; border-radius: 4px; '
-                    'font-size: 10px; font-weight: 700; text-transform: uppercase; '
-                    'letter-spacing: -0.02em; '
-                    'background: rgba(160,58,33,0.1); color: #a03a21; '
-                    'border: 1px solid rgba(160,58,33,0.2);'
+            with ui.row().classes('items-center gap-2'):
+                ui.label(tier['name']).style(
+                    "font-family: 'Plus Jakarta Sans'; font-size: 24px; "
+                    "font-weight: 600; color: #171c21;"
                 )
+                if tier['badge']:
+                    ui.label(tier['badge']).style(
+                        'padding: 2px 8px; border-radius: 4px; '
+                        'font-size: 10px; font-weight: 700; text-transform: uppercase; '
+                        'letter-spacing: -0.02em; '
+                        'background: rgba(160,58,33,0.1); color: #a03a21; '
+                        'border: 1px solid rgba(160,58,33,0.2);'
+                    )
             ui.label(tier['subtitle']).style(
                 'font-size: 12px; font-weight: 500; color: #57423d; '
                 'text-transform: uppercase; letter-spacing: 0.1em;'
             )
-            with ui.row().classes('items-baseline gap-1 mt-2'):
+            with ui.row().classes('items-center gap-2 mt-2 flex-wrap'):
                 ui.label(tier['price']).style(
                     'font-size: 36px; font-weight: 700; color: #171c21;'
                 )
                 ui.label(tier['period']).style(
-                    'font-size: 12px; color: #57423d;'
+                    'font-size: 12px; color: #57423d; margin-right: 4px;'
                 )
-
-            # Beta offer banner
-            if tier.get('beta_offer'):
-                ui.label(tier['beta_offer']).style(
-                    'font-size: 12px; font-weight: 600; color: #166534; '
-                    'background: #dcfce7; padding: 6px 12px; border-radius: 6px; '
-                    'border: 1px solid #bbf7d0; margin-top: 0.5rem;'
-                )
+                if tier.get('beta_offer'):
+                    ui.label(tier['beta_offer']).style(
+                        'font-size: 11px; font-weight: 600; color: #166534; '
+                        'background: #dcfce7; padding: 3px 8px; border-radius: 4px; '
+                        'border: 1px solid #bbf7d0;'
+                    )
 
         # Only show included features
         with ui.column().classes('gap-3 flex-grow mb-8'):
