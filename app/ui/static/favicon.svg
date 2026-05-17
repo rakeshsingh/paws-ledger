@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="pawGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#B5452A"/>
+      <stop offset="100%" stop-color="#8B3520"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="30" fill="#F5E6D3"/>
+
+  <!-- Paw print -->
+  <ellipse cx="32" cy="40" rx="11" ry="10" fill="url(#pawGrad)"/>
+  <ellipse cx="21" cy="27" rx="6" ry="7" fill="url(#pawGrad)"/>
+  <ellipse cx="32" cy="22" rx="6" ry="7" fill="url(#pawGrad)"/>
+  <ellipse cx="43" cy="27" rx="6" ry="7" fill="url(#pawGrad)"/>
+
+  <!-- Microchip lines on main pad -->
+  <rect x="28" y="36" width="8" height="8" rx="1.5" fill="none" stroke="#F5E6D3" stroke-width="1.2"/>
+  <line x1="30" y1="38" x2="30" y2="42" stroke="#F5E6D3" stroke-width="0.8" stroke-linecap="round"/>
+  <line x1="32" y1="37.5" x2="32" y2="42.5" stroke="#F5E6D3" stroke-width="0.8" stroke-linecap="round"/>
+  <line x1="34" y1="38" x2="34" y2="42" stroke="#F5E6D3" stroke-width="0.8" stroke-linecap="round"/>
+</svg>
