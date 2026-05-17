@@ -5,14 +5,19 @@ from .footer import nav_footer
 
 # All features with availability per tier (True = included, False = not, str = detail)
 ALL_FEATURES = [
-    ('Public Identity Lookup', True, True, True),
-    ('Emergency Medical Alerts', True, True, True),
-    ('Ownership Handshake', 'Receive Only', 'Full Access', 'Audit Trail'),
-    ('Verified Identity Badge', False, True, True),
-    ('Vaccination Storage', False, True, True),
-    ('SHA-256 Sealed PDFs', False, 'Standard', 'Signed'),
-    ('AI Photo-Match (Vision)', False, False, True),
-    ('Sitter Heartbeat', False, False, 'Unlimited'),
+    ('Microchip + QR/NFC Tag Registration', True, True, True),
+    ('Lost Pet (Microchip, QR Tag) Lookup', True, True, True),
+    ('Finder Owner Communication', 'Email', 'Email/SMS/Secure Chat', 'Email/SMS/Secure Chat'),
+    ('Verified Badge & Periodic Alerts to maintain updated contact', False, True, True),
+    ('Pet Care Instructions to Service providers', False, True, True),
+    ('Secure Ownership Transfer', False, True, 'Full Audit Trail'),
+    ('Appointment/Vaccination Alerts', False, True, True),
+    ('Vaccination Storage', False, 'Standard', 'Unlimited'),
+    ('Service Provider Heartbeat (Sitter/Groomer check-ins)', False, False, 'Unlimited'),
+    ('Tamper Proof Medical Documents', False, False, 'SHA-256 Signed'),
+    ('Lost Pet Alert Broadcast', False, False, True),
+    ('Emergency Vet Authorization Card', False, False, True),
+
 ]
 
 # Pricing tier data
@@ -79,7 +84,7 @@ def init_pricing_page() -> None:
                 )
 
             # ── Pricing cards with full feature comparison ──
-            with ui.row().classes('w-full gap-8 justify-center items-stretch'):
+            with ui.row().classes('w-full gap-8 justify-center items-stretch').style('flex-wrap: wrap;'):
                 for tier in TIERS:
                     _render_pricing_card(tier)
 
@@ -87,21 +92,25 @@ def init_pricing_page() -> None:
 
 
 def _render_pricing_card(tier):
-    """Render a pricing card with full feature comparison built in."""
-    scale = 'transform: scale(1.05); z-index: 10;' if tier['highlighted'] else ''
-    shadow = (
-        'box-shadow: 0 12px 24px rgba(0,0,0,0.1);'
-        if tier['highlighted']
-        else 'box-shadow: 0 4px 4px rgba(0,0,0,0.05);'
-    )
+    """Render a pricing card showing only included features."""
     col_idx = tier['col_index']
+    highlighted = tier['highlighted']
+
+    if highlighted:
+        bg = 'background: linear-gradient(135deg, #fffbf7 0%, #fff0eb 100%);'
+        shadow = 'box-shadow: 0 16px 40px rgba(160,58,33,0.15);'
+        border = f'border: 2px solid {tier["border_color"]};'
+    else:
+        bg = 'background: white;'
+        shadow = 'box-shadow: 0 4px 12px rgba(0,0,0,0.05);'
+        border = f'border: 1px solid #e7e5e4; border-left: 4px solid {tier["border_color"]};'
 
     with ui.element('div').classes(
         'flex flex-col rounded-xl p-10 relative overflow-hidden'
     ).style(
-        f'background: white; border-left: 4px solid {tier["border_color"]}; '
-        f'{shadow} {scale} flex: 1; min-width: 280px; max-width: 380px;'
+        f'{bg} {border} {shadow} flex: 1 1 280px; min-width: 280px; max-width: 380px; align-self: stretch;'
     ):
+
         # Header
         with ui.column().classes('gap-2 mb-6'):
             ui.label(tier['name']).style(
@@ -136,36 +145,23 @@ def _render_pricing_card(tier):
                     'border: 1px solid #bbf7d0; margin-top: 0.5rem;'
                 )
 
-        # Features with check/dash/detail
+        # Only show included features
         with ui.column().classes('gap-3 flex-grow mb-8'):
             for feature_row in ALL_FEATURES:
                 feature_name = feature_row[0]
                 value = feature_row[col_idx]
 
+                if value is False:
+                    continue
+
                 with ui.row().classes('items-center gap-2'):
-                    if value is True:
-                        ui.icon('check_circle').style(
-                            'font-size: 18px; color: #a03a21;'
-                        )
-                        ui.label(feature_name).style(
-                            'font-size: 14px; color: #171c21;'
-                        )
-                    elif value is False:
-                        ui.icon('remove_circle_outline').style(
-                            'font-size: 18px; color: #d4d4d8;'
-                        )
-                        ui.label(feature_name).style(
-                            'font-size: 14px; color: #a8a29e; '
-                            'text-decoration: line-through;'
-                        )
-                    else:
-                        # String value — included with detail
-                        ui.icon('check_circle').style(
-                            'font-size: 18px; color: #a03a21;'
-                        )
-                        ui.label(feature_name).style(
-                            'font-size: 14px; color: #171c21;'
-                        )
+                    ui.icon('check_circle').style(
+                        'font-size: 18px; color: #a03a21;'
+                    )
+                    ui.label(feature_name).style(
+                        'font-size: 14px; color: #171c21;'
+                    )
+                    if isinstance(value, str):
                         ui.label(f'({value})').style(
                             'font-size: 11px; color: #7d5800; font-weight: 600;'
                         )
