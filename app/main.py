@@ -1,6 +1,8 @@
 from contextlib import asynccontextmanager
+import pathlib
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -47,6 +49,10 @@ fastapi_app.add_middleware(
     https_only=False,
 )
 
+# Serve static assets (logo, CSS, etc.)
+_static_dir = pathlib.Path(__file__).parent / "ui" / "static"
+fastapi_app.mount("/static", StaticFiles(directory=_static_dir), name="static")
+
 # Include API routes
 fastapi_app.include_router(api_router)
 
@@ -91,8 +97,7 @@ init_pages()
 
 # Integrate NiceGUI with FastAPI
 storage_secret = os.getenv("STORAGE_SECRET", "paws_secret_key")
-import pathlib
-_favicon_path = pathlib.Path(__file__).parent / "ui" / "static" / "favicon.svg"
+_favicon_path = _static_dir / "favicon.svg"
 ui.run_with(fastapi_app, title="PawsLedger", storage_secret=storage_secret, favicon=_favicon_path)
 
 if __name__ == "__main__":
