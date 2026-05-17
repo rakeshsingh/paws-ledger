@@ -116,8 +116,8 @@ def init_contact_page() -> None:
                                 "font-weight: 600; color: #9a3412;"
                             )
                         for icon_name, label, value in [
-                            ('mail', 'Email', 'support@pawsledger.com'),
-                            ('schedule', 'Response Time', 'Within 24 hours'),
+                            ('mail', 'Email', 'paws.ledger@gmail.com'),
+                            ('schedule', 'Response Time', 'Within five business days'),
                             ('language', 'Languages', 'English'),
                         ]:
                             with ui.row().classes('items-center gap-3 py-2'):
