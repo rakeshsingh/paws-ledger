@@ -92,6 +92,9 @@ async def sitemap_xml():
     )
 
 
+# Serve static assets via NiceGUI's routing (avoids Cloudflare WAF blocking /static paths)
+nicegui_app.add_static_files('/assets', str(_static_dir))
+
 # Initialize NiceGUI pages
 init_pages()
 

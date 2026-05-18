@@ -8,7 +8,7 @@ def nav_header():
         with ui.row().classes('w-full max-w-7xl mx-auto justify-between items-center flex-nowrap'):
             # Brand (left)
             with ui.link('', '/').classes('no-underline shrink-0'):
-                ui.html('<img src="/static/logo.svg" style="height: 40px; width: auto;">')
+                ui.html('<img src="/assets/logo.svg" style="height: 40px; width: auto;">')
 
             # Nav links + auth (right-aligned together)
             with ui.row().classes('gap-4 md:gap-8 items-center flex-nowrap'):
