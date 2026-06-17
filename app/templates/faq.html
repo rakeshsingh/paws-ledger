@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="text-align: center; margin-bottom: 3rem;">
+    <h1 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 2.5rem; font-weight: 700; color: #171c21;">Frequently Asked Questions</h1>
+    <p style="font-size: 1.125rem; color: #57423d; max-width: 600px; margin: 0.5rem auto;">
+        Everything you need to know about microchipping, pet registration, and PawsLedger.
+    </p>
+</div>
+
+{% for section in faq_sections %}
+<div class="seo-section">
+    <h2>{{ section.title }}</h2>
+    {% for question, answer in section['items'] %}
+    <details class="seo-card" style="cursor: pointer;">
+        <summary style="font-weight: 600; font-size: 1rem; color: #171c21;">{{ question }}</summary>
+        <p style="margin-top: 0.75rem;">{{ answer }}</p>
+    </details>
+    {% endfor %}
+</div>
+{% endfor %}
+
+<p style="font-size: 0.8rem; color: #8a716c; border-top: 1px solid #eaeef5; padding-top: 1.5rem; margin-top: 2rem;">
+    Microchipping information adapted from industry guidelines by
+    <a href="https://www.freepetchipregistry.com/faqs/" style="color: #a03a21;">FreePetChipRegistry</a>, AAHA, and AVMA recommendations.
+</p>
+{% endblock %}
+
+{% block structured_data %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {% set ns = namespace(first=true) %}{% for section in faq_sections %}{% for question, answer in section['items'] %}{% if not ns.first %},{% endif %}{% set ns.first = false %}
+    {
+      "@type": "Question",
+      "name": "{{ question | e }}",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "{{ answer | e }}"
+      }
+    }{% endfor %}{% endfor %}
+  ]
+}
+</script>
+{% endblock %}

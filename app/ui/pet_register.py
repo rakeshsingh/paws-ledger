@@ -1,14 +1,15 @@
+import uuid
+from datetime import datetime
+
 from nicegui import ui, app
 from starlette.requests import Request
 from sqlmodel import Session, select
+
 from ..database import engine
-from ..models import Pet, User, PetTag, LedgerEvent
+from ..models import Pet, User, PetTag, LedgerEvent, Subscription
 from ..services.integrations import get_manufacturer_from_chip
-from .header import nav_header
-from .footer import nav_footer
-from .common import dog_client, try_restore_session
-from datetime import datetime
-import uuid
+from .dashboard_shell import dashboard_shell
+from .common import dog_client, try_restore_session, sanitize
 
 
 def init_register_page() -> None:
@@ -18,24 +19,17 @@ def init_register_page() -> None:
             ui.navigate.to('/login')
             return
 
-        nav_header()
-
         breeds = await dog_client.get_breeds()
         breed_options = {b['name']: b['name'] for b in breeds}
 
-        with ui.element('main').classes('w-full max-w-3xl mx-auto px-6 py-12'):
+        with dashboard_shell(title='Register Pet', breadcrumbs=[('Dashboard', '/dashboard')]):
+          with ui.element('div').classes('w-full max-w-3xl mx-auto'):
             # ── Header ──
             with ui.column().classes('w-full items-center mb-8'):
-                ui.label('Register New Pet').style(
-                    "font-family: 'Plus Jakarta Sans'; font-size: 40px; "
-                    "font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; "
-                    "color: #171c21;"
-                )
+                ui.label('Register New Pet').classes('pl-heading-3xl')
                 ui.label(
                     "Add your companion's identification and care details to PawsLedger."
-                ).style(
-                    'font-size: 18px; line-height: 1.6; color: #57423d; margin-top: 4px;'
-                )
+                ).classes('pl-body-base').style('font-size: var(--pl-text-lg); margin-top: 4px;')
 
             # ── Section tabs (clickable navigation) ──
             section_ids = ['section-basic', 'section-care', 'section-health', 'section-tags']
@@ -46,12 +40,12 @@ def init_register_page() -> None:
             ).style('border-bottom: 1px solid #eaeef5;'):
                 for i, label in enumerate(tab_labels):
                     active_style = (
-                        'color: #a03a21; font-weight: 600; font-size: 14px; '
-                        'border-bottom: 2px solid #a03a21; padding-bottom: 16px; '
+                        'color: var(--pl-primary); font-weight: 600; font-size: 14px; '
+                        'border-bottom: 2px solid var(--pl-primary); padding-bottom: 16px; '
                         'margin-bottom: -17px; cursor: pointer;'
                     )
                     inactive_style = (
-                        'color: #57423d; font-weight: 600; font-size: 14px; '
+                        'color: var(--pl-on-surface-variant); font-weight: 600; font-size: 14px; '
                         'padding-bottom: 16px; margin-bottom: -17px; cursor: pointer;'
                     )
                     sid = section_ids[i]
@@ -70,43 +64,32 @@ def init_register_page() -> None:
                 with ui.element('div').classes('p-6').style(
                     'border-bottom: 1px solid #eaeef5; background: white;'
                 ):
-                    ui.label('Basic Info').style(
-                        "font-family: 'Plus Jakarta Sans'; font-size: 24px; "
-                        "font-weight: 600; color: #171c21;"
-                    )
+                    ui.label('Basic Info').classes('pl-heading-xl')
 
                 with ui.column().classes('p-10 gap-6'):
                     # Two-column grid
                     with ui.row().classes('w-full gap-6'):
                         with ui.column().classes('flex-1 gap-1'):
-                            ui.label('Pet Name').style(
-                                'font-weight: 600; font-size: 14px; color: #171c21;'
-                            )
+                            ui.label('Pet Name').classes('pl-form-label')
                             name_input = ui.input(
                                 placeholder='e.g. Cooper'
                             ).classes('w-full').props('outlined dense')
 
                         with ui.column().classes('flex-1 gap-1'):
-                            ui.label('Microchip ID').style(
-                                'font-weight: 600; font-size: 14px; color: #171c21;'
-                            )
+                            ui.label('Microchip ID').classes('pl-form-label')
                             chip_input = ui.input(
                                 placeholder='15-digit microchip number'
                             ).classes('w-full').props('outlined dense')
 
                     with ui.row().classes('w-full gap-6'):
                         with ui.column().classes('flex-1 gap-1'):
-                            ui.label('Species').style(
-                                'font-weight: 600; font-size: 14px; color: #171c21;'
-                            )
+                            ui.label('Species').classes('pl-form-label')
                             species_input = ui.select(
                                 ['DOG', 'CAT'], label='', value='DOG'
                             ).classes('w-full').props('outlined dense')
 
                         with ui.column().classes('flex-1 gap-1') as breed_col:
-                            ui.label('Breed').style(
-                                'font-weight: 600; font-size: 14px; color: #171c21;'
-                            )
+                            ui.label('Breed').classes('pl-form-label')
                             # Dog breed dropdown (populated from Dog API)
                             breed_input = ui.select(
                                 breed_options, label=''
@@ -130,17 +113,13 @@ def init_register_page() -> None:
 
                     with ui.row().classes('w-full gap-6'):
                         with ui.column().classes('flex-1 gap-1'):
-                            ui.label('Birth Date').style(
-                                'font-weight: 600; font-size: 14px; color: #171c21;'
-                            )
+                            ui.label('Birth Date').classes('pl-form-label')
                             dob_input = ui.input('').classes('w-full').props(
                                 'outlined dense type=date'
                             )
 
                         with ui.column().classes('flex-1 gap-1'):
-                            ui.label('Gender').style(
-                                'font-weight: 600; font-size: 14px; color: #171c21;'
-                            )
+                            ui.label('Gender').classes('pl-form-label')
                             gender_input = ui.select(
                                 ['Male', 'Female', 'Unknown'],
                                 label='', value='Unknown',
@@ -155,35 +134,26 @@ def init_register_page() -> None:
                 with ui.element('div').classes('p-6').style(
                     'border-bottom: 1px solid #eaeef5; background: white;'
                 ):
-                    ui.label('Daily Care').style(
-                        "font-family: 'Plus Jakarta Sans'; font-size: 24px; "
-                        "font-weight: 600; color: #171c21;"
-                    )
+                    ui.label('Daily Care').classes('pl-heading-xl')
 
                 with ui.column().classes('p-10 gap-6'):
                     with ui.row().classes('w-full gap-6'):
                         with ui.column().classes('flex-1 gap-1'):
-                            ui.label('Energy Level').style(
-                                'font-weight: 600; font-size: 14px; color: #171c21;'
-                            )
+                            ui.label('Energy Level').classes('pl-form-label')
                             energy_input = ui.select(
                                 ['Low', 'Moderate', 'High', 'Very High'],
                                 label='', value='Moderate',
                             ).classes('w-full').props('outlined dense')
 
                         with ui.column().classes('flex-1 gap-1'):
-                            ui.label('Max Alone Hours').style(
-                                'font-weight: 600; font-size: 14px; color: #171c21;'
-                            )
+                            ui.label('Max Alone Hours').classes('pl-form-label')
                             alone_input = ui.number(
                                 '', value=None, min=0, max=24,
                             ).classes('w-full').props('outlined dense suffix="hours"')
 
                     with ui.row().classes('w-full gap-6'):
                         with ui.column().classes('flex-1 gap-1'):
-                            ui.label('Feeds per Day').style(
-                                'font-weight: 600; font-size: 14px; color: #171c21;'
-                            )
+                            ui.label('Feeds per Day').classes('pl-form-label')
                             feeds_input = ui.number(
                                 '', value=None, min=1, max=10,
                             ).classes('w-full').props('outlined dense')
@@ -197,42 +167,31 @@ def init_register_page() -> None:
                 with ui.element('div').classes('p-6').style(
                     'border-bottom: 1px solid #eaeef5; background: white;'
                 ):
-                    ui.label('Health & Temperament').style(
-                        "font-family: 'Plus Jakarta Sans'; font-size: 24px; "
-                        "font-weight: 600; color: #171c21;"
-                    )
+                    ui.label('Health & Temperament').classes('pl-heading-xl')
 
                 with ui.column().classes('p-10 gap-6'):
                     with ui.column().classes('w-full gap-1'):
-                        ui.label('Temperament').style(
-                            'font-weight: 600; font-size: 14px; color: #171c21;'
-                        )
+                        ui.label('Temperament').classes('pl-form-label')
                         temperament_input = ui.textarea(
                             placeholder='Friendly, shy, reactive to other dogs?'
                         ).classes('w-full').props('outlined rows=3')
 
                     with ui.column().classes('w-full gap-1'):
-                        ui.label('Dietary Notes').style(
-                            'font-weight: 600; font-size: 14px; color: #171c21;'
-                        )
+                        ui.label('Dietary Notes').classes('pl-form-label')
                         dietary_input = ui.textarea(
                             placeholder='Allergies or special diet requirements?'
                         ).classes('w-full').props('outlined rows=3')
 
                     with ui.row().classes('w-full gap-6'):
                         with ui.column().classes('flex-1 gap-1'):
-                            ui.label('Exercise Needs').style(
-                                'font-weight: 600; font-size: 14px; color: #171c21;'
-                            )
+                            ui.label('Exercise Needs').classes('pl-form-label')
                             exercise_input = ui.select(
                                 ['Minimal (Short walks)', 'Moderate (1-2 hours)', 'Intense (Running/Hiking)'],
                                 label='', value='Moderate (1-2 hours)',
                             ).classes('w-full').props('outlined dense')
 
                         with ui.column().classes('flex-1 gap-1'):
-                            ui.label('Medical Conditions').style(
-                                'font-weight: 600; font-size: 14px; color: #171c21;'
-                            )
+                            ui.label('Medical Conditions').classes('pl-form-label')
                             medical_input = ui.textarea(
                                 placeholder='List any ongoing health issues'
                             ).classes('w-full').props('outlined rows=3')
@@ -246,46 +205,33 @@ def init_register_page() -> None:
                 with ui.element('div').classes('p-6 flex justify-between items-center').style(
                     'border-bottom: 1px solid #eaeef5; background: white;'
                 ):
-                    ui.label('Physical Tags').style(
-                        "font-family: 'Plus Jakarta Sans'; font-size: 24px; "
-                        "font-weight: 600; color: #171c21;"
-                    )
-                    ui.label('(Optional — can be added later)').style(
-                        'font-size: 12px; color: #57423d;'
-                    )
+                    ui.label('Physical Tags').classes('pl-heading-xl')
+                    ui.label('(Optional — can be added later)').classes('pl-body-xs')
 
                 with ui.column().classes('p-10 gap-6'):
                     with ui.row().classes('w-full gap-6'):
                         with ui.column().classes('flex-1 gap-1'):
-                            ui.label('Tag Type').style(
-                                'font-weight: 600; font-size: 14px; color: #171c21;'
-                            )
+                            ui.label('Tag Type').classes('pl-form-label')
                             tag_type_input = ui.select(
                                 ['', 'QR', 'NFC', 'DUAL'],
                                 label='', value='',
                             ).classes('w-full').props('outlined dense')
 
                         with ui.column().classes('flex-1 gap-1'):
-                            ui.label('Tag Label').style(
-                                'font-weight: 600; font-size: 14px; color: #171c21;'
-                            )
+                            ui.label('Tag Label').classes('pl-form-label')
                             tag_label_input = ui.input(
                                 placeholder='e.g. Collar tag'
                             ).classes('w-full').props('outlined dense')
 
                     with ui.row().classes('w-full gap-6'):
                         with ui.column().classes('flex-1 gap-1'):
-                            ui.label('Tag Code').style(
-                                'font-weight: 600; font-size: 14px; color: #171c21;'
-                            )
+                            ui.label('Tag Code').classes('pl-form-label')
                             tag_code_input = ui.input(
                                 placeholder='Leave blank to auto-generate'
                             ).classes('w-full').props('outlined dense')
 
                         with ui.column().classes('flex-1 gap-1'):
-                            ui.label('Serial Number').style(
-                                'font-weight: 600; font-size: 14px; color: #171c21;'
-                            )
+                            ui.label('Serial Number').classes('pl-form-label')
                             tag_serial_input = ui.input(
                                 placeholder='Optional'
                             ).classes('w-full').props('outlined dense')
@@ -298,7 +244,7 @@ def init_register_page() -> None:
                     'Cancel',
                     on_click=lambda: ui.navigate.to('/dashboard'),
                 ).style(
-                    'color: #57423d; font-weight: 600; padding: 12px 40px;'
+                    'color: var(--pl-on-surface-variant); font-weight: 600; padding: 12px 40px;'
                 ).props('flat no-caps')
 
                 async def submit():
@@ -325,6 +271,16 @@ def init_register_page() -> None:
                         if not user:
                             ui.notify('User session error.', type='negative')
                             return
+
+                        # Determine identity status based on subscription tier
+                        sub = session.exec(
+                            select(Subscription).where(Subscription.user_id == user.id)
+                        ).first()
+                        has_verified_sub = (
+                            sub and sub.status == "active"
+                            and sub.tier in ("verified", "guardian")
+                        )
+
                         if len(user.pets) >= 5:
                             ui.notify(
                                 'Maximum of 5 pets reached per profile.',
@@ -344,12 +300,12 @@ def init_register_page() -> None:
                             return
 
                         new_pet = Pet(
-                            name=name_input.value.strip(),
+                            name=sanitize(name_input.value.strip()),
                             chip_id=chip_val,
                             breed=(
                                 breed_input.value
                                 if species_input.value == 'DOG'
-                                else (breed_text_input.value.strip() if breed_text_input.value else None)
+                                else (sanitize(breed_text_input.value.strip()) if breed_text_input.value else None)
                             ),
                             pet_species=species_input.value,
                             gender=gender_input.value,
@@ -358,7 +314,7 @@ def init_register_page() -> None:
                                 if dob_input.value else None
                             ),
                             manufacturer=manufacturer,
-                            identity_status="VERIFIED",
+                            identity_status="VERIFIED" if has_verified_sub else "UNVERIFIED",
                             owner_id=user.id,
                             # Care fields
                             energy_level=energy_input.value if energy_input.value else None,
@@ -369,18 +325,18 @@ def init_register_page() -> None:
                                 int(feeds_input.value) if feeds_input.value else None
                             ),
                             dietary_notes=(
-                                dietary_input.value.strip()
+                                sanitize(dietary_input.value.strip())
                                 if dietary_input.value else None
                             ),
                             exercise_needs=(
-                                exercise_input.value if exercise_input.value else None
+                                sanitize(exercise_input.value) if exercise_input.value else None
                             ),
                             medical_conditions=(
-                                medical_input.value.strip()
+                                sanitize(medical_input.value.strip())
                                 if medical_input.value else None
                             ),
                             temperament=(
-                                temperament_input.value.strip()
+                                sanitize(temperament_input.value.strip())
                                 if temperament_input.value else None
                             ),
                         )
@@ -435,24 +391,31 @@ def init_register_page() -> None:
                     )
                     ui.navigate.to('/dashboard')
 
-                ui.button(
-                    'Register Pet', on_click=submit,
+                register_btn = ui.button(
+                    'Register Pet',
                 ).style(
-                    'background: #a03a21; color: white; font-weight: 600; '
+                    'background: var(--pl-primary); color: white; font-weight: 600; '
                     'padding: 12px 40px; border-radius: 8px; '
                     'box-shadow: 0 4px 12px rgba(160,58,33,0.2);'
                 ).props('no-caps')
 
+                async def _submit_guarded():
+                    register_btn.disable()
+                    try:
+                        await submit()
+                    finally:
+                        register_btn.enable()
+
+                register_btn.on_click(_submit_guarded)
+
             # ── Info banner ──
             with ui.row().classes('w-full items-start gap-3 mt-6 p-4 rounded-xl').style(
-                'background: #fff7ed; border: 1px solid rgba(251,191,36,0.2);'
+                'background: var(--pl-surface-warm); border: 1px solid rgba(251,191,36,0.2);'
             ):
                 ui.icon('info').style('font-size: 20px; color: #c2410c; margin-top: 2px;')
                 ui.html(
-                    '<span style="font-size: 12px; color: #57423d;">'
+                    '<span style="font-size: 12px; color: var(--pl-on-surface-variant);">'
                     'Changes to medical identifiers like <strong>Microchip ID</strong> '
                     'may require verification for official travel documents. '
                     'Tag updates reflect immediately on scan results.</span>'
                 )
-
-        nav_footer()

@@ -7,8 +7,8 @@ from sqlmodel import Session, select
 from typing import Optional
 from uuid import UUID
 from ...database import get_session
-from ...models import User
-from .common import serializer, get_current_user
+from ...models import User, _utc_now
+from .common import serializer, get_current_user, sanitize_text
 
 _EMAIL_RE = re.compile(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$')
 
@@ -110,18 +110,19 @@ async def update_owner_profile(
             raise HTTPException(status_code=409, detail="Email already in use")
 
     if payload.name is not None:
-        user.name = payload.name
+        user.name = sanitize_text(payload.name)
     if payload.email is not None:
         user.email = payload.email
     if payload.phone is not None:
         user.phone = payload.phone
     if payload.address is not None:
-        user.address = payload.address
+        user.address = sanitize_text(payload.address)
     if payload.city is not None:
-        user.city = payload.city
+        user.city = sanitize_text(payload.city)
     if payload.country is not None:
-        user.country = payload.country
+        user.country = sanitize_text(payload.country)
 
+    user.profile_updated_at = _utc_now()
     session.add(user)
     session.commit()
     session.refresh(user)

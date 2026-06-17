@@ -17,6 +17,12 @@ from .owner_profile import init_owner_profile_page
 from .pricing import init_pricing_page
 from .privacy import init_privacy_page
 from .terms import init_terms_page
+from .subscription import init_subscription_pages
+from .lookup import init_lookup_page
+from .manage_shared_access import init_shared_access_management_page
+from .manage_tags import init_manage_tags_page
+from .nudge_reply import init_nudge_reply_page
+from .nudge_history import init_nudge_history_page
 
 
 def init_pages():
@@ -57,24 +63,15 @@ def init_pages():
         '</script>\n'
     )
 
-    # ── SEO: Global meta tags ──
+    # ── SEO: Global meta tags (for NiceGUI-rendered pages like /, /login, /dashboard) ──
+    # Note: Public content pages (/about, /faq, /pricing, etc.) are served as
+    # pre-rendered HTML by FastAPI routes in seo_pages.py with per-page meta.
     ui.add_head_html(
         '<meta name="google-site-verification" content="tVpTG1skwcyW0gOUWbWUS50-MtKx0mYu86mlUmP4ePA">\n'
-        '<meta name="description" content="PawsLedger — The universal microchip registry and pet recovery network. Register your pet\'s microchip, manage vaccination records, and enable instant identification with NFC/QR tags.">\n'
-        '<meta name="keywords" content="pet microchip registry, pet recovery, microchip lookup, pet identification, NFC pet tag, QR pet tag, vaccination records, lost pet, found pet, AAHA">\n'
         '<meta name="author" content="PawsLedger">\n'
-        '<meta name="robots" content="index, follow">\n'
-        '<link rel="canonical" href="https://www.pawsledger.com">\n'
-        '<!-- Open Graph -->\n'
-        '<meta property="og:type" content="website">\n'
         '<meta property="og:site_name" content="PawsLedger">\n'
-        '<meta property="og:title" content="PawsLedger — Universal Pet Microchip Registry">\n'
-        '<meta property="og:description" content="Secure medical records, emergency alerts, and verified ownership. Register your pet\'s microchip for free.">\n'
-        '<meta property="og:url" content="https://www.pawsledger.com">\n'
-        '<!-- Twitter Card -->\n'
-        '<meta name="twitter:card" content="summary">\n'
-        '<meta name="twitter:title" content="PawsLedger — Universal Pet Microchip Registry">\n'
-        '<meta name="twitter:description" content="Register your pet\'s microchip. Enable instant identification with NFC/QR tags. Free forever.">\n'
+        '<meta property="og:image" content="https://www.pawsledger.com/assets/og-image.png">\n'
+        '<meta name="twitter:image" content="https://www.pawsledger.com/assets/og-image.png">\n'
     )
 
     # JSON-LD Structured Data (Organization + WebSite)
@@ -119,3 +116,9 @@ def init_pages():
     init_pricing_page()
     init_privacy_page()
     init_terms_page()
+    init_subscription_pages()
+    init_lookup_page()
+    init_shared_access_management_page()
+    init_manage_tags_page()
+    init_nudge_reply_page()
+    init_nudge_history_page()

@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="text-align: center; margin-bottom: 3rem;">
+    <h1 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 2.5rem; font-weight: 700; color: #171c21;">Simple, Transparent Pricing</h1>
+    <p style="font-size: 1.125rem; color: #57423d; max-width: 600px; margin: 0.5rem auto;">
+        Registration is free. Upgrade when you need verified status, care sharing, and sealed documents.
+    </p>
+</div>
+
+<div class="seo-grid" style="grid-template-columns: repeat(3, 1fr);">
+    <div class="seo-card" style="text-align: center;">
+        <h2>Free</h2>
+        <p style="font-size: 2rem; font-weight: 700; color: #171c21;">$0</p>
+        <ul style="text-align: left; list-style: none; padding: 0; margin-top: 1.5rem;">
+            <li style="padding: 0.5rem 0; border-bottom: 1px solid #f5f5f4;">&#10003; Microchip + QR/NFC Tag Registration</li>
+            <li style="padding: 0.5rem 0; border-bottom: 1px solid #f5f5f4;">&#10003; Lost Pet Lookup</li>
+            <li style="padding: 0.5rem 0; border-bottom: 1px solid #f5f5f4;">&#10003; Finder-Owner Communication (Email)</li>
+        </ul>
+        <a href="/login" style="display: block; margin-top: 1.5rem; padding: 0.75rem; border-radius: 0.5rem; background: #f0f4fb; color: #171c21; text-decoration: none; font-weight: 600; border: 1px solid #dec0b9;">Start Free</a>
+    </div>
+    <div class="seo-card" style="text-align: center; border-color: #7d5800; border-width: 2px;">
+        <h2>Verified</h2>
+        <p style="font-size: 2rem; font-weight: 700; color: #171c21;">$1<span style="font-size: 1rem; color: #8a716c;">/month</span></p>
+        <p style="font-size: 0.85rem; color: #7d5800; margin-top: 0.25rem;">or $9.99/year (save 2 months)</p>
+        <ul style="text-align: left; list-style: none; padding: 0; margin-top: 1.5rem;">
+            <li style="padding: 0.5rem 0; border-bottom: 1px solid #f5f5f4;">&#10003; Everything in Free</li>
+            <li style="padding: 0.5rem 0; border-bottom: 1px solid #f5f5f4;">&#10003; Verified Badge &amp; Contact Reminders</li>
+            <li style="padding: 0.5rem 0; border-bottom: 1px solid #f5f5f4;">&#10003; Care Instructions to Service Providers</li>
+            <li style="padding: 0.5rem 0; border-bottom: 1px solid #f5f5f4;">&#10003; Secure Ownership Transfer</li>
+            <li style="padding: 0.5rem 0; border-bottom: 1px solid #f5f5f4;">&#10003; Vaccination Alerts (View Only)</li>
+            <li style="padding: 0.5rem 0;">&#10003; Document Upload (1 per pet)</li>
+        </ul>
+        <a href="/login" style="display: block; margin-top: 1.5rem; padding: 0.75rem; border-radius: 0.5rem; background: #a03a21; color: white; text-decoration: none; font-weight: 600;">Go Verified</a>
+    </div>
+    <div class="seo-card" style="text-align: center;">
+        <h2>Guardian <span style="font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; background: rgba(160,58,33,0.1); color: #a03a21; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(160,58,33,0.2); vertical-align: middle;">Upcoming</span></h2>
+        <p style="font-size: 2rem; font-weight: 700; color: #171c21;">$4.99<span style="font-size: 1rem; color: #8a716c;">/month</span></p>
+        <p style="font-size: 0.85rem; color: #7d5800; margin-top: 0.25rem;">or $49.99/year (save 2 months)</p>
+        <ul style="text-align: left; list-style: none; padding: 0; margin-top: 1.5rem;">
+            <li style="padding: 0.5rem 0; border-bottom: 1px solid #f5f5f4;">&#10003; Everything in Verified</li>
+            <li style="padding: 0.5rem 0; border-bottom: 1px solid #f5f5f4;">&#10003; Tamper-Proof Medical Documents (SHA-256)</li>
+            <li style="padding: 0.5rem 0; border-bottom: 1px solid #f5f5f4;">&#10003; Lost Pet Alert Broadcast</li>
+            <li style="padding: 0.5rem 0; border-bottom: 1px solid #f5f5f4;">&#10003; Emergency Vet Authorization Card</li>
+            <li style="padding: 0.5rem 0; border-bottom: 1px solid #f5f5f4;">&#10003; Unlimited Vaccination Records</li>
+            <li style="padding: 0.5rem 0;">&#10003; Documents: up to 100 per pet</li>
+        </ul>
+        <a href="/login" style="display: block; margin-top: 1.5rem; padding: 0.75rem; border-radius: 0.5rem; background: #171c21; color: white; text-decoration: none; font-weight: 600;">Go Guardian</a>
+    </div>
+</div>
+
+<div class="seo-section" style="margin-top: 3rem;">
+    <h2>Feature Comparison</h2>
+    <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+        <thead>
+            <tr style="border-bottom: 2px solid #e7e5e4;">
+                <th style="text-align: left; padding: 0.75rem;">Feature</th>
+                <th style="text-align: center; padding: 0.75rem;">Free</th>
+                <th style="text-align: center; padding: 0.75rem;">Verified</th>
+                <th style="text-align: center; padding: 0.75rem;">Guardian</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for feature, free, verified, guardian in features %}
+            <tr style="border-bottom: 1px solid #f5f5f4;">
+                <td style="padding: 0.75rem;">{{ feature }}</td>
+                <td style="text-align: center; padding: 0.75rem;">{% if free == true %}&#10003;{% elif free == false %}—{% else %}{{ free }}{% endif %}</td>
+                <td style="text-align: center; padding: 0.75rem;">{% if verified == true %}&#10003;{% elif verified == false %}—{% else %}{{ verified }}{% endif %}</td>
+                <td style="text-align: center; padding: 0.75rem;">{% if guardian == true %}&#10003;{% elif guardian == false %}—{% else %}{{ guardian }}{% endif %}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block structured_data %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "name": "PawsLedger Pet Registry",
+  "description": "Universal pet microchip registry with NFC/QR tags, vaccination records, and secure pet recovery.",
+  "url": "https://www.pawsledger.com/pricing",
+  "offers": [
+    {
+      "@type": "Offer",
+      "name": "Free",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    {
+      "@type": "Offer",
+      "name": "Verified",
+      "price": "1.00",
+      "priceCurrency": "USD",
+      "billingDuration": "P1M"
+    },
+    {
+      "@type": "Offer",
+      "name": "Guardian",
+      "price": "4.99",
+      "priceCurrency": "USD",
+      "billingDuration": "P1M"
+    }
+  ]
+}
+</script>
+{% endblock %}

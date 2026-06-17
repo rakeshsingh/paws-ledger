@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import AsyncMock
 from uuid import uuid4
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from app.models import User, Pet, Vaccination, SharedAccess
 from app.api.v1.routes import serializer
 
@@ -139,8 +139,8 @@ class TestVaccinations:
             "vaccine_name": "Rabies",
             "manufacturer": "Zoetis",
             "serial_number": "ABC-123",
-            "date_given": datetime.utcnow().strftime('%Y-%m-%d'),
-            "expiration_date": (datetime.utcnow() + timedelta(days=365)).strftime('%Y-%m-%d'),
+            "date_given": datetime.now(UTC).strftime('%Y-%m-%d'),
+            "expiration_date": (datetime.now(UTC) + timedelta(days=365)).strftime('%Y-%m-%d'),
             "administering_vet": "Dr. Smith",
             "clinic_name": "Paws Clinic",
         }
@@ -202,7 +202,7 @@ class TestSharedAccess:
     def test_shared_access_expired(self, client, test_pet, session):
         access = SharedAccess(
             pet_id=test_pet.id,
-            expires_at=datetime.utcnow() - timedelta(hours=1),
+            expires_at=datetime.now(UTC) - timedelta(hours=1),
         )
         session.add(access)
         session.commit()

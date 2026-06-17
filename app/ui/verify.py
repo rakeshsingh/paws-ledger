@@ -2,29 +2,23 @@ from nicegui import ui
 from sqlmodel import Session, select
 from ..database import engine
 from ..models import Vaccination
-from .header import nav_header
-from .footer import nav_footer
+from .layout import page_shell
 
 
 def init_verify_page() -> None:
     @ui.page('/verify')
     async def verify_page() -> None:
-        nav_header()
-
-        with ui.element('main').classes('w-full max-w-4xl mx-auto px-6 py-12'):
+        with page_shell():
             # Page header
             with ui.column().classes('w-full items-center mb-10'):
-                ui.label('Verify Vaccination Record').style(
-                    "font-family: 'Plus Jakarta Sans'; font-size: 40px; "
-                    "font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; "
-                    "color: #171c21; text-align: center;"
+                ui.label('Verify Vaccination Record').classes('pl-heading-3xl').style(
+                    'text-align: center;'
                 )
                 ui.label(
                     'Enter the SHA-256 hash found at the bottom of a '
                     'PawsLedger PDF export to verify its authenticity.'
-                ).style(
-                    'font-size: 18px; line-height: 1.6; color: #57423d; '
-                    'text-align: center; margin-top: 4px; max-width: 600px;'
+                ).classes('pl-body-base').style(
+                    'font-size: var(--pl-text-lg); text-align: center; margin-top: 4px; max-width: 600px;'
                 )
 
             # Verification form
@@ -71,8 +65,8 @@ def init_verify_page() -> None:
                                             'font-size: 28px; color: #16a34a;'
                                         )
                                         ui.label('Record Verified').style(
-                                            "font-family: 'Plus Jakarta Sans'; "
-                                            "font-size: 20px; font-weight: 600; "
+                                            "font-family: var(--pl-font); "
+                                            "font-size: var(--pl-text-lg); font-weight: 600; "
                                             "color: #166534;"
                                         )
                                     for label, value in [
@@ -104,8 +98,8 @@ def init_verify_page() -> None:
                                             'font-size: 28px; color: #dc2626;'
                                         )
                                         ui.label('Verification Failed').style(
-                                            "font-family: 'Plus Jakarta Sans'; "
-                                            "font-size: 20px; font-weight: 600; "
+                                            "font-family: var(--pl-font); "
+                                            "font-size: var(--pl-text-lg); font-weight: 600; "
                                             "color: #b91c1c;"
                                         )
                                     ui.label(
@@ -131,7 +125,7 @@ def init_verify_page() -> None:
                 'background: #fff7ed; border: 1px solid rgba(251,191,36,0.2);'
             ):
                 ui.icon('info').style(
-                    'font-size: 20px; color: #9a3412; margin-top: 2px;'
+                    'font-size: 20px; color: #83250e; margin-top: 2px;'
                 )
                 ui.label(
                     'Each PawsLedger vaccination PDF contains a unique SHA-256 hash '
@@ -139,4 +133,3 @@ def init_verify_page() -> None:
                     'cryptographically verifiable medical documentation.'
                 ).style('font-size: 12px; color: #57423d; line-height: 1.5;')
 
-        nav_footer()

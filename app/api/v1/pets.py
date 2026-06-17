@@ -1,5 +1,6 @@
 """Pet routes — lookup, QR, transfer, vaccinations, shared access, tags."""
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, field_validator
@@ -7,7 +8,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from sqlmodel import Session, select
 from ...database import get_session
-from ...models import Pet, LedgerEvent, Vaccination, SharedAccess, PetTag, User, _utc_now
+from ...models import Pet, LedgerEvent, Vaccination, SharedAccess, PetTag, User, TagScan, Subscription, VaccinationAlert, _utc_now
 from .common import aaha_client, email_service, hash_service, pdf_service, serializer, IS_PRODUCTION, get_current_user, validate_chip_id
 from typing import Optional
 from uuid import UUID, uuid4
@@ -177,6 +178,182 @@ async def resolve_qr(tag_id: str, request: Request, session: Session = Depends(g
     }
 
 
+# ─── Tag Scan with Location ─────────────────────────────────
+
+class TagScanPayload(BaseModel):
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    accuracy_meters: Optional[float] = None
+    scan_method: str = "QR"
+
+    @field_validator('latitude')
+    @classmethod
+    def validate_lat(cls, v):
+        if v is not None and (v < -90 or v > 90):
+            raise ValueError('Latitude must be between -90 and 90')
+        return v
+
+    @field_validator('longitude')
+    @classmethod
+    def validate_lon(cls, v):
+        if v is not None and (v < -180 or v > 180):
+            raise ValueError('Longitude must be between -180 and 180')
+        return v
+
+    @field_validator('scan_method')
+    @classmethod
+    def validate_method(cls, v):
+        if v not in ('QR', 'NFC', 'CHIP_LOOKUP'):
+            raise ValueError('scan_method must be QR, NFC, or CHIP_LOOKUP')
+        return v
+
+
+@router.post("/scan/{tag_code}")
+@limiter.limit("30/minute")
+async def record_tag_scan(
+    tag_code: str,
+    payload: TagScanPayload,
+    request: Request,
+    session: Session = Depends(get_session),
+):
+    """Record a tag scan with optional geolocation.
+
+    Public endpoint — no auth required (finders scanning a found pet).
+    Updates the pet's last known location and creates a scan record.
+    """
+    # Resolve tag to pet
+    tag = session.exec(
+        select(PetTag).where(PetTag.tag_code == tag_code)
+    ).first()
+
+    if not tag or tag.status != "ACTIVE":
+        raise HTTPException(status_code=404, detail="Tag not found or deactivated")
+
+    pet = session.get(Pet, tag.pet_id)
+    if not pet:
+        raise HTTPException(status_code=404, detail="Pet not found")
+
+    # Reverse geocode (best-effort, non-blocking)
+    city = None
+    country = None
+    if payload.latitude is not None and payload.longitude is not None:
+        city, country = await _reverse_geocode(payload.latitude, payload.longitude)
+
+    # Determine scanner user (if logged in)
+    scanner_user_id = None
+    try:
+        raw_cookie = request.cookies.get("paws_user_id")
+        if raw_cookie:
+            user_id = serializer.loads(raw_cookie)
+            scanner_user_id = UUID(user_id)
+    except Exception:
+        pass
+
+    # Create scan record
+    scan = TagScan(
+        pet_id=pet.id,
+        tag_id=tag.id,
+        latitude=payload.latitude,
+        longitude=payload.longitude,
+        accuracy_meters=payload.accuracy_meters,
+        city=city,
+        country=country,
+        scanner_user_id=scanner_user_id,
+        scan_method=payload.scan_method,
+    )
+    session.add(scan)
+
+    # Update pet's last known location
+    if payload.latitude is not None and payload.longitude is not None:
+        pet.last_scan_latitude = payload.latitude
+        pet.last_scan_longitude = payload.longitude
+        pet.last_scan_at = _utc_now()
+        if city or country:
+            pet.last_scan_location = ", ".join(filter(None, [city, country]))
+        session.add(pet)
+
+    # Log ledger event
+    location_desc = ""
+    if city or country:
+        location_desc = f" near {', '.join(filter(None, [city, country]))}"
+    session.add(LedgerEvent(
+        pet_id=pet.id,
+        event_type="EMERGENCY_SCAN",
+        description=f"{payload.scan_method} tag scanned{location_desc}",
+    ))
+    session.commit()
+
+    # Notify owner
+    if pet.owner and pet.owner.email:
+        location_info = f" near {pet.last_scan_location}" if pet.last_scan_location else ""
+        await email_service.notify_owner_of_scan(
+            pet.owner.email, pet.name or pet.breed or "Pet"
+        )
+
+    return {
+        "message": "Scan recorded successfully.",
+        "pet_id": str(pet.id),
+        "location_recorded": payload.latitude is not None,
+        "city": city,
+        "country": country,
+    }
+
+
+@router.get("/pets/{pet_id}/scans")
+async def list_pet_scans(
+    pet_id: UUID,
+    request: Request,
+    session: Session = Depends(get_session),
+):
+    """List recent tag scans for a pet (owner only)."""
+    user = _get_current_user(request, session)
+    pet = session.get(Pet, pet_id)
+    if not pet:
+        raise HTTPException(status_code=404, detail="Pet not found")
+    _verify_pet_ownership(pet, user)
+
+    scans = session.exec(
+        select(TagScan)
+        .where(TagScan.pet_id == pet_id)
+        .order_by(TagScan.scanned_at.desc())
+        .limit(50)
+    ).all()
+
+    return [
+        {
+            "id": str(s.id),
+            "scanned_at": s.scanned_at.isoformat(),
+            "latitude": s.latitude,
+            "longitude": s.longitude,
+            "city": s.city,
+            "country": s.country,
+            "scan_method": s.scan_method,
+            "accuracy_meters": s.accuracy_meters,
+        }
+        for s in scans
+    ]
+
+
+async def _reverse_geocode(lat: float, lon: float) -> tuple:
+    """Reverse geocode coordinates to city, country using Nominatim."""
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            resp = await client.get(
+                "https://nominatim.openstreetmap.org/reverse",
+                params={"lat": lat, "lon": lon, "format": "json", "zoom": 10},
+                headers={"User-Agent": "PawsLedger/1.0"},
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                address = data.get("address", {})
+                city = address.get("city") or address.get("town") or address.get("village")
+                country = address.get("country")
+                return city, country
+    except Exception:
+        pass
+    return None, None
+
+
 @router.post("/ledger/transfer")
 async def transfer_ownership(
     chip_id: str, new_owner_email: str,
@@ -206,6 +383,14 @@ async def add_vaccination(
         raise HTTPException(status_code=404, detail="Pet not found")
     _verify_pet_ownership(pet, user)
 
+    # Enforce per-pet vaccination record limit (20 max)
+    existing_count = len(pet.vaccinations) if pet.vaccinations else 0
+    if existing_count >= 20:
+        raise HTTPException(
+            status_code=400,
+            detail="Vaccination record limit reached (20 per pet). Delete old records to add more.",
+        )
+
     try:
         date_given = datetime.strptime(payload.date_given, '%Y-%m-%d')
         expiration_date = datetime.strptime(payload.expiration_date, '%Y-%m-%d')
@@ -225,7 +410,7 @@ async def add_vaccination(
         administering_vet=payload.administering_vet or "",
         clinic_name=payload.clinic_name or "",
     )
-    record_data = vaccination.dict(exclude={"id", "pet_id", "record_hash", "pet"})
+    record_data = vaccination.model_dump(exclude={"id", "pet_id", "record_hash", "pet"})
     vaccination.record_hash = hash_service.hash_record(record_data)
 
     session.add(vaccination)
@@ -238,6 +423,26 @@ async def add_vaccination(
     session.add(event)
     session.commit()
     session.refresh(vaccination)
+
+    # US-V07: Auto-suggest alert 30 days before expiration
+    sub = session.exec(
+        select(Subscription).where(Subscription.user_id == user.id)
+    ).first()
+    if sub and sub.status == "active" and sub.tier in ("verified", "guardian"):
+        alert_date = expiration_date - timedelta(days=30)
+        if alert_date > _utc_now():
+            alert = VaccinationAlert(
+                pet_id=pet_id,
+                user_id=user.id,
+                vaccination_id=vaccination.id,
+                alert_type="vaccination_expiry",
+                alert_date=alert_date,
+                title=f"{vaccination.vaccine_name} expiring soon",
+                description=f"Vaccination expires on {expiration_date.strftime('%Y-%m-%d')}",
+            )
+            session.add(alert)
+            session.commit()
+
     return vaccination
 
 
@@ -254,7 +459,7 @@ async def export_vaccinations(pet_id: UUID, request: Request, session: Session =
         raise HTTPException(status_code=404, detail="No vaccinations found for this pet")
 
     # Generate aggregate hash for the export
-    aggregate_data = [v.dict(exclude={"id", "pet_id", "record_hash", "pet"}) for v in vaccinations]
+    aggregate_data = [v.model_dump(exclude={"id", "pet_id", "record_hash", "pet"}) for v in vaccinations]
     export_hash = hash_service.hash_record({"pet_id": str(pet_id), "vaccinations": aggregate_data})
 
     pdf_path = pdf_service.generate_vaccination_report(pet.breed or "Pet", vaccinations, export_hash)
@@ -275,6 +480,23 @@ async def create_shared_access(
 
     # Limit hours to reasonable range
     hours = max(1, min(hours, 168))  # 1 hour to 7 days
+
+    # Reuse existing active shared access link if one exists
+    existing = session.exec(
+        select(SharedAccess)
+        .where(SharedAccess.pet_id == pet_id)
+        .where(SharedAccess.expires_at > _utc_now())
+    ).first()
+
+    if existing:
+        existing.expires_at = _utc_now() + timedelta(hours=24)
+        session.add(existing)
+        session.commit()
+        session.refresh(existing)
+        return {
+            "access_url": f"/api/v1/shared/{existing.token}",
+            "expires_at": existing.expires_at
+        }
 
     shared_access = SharedAccess(
         pet_id=pet_id,
@@ -299,14 +521,31 @@ async def get_shared_access(token: str, session: Session = Depends(get_session))
         raise HTTPException(status_code=403, detail="Access link expired or invalid")
 
     pet = shared_access.pet
+    now = _utc_now()
 
-    # Log Heartbeat Audit
-    event = LedgerEvent(
-        pet_id=pet.id,
-        event_type="HEARTBEAT_ACCESS",
-        description="Shared records accessed"
-    )
-    session.add(event)
+    # Dedup heartbeat events within 5 minutes (US-V06.4)
+    last_event = session.exec(
+        select(LedgerEvent)
+        .where(
+            LedgerEvent.pet_id == pet.id,
+            LedgerEvent.event_type == "HEARTBEAT_ACCESS",
+        )
+        .order_by(LedgerEvent.timestamp.desc())
+        .limit(1)
+    ).first()
+
+    if not last_event or (now - last_event.timestamp).total_seconds() > 300:
+        event = LedgerEvent(
+            pet_id=pet.id,
+            event_type="HEARTBEAT_ACCESS",
+            description="Shared records accessed",
+        )
+        session.add(event)
+
+    # Update access tracking
+    shared_access.access_count = (shared_access.access_count or 0) + 1
+    shared_access.last_accessed_at = now
+    session.add(shared_access)
     session.commit()
 
     # Notify owner
@@ -315,11 +554,25 @@ async def get_shared_access(token: str, session: Session = Depends(get_session))
 
     return {
         "pet": {
+            "name": pet.name,
             "species": pet.pet_species,
             "breed": pet.breed,
             "dob": pet.dob,
+            "chip_id": pet.chip_id,
+            "energy_level": pet.energy_level,
+            "max_alone_hours": pet.max_alone_hours,
+            "feeds_per_day": pet.feeds_per_day,
+            "dietary_notes": pet.dietary_notes,
+            "exercise_needs": pet.exercise_needs,
+            "medical_conditions": pet.medical_conditions,
+            "temperament": pet.temperament,
+            "care_notes": pet.care_notes,
+            "medication_notes": pet.medication_notes,
+            "emergency_vet_name": pet.emergency_vet_name,
+            "emergency_vet_phone": pet.emergency_vet_phone,
+            "care_priority": pet.care_priority,
         },
-        "vaccinations": pet.vaccinations
+        "vaccinations": pet.vaccinations,
     }
 
 

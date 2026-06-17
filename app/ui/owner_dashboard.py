@@ -1,17 +1,237 @@
 from nicegui import ui, app
 from starlette.requests import Request
-from sqlmodel import Session, select
+from sqlmodel import Session, select, col
+from datetime import timedelta
+
 from ..database import engine
-from ..models import Pet, User, LedgerEvent, NudgeSession, _utc_now
-from .header import nav_header
-from .footer import nav_footer
+from ..models import (
+    Pet, User, LedgerEvent, NudgeSession, Subscription,
+    VaccinationAlert, TagScan, _utc_now,
+)
+from .dashboard_shell import dashboard_shell
 from .common import (
     try_restore_session,
     SPECIES_ICONS, SPECIES_ICON_DEFAULT, SPECIES_BG, SPECIES_BG_DEFAULT,
     SPECIES_FG, SPECIES_FG_DEFAULT,
 )
 
-BORDER_COLORS = ['#a03a21', '#7d5800', '#5d5c58', '#a03a21', '#7d5800']
+# Species emoji for pet card avatars
+_SPECIES_EMOJI = {'DOG': '\U0001F415', 'CAT': '\U0001F408'}
+_SPECIES_EMOJI_DEFAULT = '\U0001F43E'
+
+
+def _relative_time(dt) -> str:
+    """Return a human-friendly relative time string."""
+    now = _utc_now()
+    diff = now - dt
+    seconds = int(diff.total_seconds())
+    if seconds < 60:
+        return 'Just now'
+    minutes = seconds // 60
+    if minutes < 60:
+        return f'{minutes}m ago'
+    hours = minutes // 60
+    if hours < 24:
+        return f'{hours}h ago'
+    days = hours // 24
+    if days < 7:
+        return f'{days}d ago'
+    if days < 30:
+        weeks = days // 7
+        return f'{weeks}w ago'
+    return dt.strftime('%b %d, %Y')
+
+
+_DASHBOARD_CSS = '''
+/* Quick stat cards */
+.qs-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+.qs-card {
+    background: #ffffff;
+    border: 1px solid #e7e5e4;
+    border-radius: 10px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.qs-icon-box {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.qs-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.qs-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--pl-on-surface);
+    line-height: 1.2;
+}
+.qs-label {
+    font-size: 12px;
+    color: var(--pl-text-hint);
+    font-weight: 500;
+}
+
+/* Pet cards grid */
+.pet-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+}
+.pet-card {
+    background: #ffffff;
+    border: 1px solid #e7e5e4;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.pet-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+}
+.pet-card-register {
+    background: transparent;
+    border: 2px dashed #d6d3d1;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    min-height: 180px;
+}
+.pet-card-register:hover {
+    border-color: var(--pl-primary);
+    background: rgba(160,58,33,0.03);
+}
+.pet-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    flex-shrink: 0;
+}
+.pet-card-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--pl-on-surface);
+    text-align: center;
+}
+.pet-card-breed {
+    font-size: 12px;
+    color: var(--pl-text-hint);
+    text-align: center;
+}
+.pet-card-stats {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 4px;
+}
+.pet-card-stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--pl-text-hint);
+}
+
+/* Bottom 2-col grid */
+.bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+.bottom-card {
+    background: #ffffff;
+    border: 1px solid #e7e5e4;
+    border-radius: 12px;
+    padding: 24px;
+}
+.bottom-card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--pl-on-surface);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.activity-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 8px 0;
+}
+.activity-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 6px;
+}
+.activity-text {
+    font-size: 13px;
+    color: var(--pl-on-surface);
+    font-weight: 500;
+}
+.activity-time {
+    font-size: 11px;
+    color: var(--pl-text-hint);
+    margin-top: 2px;
+}
+
+/* Responsive */
+@media (max-width: 1023px) {
+    .qs-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .bottom-grid {
+        grid-template-columns: 1fr;
+    }
+}
+@media (max-width: 767px) {
+    .qs-grid {
+        grid-template-columns: 1fr;
+    }
+    .pet-cards-grid {
+        grid-template-columns: 1fr;
+    }
+}
+'''
+
+# Dot colors by event type
+_EVENT_DOT_COLORS = {
+    'VACCINATION': '#16a34a',
+    'EMERGENCY_SCAN': '#dc2626',
+    'HEARTBEAT_ACCESS': '#2563eb',
+    'OWNERSHIP_CHANGE': '#7c3aed',
+    'WEIGHT_CHECK': '#ca8a04',
+}
 
 
 def init_dashboard_page() -> None:
@@ -25,8 +245,7 @@ def init_dashboard_page() -> None:
             ui.notify(f"Welcome back, {app.storage.user['name']}!", type='positive')
             app.storage.user['greet_user'] = False
 
-        nav_header()
-
+        # ── Data fetching ──
         with Session(engine) as session:
             user = session.exec(
                 select(User).where(User.email == app.storage.user['email'])
@@ -42,12 +261,11 @@ def init_dashboard_page() -> None:
                 session.refresh(user)
 
             pets = session.exec(select(Pet).where(Pet.owner_id == user.id)).all()
-
-            # Gather recent ledger events across all pets
             pet_ids = [p.id for p in pets]
+
+            # Recent ledger events
             recent_events = []
             if pet_ids:
-                from sqlmodel import col
                 recent_events = session.exec(
                     select(LedgerEvent)
                     .where(col(LedgerEvent.pet_id).in_(pet_ids))
@@ -55,22 +273,32 @@ def init_dashboard_page() -> None:
                     .limit(5)
                 ).all()
 
-            # Calculate vaccination health score
+            # Total vaccinations
             total_vax = 0
-            current_vax = 0
             for pet in pets:
-                for v in pet.vaccinations:
-                    total_vax += 1
-                    if v.expiration_date > _utc_now():
-                        current_vax += 1
-            health_pct = round((current_vax / total_vax) * 100) if total_vax > 0 else 0
-            health_label = 'Optimal Health' if health_pct >= 80 else ('Needs Attention' if health_pct >= 50 else 'Action Required')
-            health_sub = 'All shots current' if health_pct >= 80 else f'{current_vax}/{total_vax} vaccinations current'
+                total_vax += len(pet.vaccinations)
 
-            # Gather most recent nudge per pet
+            # Pending alerts count
+            pending_alerts_count = 0
+            user_sub = session.exec(
+                select(Subscription).where(Subscription.user_id == user.id)
+            ).first()
+            user_tier = user_sub.tier if user_sub and user_sub.status == "active" else "free"
+            is_verified = user_tier in ("verified", "guardian")
+
+            if is_verified and pet_ids:
+                pending_alerts_count = len(session.exec(
+                    select(VaccinationAlert)
+                    .where(
+                        col(VaccinationAlert.pet_id).in_(pet_ids),
+                        VaccinationAlert.is_sent == False,
+                        VaccinationAlert.alert_date <= _utc_now() + timedelta(days=30),
+                    )
+                ).all())
+
+            # Nudge sessions (recovery alerts)
             recent_nudges = []
             if pet_ids:
-                from sqlmodel import col
                 for pid in pet_ids:
                     nudge = session.exec(
                         select(NudgeSession)
@@ -82,244 +310,247 @@ def init_dashboard_page() -> None:
                         pet_for_nudge = next((p for p in pets if p.id == pid), None)
                         recent_nudges.append((nudge, pet_for_nudge))
 
-        # ── Main content ──
-        with ui.element('main').classes('w-full max-w-7xl mx-auto px-6 py-10'):
-            with ui.row().classes('w-full gap-10 items-start').style('flex-wrap: wrap;'):
+            # Tag + scan counts per pet
+            pet_stats = {}
+            for pet in pets:
+                tag_count = len(pet.tags)
+                scan_count = len(session.exec(
+                    select(TagScan).where(TagScan.pet_id == pet.id)
+                ).all())
+                vax_count = len(pet.vaccinations)
+                pet_stats[pet.id] = {
+                    'tags': tag_count,
+                    'scans': scan_count,
+                    'vaccinations': vax_count,
+                }
 
-                # ── Left: Pet Cards (8/12) ──
-                with ui.column().classes('gap-6').style('flex: 1 1 60%; min-width: 300px;'):
-                    # Header row
-                    with ui.row().classes('w-full justify-between items-center'):
-                        with ui.column().classes('gap-1'):
-                            ui.label('My Pets').style(
-                                "font-family: 'Plus Jakarta Sans'; font-size: 40px; "
-                                "font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; color: #171c21;"
+        # ── Render ──
+        first_name = (app.storage.user.get('name') or 'there').split()[0]
+
+        with dashboard_shell(title='Dashboard'):
+            ui.add_css(_DASHBOARD_CSS)
+
+            # ── Subscription status warnings ──
+            if user_sub and user_sub.status == "past_due":
+                with ui.element('div').classes('w-full p-4 mb-4 rounded-lg').style(
+                    'background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px;'
+                ):
+                    with ui.row().classes('items-center gap-3'):
+                        ui.icon('warning').style('font-size: 24px; color: #dc2626;')
+                        with ui.column().classes('gap-1 flex-1'):
+                            ui.label('Payment Failed').style(
+                                'font-size: 14px; font-weight: 700; color: #991b1b;'
                             )
-                            ui.label("Manage and view your pets' medical records.").style(
-                                'color: #57423d; font-size: 16px;'
-                            )
-
-                    # Pet cards grid
-                    with ui.row().classes('w-full gap-6 flex-wrap'):
-                        for idx, pet in enumerate(pets):
-                            border_color = BORDER_COLORS[idx % len(BORDER_COLORS)]
-                            has_photo = bool(pet.photo_url)
-
-                            with ui.card().classes(
-                                'overflow-hidden flex flex-col cursor-pointer'
-                            ).style(
-                                f'border-left: 4px solid {border_color}; border-radius: 0.75rem; '
-                                'box-shadow: 0 4px 12px rgba(0,0,0,0.05); width: calc(50% - 0.75rem); '
-                                'min-width: 260px; transition: box-shadow 0.3s;'
-                            ).on('click', lambda p=pet: ui.navigate.to(f'/pet/{p.id}')):
-                                with ui.column().classes('p-6 gap-3 items-center'):
-                                    # Circular avatar (matching pet details page)
-                                    with ui.element('div').classes('relative'):
-                                        if has_photo:
-                                            ui.image(pet.photo_url).classes('rounded-full').style(
-                                                'width: 96px; height: 96px; object-fit: cover; '
-                                                'border: 4px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.1);'
-                                            )
-                                        else:
-                                            species = pet.pet_species or 'DOG'
-                                            bg = SPECIES_BG.get(species, SPECIES_BG_DEFAULT)
-                                            fg = SPECIES_FG.get(species, SPECIES_FG_DEFAULT)
-                                            icon_name = SPECIES_ICONS.get(species, SPECIES_ICON_DEFAULT)
-                                            with ui.element('div').classes(
-                                                'flex items-center justify-center rounded-full'
-                                            ).style(
-                                                f'width: 96px; height: 96px; background: {bg}; '
-                                                'border: 4px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.1);'
-                                            ):
-                                                ui.icon(icon_name).style(
-                                                    f'font-size: 48px; color: {fg};'
-                                                )
-
-                                    # Info
-                                    ui.label(pet.name or 'Unnamed').style(
-                                        "font-family: 'Plus Jakarta Sans'; font-size: 24px; "
-                                        "font-weight: 600; color: #171c21; text-align: center;"
-                                    )
-                                    ui.label(
-                                        f'{pet.pet_species}, {pet.breed or "Unknown"}'
-                                    ).style('color: #57423d; font-size: 16px; text-align: center;')
-
-                                    # Status badge (matching pet profile page style)
-                                    with ui.row().classes('gap-2 justify-center'):
-                                        s_bg = '#dcfce7' if pet.identity_status == 'VERIFIED' else '#fef9c3'
-                                        s_fg = '#166534' if pet.identity_status == 'VERIFIED' else '#854d0e'
-                                        s_txt = 'Verified' if pet.identity_status == 'VERIFIED' else 'Unverified'
-                                        ui.label(s_txt).style(
-                                            f'padding: 4px 12px; background: {s_bg}; '
-                                            f'color: {s_fg}; font-size: 12px; '
-                                            'font-weight: 600; border-radius: 9999px;'
-                                        )
-
-                                    with ui.row().classes('items-center gap-2 pt-2'):
-                                        ui.label('View Records').style(
-                                            'color: #a03a21; font-weight: 600; font-size: 14px;'
-                                        )
-                                        ui.icon('arrow_forward').style(
-                                            'font-size: 14px; color: #a03a21;'
-                                        )
-
-                        # Add New Pet placeholder
-                        with ui.card().classes(
-                            'flex flex-col items-center justify-center cursor-pointer'
-                        ).style(
-                            'border: 2px dashed #dec0b9; border-radius: 0.75rem; '
-                            'width: calc(50% - 0.75rem); min-width: 260px; min-height: 300px; '
-                            'background: transparent; box-shadow: none;'
-                        ).on('click', lambda: ui.navigate.to('/register')):
-                            with ui.element('div').classes(
-                                'flex items-center justify-center rounded-full'
-                            ).style(
-                                'width: 64px; height: 64px; background: #eaeef5;'
-                            ):
-                                ui.icon('add').style('font-size: 36px; color: #57423d;')
-                            ui.label('Add New Pet').style(
-                                'font-weight: 600; color: #171c21; margin-top: 1rem;'
-                            )
-                            ui.label('Register a new companion').style(
-                                'font-size: 12px; color: #57423d;'
-                            )
-
-                # ── Right: Sidebar Widgets (4/12) ──
-                with ui.column().classes('gap-6').style('flex: 1 0 340px; max-width: 100%;'):
-
-                    # Recent Activity Widget
-                    with ui.card().classes('w-full p-6').style(
-                        'border-radius: 0.75rem; background: #f0f4fb; '
-                        'border: 1px solid rgba(222,192,185,0.3);'
-                    ):
-                        with ui.row().classes('items-center gap-2 mb-4'):
-                            ui.icon('history').style('color: #a03a21;')
-                            ui.label('Recent Activity').style(
-                                "font-family: 'Plus Jakarta Sans'; font-size: 24px; "
-                                "font-weight: 600; color: #171c21;"
-                            )
-
-                        if recent_events:
-                            with ui.column().classes('gap-4'):
-                                event_icons = {
-                                    'VACCINATION': ('vaccines', '#c15237', '#fffbff'),
-                                    'EMERGENCY_SCAN': ('qr_code_scanner', '#7d5800', '#ffffff'),
-                                    'HEARTBEAT_ACCESS': ('medical_services', '#ffc65d', '#755100'),
-                                    'OWNERSHIP_CHANGE': ('swap_horiz', '#767470', '#fcffe0'),
-                                    'WEIGHT_CHECK': ('monitor_weight', '#ffc65d', '#755100'),
-                                }
-                                for event in recent_events:
-                                    icon_name, bg_color, fg_color = event_icons.get(
-                                        event.event_type, ('description', '#767470', '#fcffe0')
-                                    )
-                                    with ui.row().classes('gap-4'):
-                                        with ui.element('div').classes(
-                                            'flex items-center justify-center rounded-full flex-shrink-0'
-                                        ).style(
-                                            f'width: 32px; height: 32px; background: {bg_color}; color: {fg_color};'
-                                        ):
-                                            ui.icon(icon_name).style('font-size: 16px;')
-                                        with ui.column().classes('gap-0'):
-                                            ui.label(event.description).style(
-                                                'font-weight: 600; font-size: 14px; color: #171c21;'
-                                            )
-                                            ui.label(
-                                                event.timestamp.strftime('%b %d, %Y • %H:%M')
-                                            ).style('font-size: 12px; color: #57423d;')
-                        else:
-                            ui.label('No recent activity.').style(
-                                'color: #57423d; font-style: italic; font-size: 14px;'
-                            )
-
-                    # Medical Status Widget
-                    with ui.card().classes('w-full p-6 relative overflow-hidden').style(
-                        'border-radius: 0.75rem; background: #dee3e9; '
-                        'border: 1px solid rgba(222,192,185,0.3);'
-                    ):
-                        with ui.column().classes('relative z-10 gap-1'):
-                            ui.label('Medical Status').style(
-                                "font-family: 'Plus Jakarta Sans'; font-size: 24px; "
-                                "font-weight: 600; color: #171c21;"
-                            )
-                            ui.label('Your overall pet health status').style(
-                                'font-size: 12px; color: #57423d; margin-bottom: 1rem;'
-                            )
-
-                            with ui.row().classes('items-center gap-4 p-4 rounded-lg').style(
-                                'background: rgba(255,255,255,0.4); backdrop-filter: blur(4px);'
-                            ):
-                                # Health ring
-                                ring_color = '#16a34a' if health_pct >= 80 else ('#ca8a04' if health_pct >= 50 else '#dc2626')
-                                with ui.element('div').classes(
-                                    'flex items-center justify-center rounded-full'
-                                ).style(
-                                    f'width: 48px; height: 48px; '
-                                    f'border: 4px solid {ring_color}; border-top-color: transparent;'
-                                ):
-                                    ui.label(f'{health_pct}%').style(
-                                        'font-weight: 700; font-size: 14px; color: #171c21;'
-                                    )
-                                with ui.column().classes('gap-0'):
-                                    ui.label(health_label).style(
-                                        'font-weight: 600; font-size: 14px; color: #171c21;'
-                                    )
-                                    ui.label(health_sub).style(
-                                        'font-size: 12px; color: #57423d;'
-                                    )
-
-                        # Decorative background icon
-                        ui.icon('pets').style(
-                            'position: absolute; right: -10px; bottom: -10px; '
-                            'font-size: 160px; opacity: 0.1; color: #171c21;'
+                            ui.label(
+                                'Your last payment failed. Please update your billing information '
+                                'to keep your Verified features active.'
+                            ).style('font-size: 13px; color: #7f1d1d;')
+                        ui.button(
+                            'Update Billing', icon='credit_card',
+                            on_click=lambda: ui.navigate.to('/subscription/manage'),
+                        ).props('no-caps dense').style(
+                            'background: #dc2626; color: white; border-radius: 6px; font-size: 12px;'
                         )
 
-                    # Recovery Alerts Widget
-                    with ui.card().classes('w-full p-6').style(
-                        'border-radius: 0.75rem; background: #fff7ed; '
-                        'border: 1px solid rgba(160,58,33,0.2);'
+            elif user_sub and user_sub.cancel_at_period_end and user_sub.status == "active":
+                end_date = user_sub.current_period_end
+                end_str = end_date.strftime('%B %d, %Y') if end_date else 'end of period'
+                with ui.element('div').classes('w-full p-4 mb-4 rounded-lg').style(
+                    'background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px;'
+                ):
+                    with ui.row().classes('items-center gap-3'):
+                        ui.icon('info').style('font-size: 24px; color: #d97706;')
+                        with ui.column().classes('gap-1 flex-1'):
+                            ui.label('Subscription Canceling').style(
+                                'font-size: 14px; font-weight: 700; color: #92400e;'
+                            )
+                            ui.label(
+                                f'Your Verified subscription will end on {end_str}. '
+                                'You can reactivate anytime before then.'
+                            ).style('font-size: 13px; color: #78350f;')
+                        ui.button(
+                            'Reactivate', icon='autorenew',
+                            on_click=lambda: ui.navigate.to('/subscription/manage'),
+                        ).props('no-caps dense').style(
+                            'background: #d97706; color: white; border-radius: 6px; font-size: 12px;'
+                        )
+
+            # Welcome header
+            with ui.column().classes('gap-1 mb-6'):
+                ui.label(f'Welcome back, {first_name}').style(
+                    'font-size: 24px; font-weight: 800; color: var(--pl-on-surface); '
+                    'letter-spacing: -0.02em;'
+                )
+                ui.label("Manage your pets' medical records and recovery tools.").style(
+                    'font-size: 14px; color: var(--pl-text-hint);'
+                )
+
+            # ── Quick stats row ──
+            with ui.element('div').classes('qs-grid mb-8'):
+                # Registered Pets
+                _quick_stat(
+                    value=str(len(pets)),
+                    label='Registered Pets',
+                    icon='pets',
+                    bg='#dcfce7',
+                    fg='#166534',
+                )
+                # Total Vaccinations
+                _quick_stat(
+                    value=str(total_vax),
+                    label='Total Vaccinations',
+                    icon='vaccines',
+                    bg='#dbeafe',
+                    fg='#1e40af',
+                )
+                # Pending Alerts
+                _quick_stat(
+                    value=str(pending_alerts_count),
+                    label='Pending Alerts',
+                    icon='notifications',
+                    bg='#fef9c3',
+                    fg='#854d0e',
+                )
+                # Plan Status
+                _quick_stat(
+                    value=user_tier.capitalize(),
+                    label='Plan Status',
+                    icon='verified',
+                    bg='#f3e8ff',
+                    fg='#6b21a8',
+                )
+
+            # ── My Pets heading + grid ──
+            ui.label('My Pets').style(
+                'font-size: 18px; font-weight: 700; color: var(--pl-on-surface); margin-bottom: 12px;'
+            )
+
+            with ui.element('div').classes('pet-cards-grid mb-8'):
+                for pet in pets:
+                    species = pet.pet_species or 'DOG'
+                    _AVATAR_BG = {'DOG': '#fef3c7', 'CAT': '#e0e7ff'}
+                    bg = _AVATAR_BG.get(species, '#f5f5f4')
+                    emoji = _SPECIES_EMOJI.get(species, _SPECIES_EMOJI_DEFAULT)
+                    stats = pet_stats.get(pet.id, {'vaccinations': 0, 'tags': 0, 'scans': 0})
+
+                    with ui.element('div').classes('pet-card').on(
+                        'click', lambda p=pet: ui.navigate.to(f'/pet/{p.id}')
                     ):
-                        with ui.row().classes('items-center gap-2 mb-4'):
-                            ui.icon('notifications_active').style('color: #a03a21;')
-                            ui.label('Recovery Alerts').style(
-                                "font-family: 'Plus Jakarta Sans'; font-size: 24px; "
-                                "font-weight: 600; color: #171c21;"
+                        # Avatar — photo if available, emoji fallback
+                        if pet.photo_url:
+                            ui.image(
+                                f'/api/v1/pets/{pet.id}/photo'
+                            ).classes('pet-avatar').style(
+                                'object-fit: cover; border: 2px solid #e7e5e4;'
                             )
-
-                        if recent_nudges:
-                            with ui.column().classes('gap-4'):
-                                for nudge, nudge_pet in recent_nudges:
-                                    with ui.row().classes('gap-3'):
-                                        with ui.element('div').classes(
-                                            'flex items-center justify-center rounded-full flex-shrink-0'
-                                        ).style(
-                                            'width: 32px; height: 32px; background: #ffdad2; color: #a03a21;'
-                                        ):
-                                            ui.icon('person_search').style('font-size: 16px;')
-                                        with ui.column().classes('gap-0 min-w-0'):
-                                            pet_name = nudge_pet.name if nudge_pet else 'Unknown'
-                                            ui.label(f'{pet_name}').style(
-                                                'font-weight: 600; font-size: 14px; color: #171c21;'
-                                            )
-                                            preview = nudge.message[:80] + ('...' if len(nudge.message) > 80 else '')
-                                            ui.label(f'"{preview}"').style(
-                                                'font-size: 13px; color: #57423d; font-style: italic; '
-                                                'overflow: hidden; text-overflow: ellipsis; white-space: nowrap;'
-                                            )
-                                            ui.label(
-                                                nudge.created_at.strftime('%b %d, %Y • %H:%M')
-                                            ).style('font-size: 11px; color: #a8a29e;')
                         else:
-                            ui.label('No recovery alerts.').style(
-                                'color: #57423d; font-style: italic; font-size: 14px;'
-                            )
+                            with ui.element('div').classes('pet-avatar').style(f'background: {bg};'):
+                                ui.label(emoji).style('font-size: 32px; line-height: 1;')
 
-                        # Upsell prompt
-                        with ui.row().classes('items-center gap-2 mt-4 pt-3').style(
-                            'border-top: 1px solid rgba(160,58,33,0.1);'
+                        # Name
+                        ui.label(pet.name or 'Unnamed').classes('pet-card-name')
+
+                        # Breed
+                        ui.label(pet.breed or species.capitalize()).classes('pet-card-breed')
+
+                        # Verified badge
+                        if is_verified:
+                            with ui.element('div').style(
+                                'display: inline-flex; align-items: center; gap: 4px; '
+                                'padding: 2px 8px; background: #dcfce7; border-radius: 9999px;'
+                            ):
+                                ui.icon('verified').style('font-size: 12px; color: #166534;')
+                                ui.label('Verified').style(
+                                    'font-size: 10px; font-weight: 600; color: #166534;'
+                                )
+
+                        # Stat row
+                        with ui.element('div').classes('pet-card-stats'):
+                            with ui.element('div').classes('pet-card-stat'):
+                                ui.icon('vaccines').style('font-size: 14px;')
+                                ui.label(str(stats['vaccinations']))
+                            with ui.element('div').classes('pet-card-stat'):
+                                ui.icon('qr_code_2').style('font-size: 14px;')
+                                ui.label(str(stats['tags']))
+                            with ui.element('div').classes('pet-card-stat'):
+                                ui.icon('radar').style('font-size: 14px;')
+                                ui.label(str(stats['scans']))
+
+                # Register New Pet card
+                with ui.element('div').classes('pet-card-register').on(
+                    'click', lambda: ui.navigate.to('/register')
+                ):
+                    ui.icon('add_circle_outline').style(
+                        'font-size: 32px; color: var(--pl-text-hint);'
+                    )
+                    ui.label('Register New Pet').style(
+                        'font-size: 14px; font-weight: 600; color: var(--pl-on-surface);'
+                    )
+
+            # ── Bottom 2-column grid: Recent Activity + Recovery Alerts ──
+            with ui.element('div').classes('bottom-grid'):
+
+                # Recent Activity
+                with ui.element('div').classes('bottom-card'):
+                    with ui.element('div').classes('bottom-card-title'):
+                        ui.icon('history').style('font-size: 20px; color: var(--pl-primary);')
+                        ui.label('Recent Activity')
+
+                    if recent_events:
+                        for event in recent_events:
+                            dot_color = _EVENT_DOT_COLORS.get(event.event_type, '#a8a29e')
+                            with ui.element('div').classes('activity-item'):
+                                ui.element('div').classes('activity-dot').style(
+                                    f'background: {dot_color};'
+                                )
+                                with ui.column().classes('gap-0'):
+                                    ui.label(event.description).classes('activity-text')
+                                    ui.label(_relative_time(event.timestamp)).classes('activity-time')
+                    else:
+                        ui.label('No recent activity yet.').style(
+                            'font-size: 13px; color: var(--pl-text-hint); font-style: italic;'
+                        )
+
+                # Recovery Alerts
+                with ui.element('div').classes('bottom-card'):
+                    with ui.element('div').classes('bottom-card-title'):
+                        ui.icon('notifications_active').style(
+                            'font-size: 20px; color: var(--pl-primary);'
+                        )
+                        ui.label('Recovery Alerts')
+
+                    if recent_nudges:
+                        for nudge, nudge_pet in recent_nudges:
+                            dot_color = '#dc2626'
+                            with ui.element('div').classes('activity-item'):
+                                ui.element('div').classes('activity-dot').style(
+                                    f'background: {dot_color};'
+                                )
+                                with ui.column().classes('gap-0'):
+                                    pet_name = nudge_pet.name if nudge_pet else 'Unknown'
+                                    preview = nudge.message[:80] + ('...' if len(nudge.message) > 80 else '')
+                                    ui.label(f'{pet_name}: "{preview}"').classes('activity-text')
+                                    ui.label(_relative_time(nudge.created_at)).classes('activity-time')
+                    else:
+                        with ui.column().classes('items-center justify-center gap-2').style(
+                            'padding: 24px 0;'
                         ):
-                            ui.icon('verified').style('font-size: 16px; color: #7d5800;')
-                            ui.label('Upgrade to reply securely without revealing your email').style(
-                                'font-size: 12px; color: #7d5800; font-style: italic;'
+                            ui.icon('shield').style(
+                                'font-size: 32px; color: #16a34a; opacity: 0.7;'
+                            )
+                            ui.label('All pets are protected').style(
+                                'font-size: 13px; color: var(--pl-text-hint); font-weight: 500;'
+                            )
+                            ui.label('No recovery alerts at this time.').style(
+                                'font-size: 12px; color: var(--pl-text-hint);'
                             )
 
-        nav_footer()
+
+def _quick_stat(value: str, label: str, icon: str, bg: str, fg: str) -> None:
+    """Render a quick-stat card."""
+    with ui.element('div').classes('qs-card'):
+        with ui.element('div').classes('qs-icon-box').style(f'background: {bg};'):
+            ui.icon(icon).style(f'font-size: 20px; color: {fg};')
+        with ui.element('div').classes('qs-info'):
+            ui.label(value).classes('qs-value')
+            ui.label(label).classes('qs-label')

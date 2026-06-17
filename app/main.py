@@ -53,13 +53,24 @@ fastapi_app.add_middleware(
 _static_dir = pathlib.Path(__file__).parent / "ui" / "static"
 fastapi_app.mount("/static", StaticFiles(directory=_static_dir), name="static")
 
+
 # Include API routes
 fastapi_app.include_router(api_router)
+
+# SEO: Server-rendered public pages (registered before NiceGUI so they take priority)
+from .seo_pages import router as seo_router
+fastapi_app.include_router(seo_router)
 
 # Top-level /auth/callback to match Google OAuth registered redirect URI.
 # Delegates to the same logic as /api/v1/auth/callback.
 from .api.v1.auth import auth_callback as _auth_callback
 fastapi_app.add_api_route("/auth/callback", _auth_callback, methods=["GET"])
+
+
+# ── Health check (lightweight, no page rendering) ──
+@fastapi_app.get("/health")
+async def health_check():
+    return {"status": "ok"}
 
 
 # ── SEO: robots.txt and sitemap.xml ──
@@ -74,6 +85,12 @@ async def robots_txt():
         "Disallow: /owner/\n"
         "Disallow: /register\n"
         "Disallow: /api/\n"
+        "Disallow: /pet/\n"
+        "Disallow: /qr/\n"
+        "Disallow: /shared-access\n"
+        "Disallow: /subscription\n"
+        "Disallow: /lookup\n"
+        "Disallow: /tags\n"
         "\n"
         "Sitemap: https://www.pawsledger.com/sitemap.xml\n"
     )
@@ -85,8 +102,14 @@ async def sitemap_xml():
         '<?xml version="1.0" encoding="UTF-8"?>\n'
         '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
         '  <url><loc>https://www.pawsledger.com/</loc><priority>1.0</priority><changefreq>weekly</changefreq></url>\n'
+        '  <url><loc>https://www.pawsledger.com/about</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>\n'
         '  <url><loc>https://www.pawsledger.com/faq</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>\n'
         '  <url><loc>https://www.pawsledger.com/pricing</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>\n'
+        '  <url><loc>https://www.pawsledger.com/lost</loc><priority>0.8</priority><changefreq>monthly</changefreq></url>\n'
+        '  <url><loc>https://www.pawsledger.com/verify</loc><priority>0.7</priority><changefreq>monthly</changefreq></url>\n'
+        '  <url><loc>https://www.pawsledger.com/contact</loc><priority>0.6</priority><changefreq>monthly</changefreq></url>\n'
+        '  <url><loc>https://www.pawsledger.com/privacy</loc><priority>0.5</priority><changefreq>yearly</changefreq></url>\n'
+        '  <url><loc>https://www.pawsledger.com/terms</loc><priority>0.5</priority><changefreq>yearly</changefreq></url>\n'
         '  <url><loc>https://www.pawsledger.com/login</loc><priority>0.6</priority><changefreq>monthly</changefreq></url>\n'
         '</urlset>\n'
     )

@@ -1,19 +1,14 @@
 from nicegui import ui
-from .header import nav_header
-from .footer import nav_footer
+from .layout import page_shell
 
 
 def init_privacy_page() -> None:
     @ui.page('/privacy')
     async def privacy_page() -> None:
-        nav_header()
-
-        with ui.element('main').classes('w-full max-w-4xl mx-auto px-6 py-16'):
+        with page_shell():
             with ui.column().classes('w-full items-center mb-12'):
-                ui.label('Privacy Policy').style(
-                    "font-family: 'Plus Jakarta Sans'; font-size: 40px; "
-                    "font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; "
-                    "color: #171c21; text-align: center;"
+                ui.label('Privacy Policy').classes('pl-heading-3xl').style(
+                    'text-align: center;'
                 )
                 ui.label(
                     'How PawsLedger collects, uses, and protects your information.'
@@ -211,17 +206,13 @@ def init_privacy_page() -> None:
                     ],
                 )
 
-        nav_footer()
 
 
 def _section(title: str, icon: str, items: list) -> None:
     with ui.column().classes('w-full'):
         with ui.row().classes('items-center gap-3 mb-4'):
-            ui.icon(icon).style('font-size: 24px; color: #a03a21;')
-            ui.label(title).style(
-                "font-family: 'Plus Jakarta Sans'; font-size: 24px; "
-                "font-weight: 600; color: #171c21;"
-            )
+            ui.icon(icon).style('font-size: 24px; color: var(--pl-primary);')
+            ui.label(title).classes('pl-heading-xl')
         for subtitle, text in items:
             with ui.column().classes('w-full ml-9 mb-3'):
                 ui.label(subtitle).style(

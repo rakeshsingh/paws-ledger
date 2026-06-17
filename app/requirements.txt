@@ -7,6 +7,8 @@ httpx
 authlib
 itsdangerous
 fpdf2
+stripe
+boto3
 pytest
 pytest-asyncio
 pytest-mock

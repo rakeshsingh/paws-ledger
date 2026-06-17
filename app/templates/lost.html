@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="text-align: center; margin-bottom: 3rem;">
+    <h1 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 2.5rem; font-weight: 700; color: #171c21;">Found a Lost Pet?</h1>
+    <p style="font-size: 1.125rem; color: #57423d; max-width: 600px; margin: 0.5rem auto;">
+        Use our global lookup or scan their QR/NFC tag to notify the owner instantly.
+    </p>
+</div>
+
+<div class="seo-card" style="text-align: center; background: #fff7ed; border-color: rgba(251,191,36,0.3);">
+    <h2>Search the Global Ledger</h2>
+    <p>Enter the 15-digit microchip ID to search across PawsLedger and the AAHA Universal Network.</p>
+    <form action="/" method="get" style="display: flex; gap: 0.5rem; max-width: 480px; margin: 1.5rem auto;">
+        <input type="text" name="q" placeholder="Enter Microchip ID" aria-label="Microchip number"
+               style="flex: 1; padding: 0.75rem 1rem; border: 1px solid #dec0b9; border-radius: 0.5rem; font-size: 1rem;">
+        <button type="submit" style="background: #a03a21; color: white; font-weight: 600; padding: 0.75rem 1.5rem; border-radius: 0.5rem; border: none; cursor: pointer;">Search</button>
+    </form>
+</div>
+
+<div class="seo-grid" style="margin-top: 2rem;">
+    <div class="seo-card" style="border-left: 4px solid #a03a21;">
+        <h2>Found a Pet?</h2>
+        <ol style="color: #57423d; line-height: 2;">
+            <li>Check for a PawsLedger QR or NFC tag on the collar.</li>
+            <li>Scan with your phone camera or tap with NFC.</li>
+            <li>Use the secure nudge form to alert the owner.</li>
+            <li>Take the pet to any vet to scan the microchip.</li>
+        </ol>
+    </div>
+    <div class="seo-card" style="border-left: 4px solid #7d5800;">
+        <h2>Owner Privacy</h2>
+        <p>We never expose owner names, phone numbers, or addresses to finders. All communication goes through our secure relay system. The owner receives an email notification with your message and can choose how to respond.</p>
+        <p style="font-size: 0.85rem; font-weight: 600; color: #7d5800; margin-top: 1rem;">Identity-verified nudges only — no anonymous spam.</p>
+    </div>
+</div>
+{% endblock %}

@@ -168,11 +168,11 @@ Building on the Phase 0 foundation, Phase 1 delivers the minimum viable product:
 
 #### Phase 2: The "Health Ledger"
 
-* Integrate medical record uploads (PDF parsing using Gen-AI).
-* Build the "Caregiver" time-bound access sharing.
+* supporting uploading of medical records (PDF files)
+* Build thetime-bound access sharing feature to "Caregivers". The sharing feature should be able to provide basic info, care info, and medical history. default share-time should be 24hrs.
 
 #### Phase 3: The "Ecosystem"
-
+* update medical record uploads feature to support PDF parsing using Gen-AI
 * Integrate with insurance providers via API.
 * Launch the "Veri-Tag" physical hardware store.
 

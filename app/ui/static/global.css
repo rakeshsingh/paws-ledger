@@ -3,7 +3,7 @@
    Single source of truth for all UI styling.
    Used across all NiceGUI pages via <link> in pages.py.
 
-   Color palette aligned with static/templates/landing.html
+   Color palette: warm terracotta & gold.
 */
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
@@ -12,7 +12,7 @@
    CSS Custom Properties (Design Tokens)
    ============================================================ */
 :root {
-  /* Brand palette — warm terracotta & gold from landing template */
+  /* Brand palette — warm terracotta & gold */
   --pl-primary: #a03a21;
   --pl-primary-hover: #83250e;
   --pl-primary-container: #c15237;
@@ -31,6 +31,12 @@
   --pl-surface-container-highest: #dee3e9;
   --pl-surface-warm: #fff7ed;
 
+  /* Semantic surface backgrounds */
+  --pl-surface-info: #fff7ed;
+  --pl-surface-warning: #fff7ed;
+  --pl-surface-success: #f0fdf4;
+  --pl-surface-danger: #fef2f2;
+
   /* Text */
   --pl-on-surface: #171c21;
   --pl-on-surface-variant: #57423d;
@@ -43,8 +49,15 @@
   --pl-border: #dec0b9;
   --pl-border-light: rgba(0, 0, 0, 0.05);
 
-  /* Typography */
+  /* Typography — type scale */
   --pl-font: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  --pl-text-xs: 11px;
+  --pl-text-sm: 13px;
+  --pl-text-base: 15px;
+  --pl-text-lg: 18px;
+  --pl-text-xl: 24px;
+  --pl-text-2xl: 32px;
+  --pl-text-3xl: 40px;
 
   /* Shapes */
   --pl-radius-sm: 0.25rem;
@@ -58,7 +71,7 @@
   --pl-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --pl-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
 
-  /* Quasar color overrides — replace default blue with warm palette */
+  /* Quasar color overrides — warm palette */
   --q-primary: #a03a21;
   --q-secondary: #7d5800;
   --q-accent: #c15237;
@@ -71,6 +84,10 @@
 /* ============================================================
    Base / Reset
    ============================================================ */
+a {
+  color: var(--pl-primary);
+}
+
 body {
   font-family: 'Inter', sans-serif;
   background-color: var(--pl-bg);
@@ -103,7 +120,7 @@ body {
 .bg-accent { background-color: #c15237 !important; }
 .text-accent { color: #c15237 !important; }
 
-/* All Quasar buttons get warm styling by default */
+/* All Quasar buttons */
 .q-btn {
   border-radius: var(--pl-radius-lg) !important;
   text-transform: none !important;
@@ -128,6 +145,40 @@ body {
   border-radius: var(--pl-radius-xl) !important;
   box-shadow: var(--pl-shadow-sm) !important;
   border: 1px solid var(--pl-border) !important;
+}
+
+/* Quasar tabs → terracotta palette */
+.q-tab--active {
+  color: var(--pl-primary) !important;
+}
+.q-tab__indicator {
+  background: var(--pl-primary) !important;
+}
+.q-tabs--not-scrollable .q-tab--active .q-tab__label {
+  color: var(--pl-primary) !important;
+}
+
+/* Quasar form fields → terracotta focus */
+.q-field--focused .q-field__control::after {
+  border-color: var(--pl-primary) !important;
+}
+.q-field--focused .q-field__label {
+  color: var(--pl-primary) !important;
+}
+.q-field--highlighted .q-field__control::after {
+  border-color: var(--pl-primary) !important;
+}
+
+/* Quasar toggle/switch/checkbox accents */
+.q-toggle__inner--truthy .q-toggle__track {
+  background: var(--pl-primary-light) !important;
+}
+.q-toggle__inner--truthy .q-toggle__thumb {
+  color: var(--pl-primary) !important;
+}
+.q-checkbox__inner--truthy .q-checkbox__bg {
+  background: var(--pl-primary) !important;
+  border-color: var(--pl-primary) !important;
 }
 
 footer {
@@ -274,7 +325,6 @@ footer {
 
 .pl-btn-primary:hover {
   background-color: var(--pl-primary-hover) !important;
-  filter: brightness(1.1);
 }
 
 /* Secondary — warm gold (#7d5800) */
@@ -286,10 +336,9 @@ footer {
 
 .pl-btn-secondary:hover {
   background-color: var(--pl-secondary-hover) !important;
-  filter: brightness(1.1);
 }
 
-/* Primary container — lighter terracotta (#c15237) */
+/* Accent — lighter terracotta (#c15237) */
 .pl-btn-accent {
   background-color: var(--pl-primary-container) !important;
   color: white !important;
@@ -297,7 +346,7 @@ footer {
 }
 
 .pl-btn-accent:hover {
-  filter: brightness(1.1);
+  background-color: var(--pl-primary) !important;
 }
 
 /* Dark — stone-900 (#1c1917) */
@@ -350,7 +399,6 @@ footer {
 
 .pl-input:focus {
   outline: none;
-  ring: 2px solid var(--pl-primary);
   border-color: var(--pl-primary);
 }
 
@@ -412,7 +460,7 @@ footer {
   color: var(--pl-text-hint);
 }
 
-/* Glass surface effect (from landing template) */
+/* Glass surface effect */
 .pl-glass {
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(12px);
@@ -423,4 +471,246 @@ footer {
 .google-signin-btn .q-btn__content {
   justify-content: center;
   gap: 12px;
+}
+
+/* ============================================================
+   Typography Scale
+   ============================================================ */
+.pl-heading-3xl {
+  font-family: var(--pl-font);
+  font-size: var(--pl-text-3xl);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--pl-on-surface);
+}
+
+.pl-heading-2xl {
+  font-family: var(--pl-font);
+  font-size: var(--pl-text-2xl);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--pl-on-surface);
+}
+
+.pl-heading-xl {
+  font-family: var(--pl-font);
+  font-size: var(--pl-text-xl);
+  font-weight: 600;
+  color: var(--pl-on-surface);
+}
+
+.pl-heading-lg {
+  font-family: var(--pl-font);
+  font-size: var(--pl-text-lg);
+  font-weight: 600;
+  color: var(--pl-on-surface);
+}
+
+.pl-body-base {
+  font-size: var(--pl-text-base);
+  color: var(--pl-on-surface-variant);
+  line-height: 1.6;
+}
+
+.pl-body-sm {
+  font-size: var(--pl-text-sm);
+  color: var(--pl-on-surface-variant);
+}
+
+.pl-body-xs {
+  font-size: var(--pl-text-xs);
+  color: var(--pl-text-hint);
+}
+
+.pl-label-upper {
+  font-weight: 600;
+  font-size: 10px;
+  color: var(--pl-on-surface-variant);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* ============================================================
+   Semantic Card Variants
+   ============================================================ */
+.pl-card-base {
+  background: var(--pl-surface);
+  border-radius: var(--pl-radius-xl);
+  box-shadow: var(--pl-shadow-md);
+  padding: 2rem;
+}
+
+.pl-card-bordered-primary {
+  background: var(--pl-surface);
+  border-radius: var(--pl-radius-xl);
+  box-shadow: var(--pl-shadow-md);
+  border-left: 4px solid var(--pl-primary);
+  padding: 2rem;
+}
+
+.pl-card-bordered-blue {
+  background: var(--pl-surface);
+  border-radius: var(--pl-radius-xl);
+  box-shadow: var(--pl-shadow-md);
+  border-left: 4px solid #3b82f6;
+  padding: 2rem;
+}
+
+.pl-card-info {
+  background: var(--pl-surface-info);
+  border-radius: var(--pl-radius-xl);
+  border: 1px solid rgba(160, 58, 33, 0.1);
+  padding: 1.5rem;
+}
+
+.pl-card-warning {
+  background: var(--pl-surface-warning);
+  border-radius: var(--pl-radius-xl);
+  border: 1px solid rgba(125, 88, 0, 0.15);
+  padding: 1.5rem;
+}
+
+.pl-card-neutral {
+  background: var(--pl-surface-container);
+  border-radius: var(--pl-radius-xl);
+  border: 1px solid var(--pl-border);
+  padding: 2rem;
+}
+
+.pl-card-interactive {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.pl-card-interactive:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--pl-shadow-lg);
+}
+
+/* ============================================================
+   Responsive Footer
+   ============================================================ */
+@media (max-width: 767px) {
+  .pl-footer-inner {
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+    text-align: center;
+  }
+  .pl-footer-inner .pl-footer-links {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+/* ============================================================
+   Form Labels
+   ============================================================ */
+.pl-form-label {
+  font-weight: 600;
+  font-size: var(--pl-text-sm);
+  color: var(--pl-on-surface);
+}
+
+/* ============================================================
+   Badge Variants
+   ============================================================ */
+.pl-badge-success {
+  padding: 4px 12px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: var(--pl-text-xs);
+  font-weight: 600;
+  border-radius: var(--pl-radius-full);
+  display: inline-block;
+}
+
+.pl-badge-warning {
+  padding: 4px 12px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: var(--pl-text-xs);
+  font-weight: 600;
+  border-radius: var(--pl-radius-full);
+  display: inline-block;
+}
+
+.pl-badge-neutral {
+  padding: 4px 12px;
+  background: var(--pl-surface-container);
+  color: var(--pl-on-surface-variant);
+  font-size: var(--pl-text-xs);
+  font-weight: 600;
+  border-radius: var(--pl-radius-full);
+  display: inline-block;
+}
+
+.pl-badge-primary {
+  padding: 4px 12px;
+  background: var(--pl-primary-light);
+  color: var(--pl-primary);
+  font-size: var(--pl-text-xs);
+  font-weight: 600;
+  border-radius: var(--pl-radius-full);
+  display: inline-block;
+}
+
+/* ============================================================
+   Responsive Dialog (mobile-safe)
+   ============================================================ */
+@media (max-width: 599px) {
+  .q-dialog .q-card {
+    min-width: 0 !important;
+    width: calc(100vw - 2rem) !important;
+    max-width: 100% !important;
+    margin: 1rem;
+  }
+}
+
+/* ============================================================
+   Responsive Utilities
+   ============================================================ */
+.two-col-responsive {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 767px) {
+  .two-col-responsive {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================
+   Owner Profile Layout
+   ============================================================ */
+.pl-profile-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 2rem;
+}
+
+.pl-profile-sidebar {
+  width: 100%;
+}
+
+@media (max-width: 767px) {
+  .pl-profile-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================
+   Page Content Fade-in
+   ============================================================ */
+main {
+  animation: plFadeIn 0.3s ease-out;
+}
+
+@keyframes plFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }

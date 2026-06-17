@@ -329,12 +329,102 @@ class EmailService:
             "---\n\n"
             f"Please visit your PawsLedger dashboard to view this nudge:\n"
             f"{dashboard_url}\n\n"
+            "Upgrade to Verified to reply securely without revealing your email.\n\n"
             "IMPORTANT: PawsLedger will never ask for your password in this email. "
             "If you did not expect this alert, please ignore it or contact "
             "support@pawsledger.com.\n\n"
             "— PawsLedger (alerts@pawsledger.com)\n"
         )
         return await EmailService.send_email(owner_email, subject, body)
+
+    @staticmethod
+    async def send_nudge_alert_verified(
+        owner_email: str, pet_name: str, sanitized_message: str,
+        callback_url: str, geo_lat=None, geo_lon=None,
+    ) -> bool:
+        """Send nudge alert to Verified-tier owner with reply callback URL."""
+        location_line = ""
+        if geo_lat is not None and geo_lon is not None:
+            map_url = f"https://www.openstreetmap.org/?mlat={geo_lat}&mlon={geo_lon}#map=15/{geo_lat}/{geo_lon}"
+            location_line = f"\nFinder's shared location:\n{map_url}\n"
+
+        subject = "PawsLedger Alert: Someone found your pet!"
+        body = (
+            "Hello,\n\n"
+            "Great news — a verified PawsLedger user has found a pet registered to your "
+            "account and sent you the following message:\n\n"
+            "---\n"
+            f"{sanitized_message}\n"
+            "---\n"
+            f"{location_line}\n"
+            "You can reply securely to this finder (your email stays hidden):\n"
+            f"{callback_url}\n\n"
+            "This link expires in 48 hours. Do not share it with anyone.\n\n"
+            "IMPORTANT: PawsLedger will never ask for your password in this email. "
+            "If you did not expect this alert, please ignore it or contact "
+            "support@pawsledger.com.\n\n"
+            "— PawsLedger (alerts@pawsledger.com)\n"
+        )
+        return await EmailService.send_email(owner_email, subject, body)
+
+    @staticmethod
+    async def send_owner_reply(finder_email: str, pet_name: str, owner_reply: str) -> bool:
+        """Send the owner's reply to the finder with masked sender identity."""
+        subject = f"PawsLedger Recovery: The owner of {pet_name} replied!"
+        body = (
+            "Hello,\n\n"
+            f"The owner of {pet_name} has replied to your nudge:\n\n"
+            "---\n"
+            f"{owner_reply}\n"
+            "---\n\n"
+            "This is a one-time secure relay. The owner's email address is not "
+            "shared — please coordinate through the platform if further contact "
+            "is needed.\n\n"
+            "IMPORTANT: PawsLedger will never ask for your password in this email.\n\n"
+            "— PawsLedger Recovery (recovery@pawsledger.com)\n"
+        )
+        from_email = "PawsLedger Recovery <recovery@pawsledger.com>"
+        import logging
+        logger = logging.getLogger("pawsledger.email")
+
+        api_key = os.getenv("RESEND_API_KEY")
+        if not api_key:
+            logger.warning("RESEND_API_KEY not set — reply email not sent")
+            return False
+
+        try:
+            import resend
+            resend.api_key = api_key
+            resend.Emails.send({
+                "from": from_email,
+                "to": [finder_email],
+                "subject": subject,
+                "text": body,
+            })
+            logger.info("Owner reply sent (recipient redacted)")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to send owner reply: {e}")
+            return False
+
+    @staticmethod
+    async def send_payment_failed_notification(user_email: str, user_name: str) -> bool:
+        """Notify user that their subscription payment has failed."""
+        base_url = os.getenv("BASE_URL", "https://www.pawsledger.com")
+        subject = "PawsLedger: Payment failed — action required"
+        body = (
+            f"Hi {user_name},\n\n"
+            "We were unable to process your most recent subscription payment. "
+            "Your account has been marked as past due.\n\n"
+            "Please update your payment method to maintain access to your "
+            "Verified features:\n"
+            f"{base_url}/subscription\n\n"
+            "If your payment method is not updated within 7 days, your "
+            "subscription will be canceled and features will revert to the "
+            "free tier.\n\n"
+            "— PawsLedger\n"
+        )
+        return await EmailService.send_email(user_email, subject, body)
 
 from authlib.integrations.starlette_client import OAuth
 from starlette.requests import Request

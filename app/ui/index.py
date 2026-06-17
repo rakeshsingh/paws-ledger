@@ -16,58 +16,123 @@ AVATAR_IMGS = [
 
 
 def init_index_page() -> None:
-    @ui.page('/')
+    @ui.page('/', title='PawsLedger — Universal Pet Microchip Registry & Recovery Network')
     async def index_page() -> None:
+        ui.add_head_html(
+            '<meta name="description" content="Register your pet\'s microchip for free. Store vaccination records, share care access with vets and sitters, and enable instant NFC/QR tag identification. If your pet is lost, anyone can reach you.">\n'
+            '<link rel="canonical" href="https://www.pawsledger.com/">\n'
+            '<meta property="og:title" content="PawsLedger — Universal Pet Microchip Registry & Recovery Network">\n'
+            '<meta property="og:description" content="Register your pet\'s microchip for free. Store vaccination records, share care access, and enable instant NFC/QR tag identification.">\n'
+            '<meta property="og:url" content="https://www.pawsledger.com/">\n'
+            '<meta name="twitter:card" content="summary_large_image">\n'
+            '<meta name="twitter:title" content="PawsLedger — Universal Pet Microchip Registry">\n'
+            '<meta name="twitter:description" content="Register your pet\'s microchip. Enable instant identification with NFC/QR tags. Free forever.">\n'
+        )
         nav_header()
 
-        # ── Hero Section ──
+        ui.add_css('''
+.hero-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    align-items: center;
+}
+.how-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    align-items: center;
+}
+.owner-steps-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+}
+.diff-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+}
+@media (max-width: 767px) {
+    .hero-grid {
+        grid-template-columns: 1fr;
+    }
+    .hero-grid .hero-image {
+        max-height: 360px;
+    }
+    .how-grid {
+        grid-template-columns: 1fr;
+    }
+    .owner-steps-grid {
+        grid-template-columns: 1fr;
+    }
+    .diff-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+@media (max-width: 480px) {
+    .diff-grid {
+        grid-template-columns: 1fr;
+    }
+}
+''')
+
+        # ── Hero Section ── (Owner-first messaging)
         with ui.element('section').classes('w-full py-16 md:py-24').style(
             'background: radial-gradient(circle at top right, rgba(255,218,210,0.5), transparent),'
             'radial-gradient(circle at bottom left, rgba(234,238,245,0.5), transparent);'
         ):
-            with ui.row().classes('max-w-7xl mx-auto px-6 gap-12 items-center flex-wrap'):
+            with ui.element('div').classes('hero-grid max-w-7xl mx-auto px-4 md:px-6'):
                 # Left column
-                with ui.column().classes('flex-1 gap-8'):
+                with ui.column().classes('gap-8'):
                     # Badge
                     with ui.row().classes('items-center gap-2 px-3 py-1 rounded-full').style(
-                        'background: rgba(193,82,55,0.1); border: 1px solid rgba(193,82,55,0.2);'
+                        'background: rgba(160,58,33,0.1); border: 1px solid rgba(193,82,55,0.2);'
                     ):
                         ui.icon('verified_user').style('font-size: 16px; color: #c15237;')
-                        ui.label('Every Pet Deserves a Home').style(
+                        ui.label('ISO 11784/11785 Compliant Registry').style(
                             'font-size: 12px; font-weight: 600; color: #c15237;'
                         )
 
-                    # Headline
+                    # Headline — owner-first
                     ui.html(
-                        '<h1 style="font-family: \'Plus Jakarta Sans\', sans-serif; font-size: clamp(2.5rem, 5vw, 4rem); '
-                        'line-height: 1.15; font-weight: 700; color: #171c21;">'
-                        'Found a pet? <span style="color: #a03a21;">Reconnect them.</span><br>'
-                        'Love a pet? <span style="color: #7d5800;">Protect them.</span></h1>'
+                        '<h1 style="font-family: var(--pl-font); font-size: clamp(2.5rem, 5vw, 4rem); '
+                        'line-height: 1.15; font-weight: 700; color: var(--pl-on-surface);">'
+                        'Your pet\'s identity, medical records, and recovery — '
+                        '<span style="color: var(--pl-primary);">in one secure ledger.</span></h1>'
                     )
 
                     # Subtitle
                     ui.label(
-                        'The universal microchip registry and recovery network. '
-                        'We provide finders with the tools to scan and contact owners instantly, '
-                        'and pet parents with the peace of mind they deserve.'
-                    ).style('font-size: 18px; line-height: 1.6; color: #57423d; max-width: 32rem;')
+                        'Register your microchip. Store vaccination records. Share care access '
+                        'with vets and sitters via time-limited links. If your pet is ever lost, '
+                        'anyone who finds them can reach you instantly — no app download required.'
+                    ).classes('pl-body-base').style('font-size: var(--pl-text-lg); max-width: 34rem;')
 
                     # Search input with real-time prefix identification
                     with ui.row().classes('w-full gap-2 items-center'):
                         chip_input = ui.input(
                             placeholder='Enter Microchip Number'
                         ).classes('flex-1').props('outlined rounded dense')
-                        search_btn = ui.button('Search', on_click=lambda: do_lookup()).style(
-                            'background-color: #7d5800; color: white; font-weight: 600;'
-                        ).classes('px-6 py-2 rounded-lg')
-                        ui.button(
-                            'Protect',
-                            on_click=lambda: ui.navigate.to(
-                                '/register' if app.storage.user.get('email') else '/login'
-                            ),
+                        search_btn = ui.button(
+                            'Search Registry', icon='search',
+                            on_click=lambda: do_lookup(),
                         ).style(
-                            'background-color: #a03a21; color: white; font-weight: 600;'
-                        ).classes('px-6 py-2 rounded-lg')
+                            'background-color: var(--pl-primary); color: white; font-weight: 600; '
+                            'padding: 10px 28px;'
+                        ).classes('rounded-lg').props('no-caps')
+
+                    with ui.row().classes('items-center gap-1 mt-1'):
+                        ui.label('Pet owner?').style(
+                            'font-size: 13px; color: var(--pl-on-surface-variant);'
+                        )
+                        ui.link(
+                            'Register & protect your pet — free →',
+                            '/register' if app.storage.user.get('email') else '/login',
+                        ).style(
+                            'font-size: var(--pl-text-sm); font-weight: 600; color: var(--pl-primary); '
+                            'text-decoration: none;'
+                        )
 
                     # Prefix identification hint (shows manufacturer as user types)
                     prefix_hint = ui.label('').style(
@@ -94,7 +159,7 @@ def init_index_page() -> None:
                             elif info.get('hint'):
                                 prefix_hint.text = info['hint']
                                 prefix_hint.style(
-                                    'font-size: 13px; font-weight: 500; color: #57423d; '
+                                    'font-size: 13px; font-weight: 500; color: var(--pl-on-surface-variant); '
                                     'padding: 4px 12px; border-radius: 6px; '
                                     'background: rgba(0,0,0,0.03); display: inline-block;'
                                 )
@@ -118,7 +183,7 @@ def init_index_page() -> None:
                     results_card = ui.column().classes('w-full mt-4').style('display: none')
                     status_badge = ui.label('').classes('px-4 py-1 rounded-full text-xs font-bold uppercase mb-2 inline-block')
                     result_title = ui.label('').classes('text-2xl font-bold')
-                    result_desc = ui.label('').style('color: #57423d; margin-bottom: 1rem;')
+                    result_desc = ui.label('').style('color: var(--pl-on-surface-variant); margin-bottom: 1rem;')
                     result_details = ui.column().classes('w-full pt-4').style('border-top: 1px solid #dec0b9;')
 
                     async def do_lookup():
@@ -142,7 +207,7 @@ def init_index_page() -> None:
 
                                 if pet:
                                     status_badge.text = 'Verified PawsLedger Record'
-                                    status_badge.style('background-color: rgba(193,82,55,0.1); color: #a03a21;')
+                                    status_badge.style('background-color: rgba(160,58,33,0.1); color: #a03a21;')
                                     result_title.text = f'{pet.name} • {pet.pet_species}'
                                     result_desc.text = f'Breed: {pet.breed} | Status: {pet.identity_status}'
 
@@ -159,7 +224,7 @@ def init_index_page() -> None:
                                             ui.label(
                                                 'This pet is registered on PawsLedger. '
                                                 'Log in to view full details and contact the owner.'
-                                            ).style('color: #57423d; font-size: 14px; margin-bottom: 0.75rem;')
+                                            ).style('color: var(--pl-on-surface-variant); font-size: 14px; margin-bottom: 0.75rem;')
                                             ui.button(
                                                 'Login to View Details & Nudge Owner', icon='login',
                                                 on_click=lambda: ui.navigate.to('/login'),
@@ -171,7 +236,7 @@ def init_index_page() -> None:
                                     aaha_data = await aaha_client.lookup(chip_id)
                                     if aaha_data:
                                         status_badge.text = 'AAHA Nationwide Network'
-                                        status_badge.style('background-color: #fff7ed; color: #9a3412;')
+                                        status_badge.style('background-color: #fff7ed; color: #83250e;')
                                         result_title.text = 'Identity Found Externally'
                                         result_desc.text = aaha_data.get('message', '')
 
@@ -185,14 +250,14 @@ def init_index_page() -> None:
                                             ]:
                                                 if value:
                                                     with ui.row().classes('w-full justify-between py-1'):
-                                                        ui.label(label).style('font-weight: 600; color: #57423d;')
+                                                        ui.label(label).style('font-weight: 600; color: var(--pl-on-surface-variant);')
                                                         ui.label(str(value))
 
                                             ui.separator().classes('my-3')
                                             ui.label(
                                                 'This pet is not yet on PawsLedger. '
                                                 'Register it to create a secure digital identity.'
-                                            ).style('font-size: 14px; font-style: italic; color: #57423d; margin-bottom: 1rem;')
+                                            ).style('font-size: 14px; font-style: italic; color: var(--pl-on-surface-variant); margin-bottom: 1rem;')
 
                                             if is_logged_in:
                                                 ui.button(
@@ -211,7 +276,7 @@ def init_index_page() -> None:
                             search_btn.enable()
                             search_btn.text = 'Search'
 
-                    # Social proof
+                    # Social proof with metrics
                     with ui.row().classes('items-center gap-4 mt-4'):
                         with ui.row().classes('items-center').style('margin-right: -0.5rem;'):
                             for img_url in AVATAR_IMGS:
@@ -219,12 +284,12 @@ def init_index_page() -> None:
                                     'width: 40px; height: 40px; object-fit: cover; '
                                     'border: 2px solid #f7f9ff; margin-right: -0.75rem;'
                                 )
-                        ui.label('Joined by responsible pet owners').style(
-                            'font-weight: 600; color: #57423d; font-size: 14px;'
+                        ui.label('3-registry cross-check • ISO 11784/11785 compliant').style(
+                            'font-weight: 600; color: var(--pl-on-surface-variant); font-size: 13px;'
                         )
 
                 # Right column — hero image
-                with ui.column().classes('flex-1 items-center').style('min-width: 300px;'):
+                with ui.column().classes('hero-image items-center'):
                     with ui.element('div').classes('relative w-full').style(
                         'aspect-ratio: 1; border-radius: 2rem; overflow: hidden; '
                         'box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); '
@@ -245,154 +310,177 @@ def init_index_page() -> None:
                                 ui.icon('pets')
                             with ui.column().classes('gap-0'):
                                 ui.label('Reunited in 15 mins').style(
-                                    'font-weight: 600; font-size: 14px; color: #171c21;'
+                                    'font-weight: 600; font-size: 14px; color: var(--pl-on-surface);'
                                 )
                                 ui.label('"Luna was found thanks to her chip."').style(
-                                    'font-size: 12px; color: #57423d;'
+                                    'font-size: 12px; color: var(--pl-on-surface-variant);'
                                 )
 
-        # # ── Dual Path Section ──
-        # with ui.element('section').classes('w-full py-24').style('background-color: #f7f9ff;'):
-        #     with ui.row().classes('max-w-7xl mx-auto px-6 gap-8'):
-        #         # Finder path
-        #         with ui.card().classes('flex-1 p-12 relative overflow-hidden').style(
-        #             'border-radius: 2.5rem; background-color: #f5f5f4; border: 1px solid #e7e5e4;'
-        #         ):
-        #             with ui.column().classes('gap-6 relative z-10'):
-        #                 with ui.element('span').classes(
-        #                     'inline-block p-4 rounded-2xl shadow-sm'
-        #                 ).style('background: white;'):
-        #                     ui.icon('find_in_page').style('font-size: 32px; color: #7d5800;')
-        #                 ui.label('I found a lost Pet').style(
-        #                     "font-family: 'Plus Jakarta Sans'; font-size: 32px; font-weight: 600; color: #171c21;"
-        #                 )
-        #                 ui.label(
-        #                     'Scan the microchip and search our global ledger to find contact details '
-        #                     'for the owner. Your kindness is their miracle.'
-        #                 ).style('color: #57423d; max-width: 24rem;')
-        #                 ui.button(
-        #                     'Start Recovery Process', icon='arrow_forward',
-        #                     on_click=lambda: chip_input.run_method('focus'),
-        #                 ).classes('px-8 py-4 rounded-xl font-semibold').style(
-        #                     'background-color: #1c1917; color: white;'
-        #                 )
-
-        #         # Owner path
-        #         with ui.card().classes('flex-1 p-12 relative overflow-hidden').style(
-        #             'border-radius: 2.5rem; background: rgba(193,82,55,0.05); '
-        #             'border: 1px solid rgba(193,82,55,0.1);'
-        #         ):
-        #             with ui.column().classes('gap-6 relative z-10'):
-        #                 with ui.element('span').classes(
-        #                     'inline-block p-4 rounded-2xl shadow-sm'
-        #                 ).style('background: white;'):
-        #                     ui.icon('shield_with_heart').style('font-size: 32px; color: #a03a21;')
-        #                 ui.label('I am a Pet Owner').style(
-        #                     "font-family: 'Plus Jakarta Sans'; font-size: 32px; font-weight: 600; color: #171c21;"
-        #                 )
-        #                 ui.label(
-        #                     "Register your pet's chip and vital information. Keep your contact data "
-        #                     "updated so you're always reachable in an emergency."
-        #                 ).style('color: #57423d; max-width: 24rem;')
-        #                 ui.button(
-        #                     'Register My Pet Now', icon='add_circle',
-        #                     on_click=lambda: ui.navigate.to('/login' if not app.storage.user.get('email') else '/register'),
-        #                 ).classes('px-8 py-4 rounded-xl font-semibold').style(
-        #                     'background-color: #a03a21; color: white;'
-        #                 )
-
-
-
-        # # ── How It Works Section ──
-        # with ui.element('section').classes('w-full py-24').style('background-color: #f0f4fb;'):
-        #     with ui.row().classes('max-w-7xl mx-auto px-6 gap-16 items-center'):
-        #         # Image
-        #         with ui.column().classes('flex-1'):
-        #             ui.image(HOW_IT_WORKS_IMG).classes('w-full rounded-3xl shadow-xl').style(
-        #                 'height: 500px; object-fit: cover; border: 1px solid white;'
-        #             )
-
-        #         # Steps
-        #         with ui.column().classes('flex-1 gap-10'):
-        #             ui.label('How It Works').style(
-        #                 "font-family: 'Plus Jakarta Sans'; font-size: 32px; font-weight: 600; color: #171c21;"
-        #             )
-        #             ui.label(
-        #                 'Three simple steps to bridge the gap between a lost pet and their home.'
-        #             ).style('color: #57423d; margin-bottom: 1rem;')
-
-        #             for num, title, desc in [
-        #                 ('1', 'Scan & Locate',
-        #                  'Any finder can take a lost pet to a vet or shelter to scan for a 15-digit microchip ID.'),
-        #                 ('2', 'Search the Ledger',
-        #                  "Enter the ID on PawsLedger to pull up the pet's profile and secure contact form."),
-        #                 ('3', 'Initiate Reunion',
-        #                  "We facilitate a safe, anonymous initial contact to coordinate the pet's safe return home."),
-        #             ]:
-        #                 with ui.row().classes('gap-6'):
-        #                     with ui.element('div').classes(
-        #                         'flex-shrink-0 flex items-center justify-center rounded-full font-bold shadow-sm'
-        #                     ).style(
-        #                         'width: 48px; height: 48px; background: white; color: #a03a21; '
-        #                         'border: 1px solid #f5f5f4;'
-        #                     ):
-        #                         ui.label(num)
-        #                     with ui.column().classes('gap-1'):
-        #                         ui.label(title).style('font-weight: 600; color: #171c21;')
-        #                         ui.label(desc).style('color: #57423d;')
-
-        #             ui.button(
-        #                 'Learn More About Microchips',
-        #                 on_click=lambda: ui.navigate.to('/faq'),
-        #             ).classes('px-8 py-4 rounded-xl font-semibold shadow-lg mt-4').style(
-        #                 'background-color: #c15237; color: white;'
-        #             )
-
-        # ── Value Props Section ──
-        with ui.element('section').classes('w-full py-6').style(
-            'background: white; border-top: 1px solid #e7e5e4; border-bottom: 1px solid #e7e5e4;'
+        # ── Owner How It Works Section ──
+        with ui.element('section').classes('w-full py-16 md:py-20').style(
+            'background-color: #fafbfd;'
         ):
-            with ui.row().classes('max-w-7xl mx-auto px-6 items-center gap-8'):
-                ui.label('Why Trust PawsLedger?').style(
-                    "font-family: 'Plus Jakarta Sans'; font-size: 18px; font-weight: 700; color: #171c21; white-space: nowrap;"
-                )
-                for icon_name, color, title in [
-                    ('hub', '#a03a21', 'Global Connection'),
-                    ('encrypted', '#7d5800', 'Privacy First'),
-                    ('volunteer_activism', '#171c21', 'Peace of Mind'),
-                ]:
-                    with ui.row().classes('items-center gap-2'):
-                        ui.icon(icon_name).style(f'font-size: 20px; color: {color};')
-                        ui.label(title).style(
-                            'font-size: 14px; font-weight: 600; color: #171c21;'
-                        )
-        # ── CTA Section ──
-        # with ui.element('section').classes('w-full py-24 px-6'):
-        #     with ui.element('div').classes(
-        #         'max-w-7xl mx-auto rounded-3xl p-12 md:p-20 text-center relative overflow-hidden'
-        #     ).style('background-color: #1c1917;'):
-        #         with ui.column().classes('relative z-10 max-w-3xl mx-auto gap-8 items-center'):
-        #             ui.label("Ready to secure your pet's future?").style(
-        #                 "font-family: 'Plus Jakarta Sans'; font-size: 40px; font-weight: 700; "
-        #                 "color: white; line-height: 1.2; letter-spacing: -0.02em;"
-        #             )
-        #             ui.label(
-        #                 "Don't wait until it's too late. Registration takes less than 5 minutes and lasts a lifetime."
-        #             ).style('font-size: 18px; color: #d6d3d1;')
+            with ui.column().classes('max-w-7xl mx-auto px-4 md:px-6 gap-10'):
+                with ui.column().classes('items-center gap-2'):
+                    ui.label('How It Works for Pet Owners').classes('pl-heading-2xl').style(
+                        'text-align: center;'
+                    )
+                    ui.label(
+                        'Three steps to give your pet a complete digital identity and safety net.'
+                    ).classes('pl-body-base').style('text-align: center; max-width: 36rem;')
 
-        #             with ui.row().classes('gap-4 justify-center'):
-        #                 ui.button(
-        #                     'Register Your Pet Today',
-        #                     on_click=lambda: ui.navigate.to('/login' if not app.storage.user.get('email') else '/register'),
-        #                 ).classes('px-10 py-4 rounded-full font-semibold text-lg').style(
-        #                     'background-color: #a03a21; color: white;'
-        #                 )
-        #                 ui.button(
-        #                     'Contact Support',
-        #                     on_click=lambda: ui.navigate.to('/contact'),
-        #                 ).classes('px-10 py-4 rounded-full font-semibold text-lg').style(
-        #                     'background: rgba(255,255,255,0.1); color: white; '
-        #                     'border: 1px solid rgba(255,255,255,0.2);'
-        #                 )
+                with ui.element('div').classes('owner-steps-grid'):
+                    for num, icon_name, title, desc in [
+                        ('1', 'app_registration', 'Register',
+                         'Add your microchip ID, pet details, and a photo. '
+                         'We identify the chip manufacturer instantly from the ISO prefix.'),
+                        ('2', 'share', 'Share',
+                         'Generate time-limited care links for vets, sitters, or groomers. '
+                         'They see vaccination records and care instructions — nothing else.'),
+                        ('3', 'shield', 'Protect',
+                         'If your pet is ever lost, anyone who scans their NFC tag or '
+                         'looks up the chip can nudge you anonymously. No phone number exposed.'),
+                    ]:
+                        with ui.card().classes('p-8 text-center').style(
+                            'border-radius: var(--pl-radius-xl); border: 1px solid #e7e5e4; '
+                            'box-shadow: var(--pl-shadow-md);'
+                        ):
+                            with ui.column().classes('items-center gap-4'):
+                                with ui.element('div').classes(
+                                    'flex items-center justify-center rounded-full'
+                                ).style(
+                                    'width: 56px; height: 56px; '
+                                    'background: rgba(160,58,33,0.08);'
+                                ):
+                                    ui.label(num).style(
+                                        'font-size: 22px; font-weight: 800; color: var(--pl-primary);'
+                                    )
+                                ui.icon(icon_name).style(
+                                    'font-size: 28px; color: var(--pl-primary);'
+                                )
+                                ui.label(title).style(
+                                    'font-weight: 700; font-size: 18px; color: var(--pl-on-surface);'
+                                )
+                                ui.label(desc).style(
+                                    'font-size: 14px; color: var(--pl-on-surface-variant); '
+                                    'line-height: 1.6;'
+                                )
+
+        # ── Finder How It Works Section ──
+        with ui.element('section').classes('w-full py-16 md:py-20').style(
+            'background-color: white;'
+        ):
+            with ui.element('div').classes('how-grid max-w-7xl mx-auto px-4 md:px-6'):
+                with ui.column().classes(''):
+                    ui.image(HOW_IT_WORKS_IMG).classes('w-full').style(
+                        'border-radius: 1.5rem; height: 420px; object-fit: cover; '
+                        'box-shadow: 0 8px 24px rgba(0,0,0,0.08);'
+                    )
+
+                with ui.column().classes('gap-8'):
+                    ui.label('Found a Lost Pet?').classes('pl-heading-2xl')
+                    ui.label(
+                        'No app download needed. Three steps to reconnect a pet with their owner.'
+                    ).classes('pl-body-base')
+
+                    for num, title, desc, icon_name in [
+                        ('1', 'Scan the Chip', 'Take the pet to any vet or shelter to read the 15-digit microchip. Or scan the NFC/QR tag on their collar.', 'nfc'),
+                        ('2', 'Search PawsLedger', "Enter the chip ID here or at /lookup. We'll identify the manufacturer and show you the pet's public profile.", 'search'),
+                        ('3', 'Nudge the Owner', "Send an anonymous message through our system. The owner gets notified instantly — your contact details stay private too.", 'mail'),
+                    ]:
+                        with ui.row().classes('gap-4 items-start'):
+                            with ui.element('div').classes(
+                                'flex-shrink-0 flex items-center justify-center rounded-xl'
+                            ).style(
+                                'width: 44px; height: 44px; background: rgba(160,58,33,0.08); '
+                                'color: var(--pl-primary);'
+                            ):
+                                ui.icon(icon_name).style('font-size: 22px;')
+                            with ui.column().classes('gap-1'):
+                                ui.label(title).style(
+                                    'font-weight: 600; font-size: var(--pl-text-base); color: var(--pl-on-surface);'
+                                )
+                                ui.label(desc).classes('pl-body-sm').style('line-height: 1.5;')
+
+                    ui.link(
+                        'Go to Found a Pet page →', '/lost'
+                    ).style(
+                        'font-size: 14px; font-weight: 600; color: #a03a21; '
+                        'text-decoration: none; margin-top: 4px;'
+                    )
+
+        # ── What Makes PawsLedger Different — concrete differentiators ──
+        with ui.element('section').classes('w-full py-16').style('background: var(--pl-surface);'):
+            with ui.column().classes('max-w-7xl mx-auto px-6 gap-10'):
+                with ui.column().classes('items-center gap-2'):
+                    ui.label('What Makes PawsLedger Different').classes('pl-heading-xl').style(
+                        'text-align: center;'
+                    )
+                    ui.label(
+                        'Not just another microchip registry. A complete digital identity for your pet.'
+                    ).classes('pl-body-base').style('text-align: center; max-width: 32rem;')
+
+                with ui.element('div').classes('diff-grid'):
+                    for icon_name, color, title, desc in [
+                        ('nfc', 'var(--pl-primary)', 'NFC/QR Tags',
+                         'Instant identification without a vet scanner. '
+                         'Anyone with a phone can scan the tag and reach you.'),
+                        ('timer', 'var(--pl-secondary)', 'Time-Limited Care Links',
+                         'Share vaccination records and care instructions with vets or sitters. '
+                         'Access auto-expires — no permanent data exposure.'),
+                        ('enhanced_encryption', '#3b82f6', 'Tamper-Proof Records',
+                         'Exported vaccination PDFs are SHA-256 signed. '
+                         'Anyone can verify authenticity at /verify — no forgery possible.'),
+                        ('cell_tower', '#7c3aed', 'Real-Time Chip ID',
+                         'As you type, we identify the chip manufacturer from the ISO prefix. '
+                         'Supports all major registries: HomeAgain, PetLink, AKC, 24PetWatch.'),
+                    ]:
+                        with ui.card().classes('p-6').style(
+                            'border-radius: var(--pl-radius-xl); '
+                            'border: 1px solid #e7e5e4; box-shadow: var(--pl-shadow-md);'
+                        ):
+                            with ui.column().classes('gap-3'):
+                                with ui.element('div').classes(
+                                    'flex items-center justify-center rounded-xl'
+                                ).style(
+                                    f'width: 44px; height: 44px; '
+                                    f'background: color-mix(in srgb, {color} 10%, transparent); color: {color};'
+                                ):
+                                    ui.icon(icon_name).style('font-size: 22px;')
+                                ui.label(title).style(
+                                    'font-weight: 600; font-size: var(--pl-text-base); color: var(--pl-on-surface);'
+                                )
+                                ui.label(desc).classes('pl-body-sm').style('line-height: 1.5;')
+
+        # ── Bottom CTA Section ──
+        with ui.element('section').classes('w-full py-24 px-6'):
+            with ui.element('div').classes(
+                'max-w-7xl mx-auto rounded-3xl p-12 md:p-20 text-center relative overflow-hidden'
+            ).style('background-color: #1c1917;'):
+                with ui.column().classes('relative z-10 max-w-3xl mx-auto gap-8 items-center'):
+                    ui.label("Your pet's safety shouldn't depend on luck.").style(
+                        "font-family: 'Plus Jakarta Sans'; font-size: clamp(28px, 4vw, 40px); font-weight: 700; "
+                        "color: white; line-height: 1.2; letter-spacing: -0.02em;"
+                    )
+                    ui.label(
+                        "Registration is free. Microchip + QR/NFC tags + vaccination records + "
+                        "finder communication — all at no cost. Upgrade only if you want verified status, "
+                        "care sharing, and document storage."
+                    ).style('font-size: 18px; color: #d6d3d1; max-width: 36rem; line-height: 1.6;')
+
+                    with ui.row().classes('gap-4 justify-center flex-wrap'):
+                        ui.button(
+                            'Register Your Pet — Free',
+                            on_click=lambda: ui.navigate.to('/login' if not app.storage.user.get('email') else '/register'),
+                        ).classes('px-10 py-4 rounded-full font-semibold text-lg').style(
+                            'background-color: var(--pl-primary); color: white;'
+                        ).props('no-caps')
+                        ui.button(
+                            'View Pricing',
+                            on_click=lambda: ui.navigate.to('/pricing'),
+                        ).classes('px-10 py-4 rounded-full font-semibold text-lg').style(
+                            'background: rgba(255,255,255,0.1); color: white; '
+                            'border: 1px solid rgba(255,255,255,0.2);'
+                        ).props('no-caps')
 
         nav_footer()

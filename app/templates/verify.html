@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="text-align: center; margin-bottom: 3rem;">
+    <h1 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 2.5rem; font-weight: 700; color: #171c21;">Verify Vaccination Record</h1>
+    <p style="font-size: 1.125rem; color: #57423d; max-width: 600px; margin: 0.5rem auto;">
+        Enter the SHA-256 hash found at the bottom of a PawsLedger PDF export to verify its authenticity.
+    </p>
+</div>
+
+<div class="seo-card" style="max-width: 40rem; margin: 0 auto; border-left: 4px solid #7d5800;">
+    <h2>Verification Hash</h2>
+    <form action="/verify" method="get" style="margin-top: 1rem;">
+        <label for="hash" style="font-weight: 600; font-size: 0.9rem; color: #171c21; display: block; margin-bottom: 0.5rem;">Paste the SHA-256 hash from the PDF footer</label>
+        <input type="text" id="hash" name="hash" placeholder="e.g. a3f2b8c91d4e5f6..." aria-label="SHA-256 hash"
+               style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #dec0b9; border-radius: 0.5rem; font-size: 1rem; margin-bottom: 1rem;">
+        <button type="submit" style="width: 100%; background: #7d5800; color: white; font-weight: 600; padding: 0.75rem; border-radius: 0.5rem; border: none; cursor: pointer; font-size: 1rem;">Verify Record</button>
+    </form>
+</div>
+
+<div class="seo-card" style="max-width: 40rem; margin: 1.5rem auto; background: #fff7ed; border-color: rgba(251,191,36,0.2);">
+    <p style="font-size: 0.85rem; color: #57423d;">
+        Each PawsLedger vaccination PDF contains a unique SHA-256 hash computed from the record data. This ensures tamper-evident, cryptographically verifiable medical documentation. If the hash matches, the document has not been altered since it was generated.
+    </p>
+</div>
+{% endblock %}

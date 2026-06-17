@@ -1,4 +1,6 @@
 ## User Experience Flow 
+### All Screens
+- make sure that UI is responsive and supports three form factors: 1) desktop, 2) tablet, and 3) mobile
 ### All Screens (Header)
 * Have following Menu items: Home, Dashboard, About, and Login ( in that order)
 * About menu should have following submenu: About, Contact, and FAQ

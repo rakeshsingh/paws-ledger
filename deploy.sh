@@ -16,7 +16,7 @@
 #   3. Run: sudo bash deploy.sh
 #
 # Prerequisites:
-#   - Debian/Ubuntu-based VPS (Hetzner Cloud with Ubuntu 22.04+ recommended)
+#   - Debian/Ubuntu-based VPS (Hetzner Cloud with Ubuntu 24.04+ recommended)
 #   - Root or sudo access
 #   - A Cloudflare account with a domain and a Tunnel token
 #     (Create at: Zero Trust → Networks → Tunnels → Create Tunnel → Docker/CLI)
@@ -68,10 +68,15 @@ step "Step 1: System Updates & Dependencies"
 apt-get update -qq
 apt-get upgrade -y -qq
 apt-get install -y -qq \
-    python3 python3-venv python3-pip python3-dev \
-    nginx curl git rsync build-essential sqlite3
+    software-properties-common \
+    nginx curl git rsync build-essential sqlite3 logrotate
 
-info "System packages installed."
+# Install Python 3.14 from deadsnakes PPA
+add-apt-repository -y ppa:deadsnakes/ppa
+apt-get update -qq
+apt-get install -y -qq python3.14 python3.14-venv python3.14-dev
+
+info "System packages installed (Python 3.14)."
 
 # ─────────────────────────────────────────────────────────────
 step "Step 2: Install Cloudflare Tunnel (cloudflared)"
@@ -132,11 +137,16 @@ info "Files deployed."
 # ─────────────────────────────────────────────────────────────
 step "Step 6: Python Virtual Environment & Dependencies"
 # ─────────────────────────────────────────────────────────────
-sudo -u "${APP_USER}" python3 -m venv "${VENV_DIR}"
+sudo -u "${APP_USER}" python3.14 -m venv "${VENV_DIR}"
 sudo -u "${APP_USER}" "${VENV_DIR}/bin/pip" install --upgrade pip wheel
 sudo -u "${APP_USER}" "${VENV_DIR}/bin/pip" install -r "${APP_DIR}/requirements.txt"
 sudo -u "${APP_USER}" "${VENV_DIR}/bin/pip" install gunicorn uvicorn[standard]
 info "Python dependencies installed."
+
+# Run database migration (safe to run multiple times)
+info "Running database migration..."
+sudo -u "${APP_USER}" "${VENV_DIR}/bin/python" "${APP_DIR}/migrate.py" "${DATA_DIR}/pawsledger.db" 2>/dev/null || true
+info "Database migration complete."
 
 # ─────────────────────────────────────────────────────────────
 step "Step 7: Environment Configuration"
@@ -155,6 +165,7 @@ fi
 
 if [[ ! -f "${ENV_FILE}" ]]; then
     STORAGE_SECRET=$(openssl rand -hex 32)
+    CRON_SECRET=$(openssl rand -hex 16)
 
     echo ""
     echo "─── OAuth Configuration ───"
@@ -177,14 +188,39 @@ if [[ ! -f "${ENV_FILE}" ]]; then
     read -rp "Email From [PawsLedger <alerts@${DOMAIN}>]: " EMAIL_FROM
     EMAIL_FROM="${EMAIL_FROM:-PawsLedger <alerts@${DOMAIN}>}"
 
+    echo ""
+    echo "─── Stripe Configuration (Subscription Billing) ───"
+    echo "Get keys at: https://dashboard.stripe.com/apikeys"
+    echo ""
+
+    read -rp "Stripe Secret Key (leave blank to skip): " STRIPE_SECRET_KEY
+    read -rp "Stripe Webhook Secret: " STRIPE_WEBHOOK_SECRET
+    read -rp "Stripe Verified Price ID: " STRIPE_VERIFIED_PRICE_ID
+    read -rp "Stripe Guardian Price ID: " STRIPE_GUARDIAN_PRICE_ID
+
+    echo ""
+    echo "─── Cloudflare R2 Storage (Document Uploads) ───"
+    echo "Leave blank to skip (edit ${ENV_FILE} later)."
+    echo ""
+
+    read -rp "R2 Account ID: " R2_ACCOUNT_ID
+    read -rp "R2 Access Key ID: " R2_ACCESS_KEY_ID
+    read -rp "R2 Secret Access Key: " R2_SECRET_ACCESS_KEY
+    read -rp "R2 Bucket Name [pawsledger-files]: " R2_BUCKET_NAME
+    R2_BUCKET_NAME="${R2_BUCKET_NAME:-pawsledger-files}"
+    read -rp "R2 Public URL: " R2_PUBLIC_URL
+
     cat > "${ENV_FILE}" <<EOF
 # PawsLedger Environment Configuration
 # Generated on $(date -u +"%Y-%m-%d %H:%M:%S UTC")
 
 # Application
 APP_ENV=prod
+BASE_URL=https://${DOMAIN}
+APP_DOMAIN=${DOMAIN}
 DATABASE_URL=sqlite:///${DATA_DIR}/pawsledger.db
 STORAGE_SECRET=${STORAGE_SECRET}
+CRON_SECRET=${CRON_SECRET}
 
 # Google OAuth
 GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
@@ -194,6 +230,19 @@ GOOGLE_CALLBACK_URL=${GOOGLE_CALLBACK_URL}
 # Email (Resend — uses HTTPS, not SMTP)
 RESEND_API_KEY=${RESEND_API_KEY}
 EMAIL_FROM=${EMAIL_FROM}
+
+# Stripe (Subscription Billing)
+STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+STRIPE_VERIFIED_PRICE_ID=${STRIPE_VERIFIED_PRICE_ID}
+STRIPE_GUARDIAN_PRICE_ID=${STRIPE_GUARDIAN_PRICE_ID}
+
+# Cloudflare R2 Storage
+R2_ACCOUNT_ID=${R2_ACCOUNT_ID}
+R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID}
+R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY}
+R2_BUCKET_NAME=${R2_BUCKET_NAME}
+R2_PUBLIC_URL=${R2_PUBLIC_URL}
 EOF
 
     chown "${APP_USER}:${APP_USER}" "${ENV_FILE}"
@@ -309,11 +358,11 @@ server {
         add_header Cache-Control "public, immutable";
     }
 
-    # SEO: Serve static landing page to search engine crawlers
-    # This ensures crawlers get full HTML content without WebSocket dependency
-    location = /landing {
-        alias ${APP_DIR}/app/ui/static/index.html;
-        add_header Cache-Control "public, max-age=3600";
+    # NiceGUI static assets (logo, CSS, images)
+    location /assets/ {
+        alias ${APP_DIR}/app/ui/static/;
+        expires 7d;
+        add_header Cache-Control "public, immutable";
     }
 }
 EOF
@@ -351,14 +400,56 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────
-step "Step 11: Start Services"
+step "Step 11: Log Rotation"
+# ─────────────────────────────────────────────────────────────
+cat > "/etc/logrotate.d/${SERVICE_NAME}" <<EOF
+/var/log/${SERVICE_NAME}/*.log {
+    daily
+    missingok
+    rotate 14
+    compress
+    delaycompress
+    notifempty
+    create 0640 ${APP_USER} ${APP_USER}
+    postrotate
+        systemctl reload ${SERVICE_NAME} > /dev/null 2>&1 || true
+    endscript
+}
+EOF
+info "Log rotation configured (14 days, daily, compressed)."
+
+# ─────────────────────────────────────────────────────────────
+step "Step 12: Cron Jobs (Scheduled Maintenance)"
+# ─────────────────────────────────────────────────────────────
+CRON_SECRET_VAL=$(grep '^CRON_SECRET=' "${ENV_FILE}" | cut -d= -f2)
+CRON_FILE="/etc/cron.d/${SERVICE_NAME}"
+
+cat > "${CRON_FILE}" <<EOF
+# PawsLedger scheduled maintenance tasks
+SHELL=/bin/bash
+
+# Purge expired nudges (30d free, 90d verified) — daily at 3:00 AM UTC
+0 3 * * * ${APP_USER} curl -s -X POST http://127.0.0.1:${APP_PORT}/api/v1/nudges/purge -H "x-cron-secret: ${CRON_SECRET_VAL}" > /dev/null 2>&1
+
+# Send vaccination expiry alerts — daily at 8:00 AM UTC
+0 8 * * * ${APP_USER} curl -s -X POST http://127.0.0.1:${APP_PORT}/api/v1/cron/send-alerts -H "x-cron-secret: ${CRON_SECRET_VAL}" > /dev/null 2>&1
+
+# Database backup — daily at 2:00 AM UTC
+0 2 * * * ${APP_USER} curl -s -X POST http://127.0.0.1:${APP_PORT}/api/v1/cron/backup -H "x-cron-secret: ${CRON_SECRET_VAL}" > /dev/null 2>&1
+EOF
+
+chmod 644 "${CRON_FILE}"
+info "Cron jobs configured (nudge purge, alert delivery, DB backup)."
+
+# ─────────────────────────────────────────────────────────────
+step "Step 13: Start Services"
 # ─────────────────────────────────────────────────────────────
 systemctl restart "${SERVICE_NAME}"
 systemctl restart nginx
 info "Gunicorn and Nginx started."
 
 # ─────────────────────────────────────────────────────────────
-step "Step 12: Verify Deployment"
+step "Step 14: Verify Deployment"
 # ─────────────────────────────────────────────────────────────
 sleep 3
 
@@ -423,9 +514,10 @@ echo ""
 echo "  Deploy updates:"
 echo "    sudo su - ${APP_USER}"
 echo "    cd ~/paws-ledger"
+echo "    git pull origin main"
 echo "    source .venv/bin/activate"
-echo "    # pull/rsync new code, then:"
 echo "    pip install -r requirements.txt"
+echo "    python migrate.py"
 echo "    exit"
 echo "    sudo systemctl restart ${SERVICE_NAME}"
 echo "═══════════════════════════════════════════════════════════════"

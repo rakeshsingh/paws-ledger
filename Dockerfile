@@ -1,5 +1,5 @@
 # Use a slim, stable Python base image
-FROM python:3.11-slim-bookworm
+FROM python:3.14-slim-bookworm
 
 # Install uv binary from the official image
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
@@ -37,5 +37,5 @@ ENV PYTHONUNBUFFERED=1
 # Expose the port NiceGUI/FastAPI runs on
 EXPOSE 8080
 
-# Command to run the application
-CMD ["python", "-m", "app.main"]
+# Command to run the application via gunicorn with uvicorn workers
+CMD ["gunicorn", "app.main:fastapi_app", "-k", "uvicorn.workers.UvicornWorker", "-w", "1", "-b", "0.0.0.0:8080", "--timeout", "120"]

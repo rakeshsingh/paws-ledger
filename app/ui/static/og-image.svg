@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f7f9ff"/>
+      <stop offset="100%" stop-color="#fff7ed"/>
+    </linearGradient>
+    <linearGradient id="pawGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#B5452A"/>
+      <stop offset="100%" stop-color="#8B3520"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Paw print -->
+  <g transform="translate(80, 200)">
+    <ellipse cx="60" cy="90" rx="30" ry="26" fill="url(#pawGrad)"/>
+    <ellipse cx="30" cy="50" rx="15" ry="18" fill="url(#pawGrad)"/>
+    <ellipse cx="60" cy="36" rx="15" ry="18" fill="url(#pawGrad)"/>
+    <ellipse cx="90" cy="50" rx="15" ry="18" fill="url(#pawGrad)"/>
+  </g>
+
+  <!-- Title -->
+  <text x="200" y="280" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="700" fill="#171c21">PawsLedger</text>
+
+  <!-- Subtitle -->
+  <text x="200" y="340" font-family="system-ui, sans-serif" font-size="32" font-weight="400" fill="#57423d">Universal Pet Microchip Registry &amp; Recovery</text>
+
+  <!-- Features -->
+  <text x="200" y="420" font-family="system-ui, sans-serif" font-size="24" fill="#8a716c">Free Registration • NFC/QR Tags • Vaccination Records • Instant Pet ID</text>
+
+  <!-- URL -->
+  <text x="200" y="520" font-family="system-ui, sans-serif" font-size="22" font-weight="600" fill="#a03a21">pawsledger.com</text>
+
+  <!-- ISO badge -->
+  <rect x="200" y="540" width="260" height="32" rx="16" fill="rgba(160,58,33,0.1)"/>
+  <text x="220" y="562" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="#a03a21">ISO 11784/11785 Compliant</text>
+
+  <!-- Border -->
+  <rect x="0" y="0" width="1200" height="630" fill="none" stroke="#e7e5e4" stroke-width="2"/>
+  <rect x="0" y="620" width="1200" height="10" fill="#a03a21"/>
+</svg>

@@ -7,10 +7,16 @@ from .header import nav_header
 from .footer import nav_footer
 from .common import email_service, try_restore_session
 from .pet_profile import _render_nudge_form
+import os
 import uuid
 
 
 def init_qr_profile_page() -> None:
+    @ui.page('/qr/tag/{tag_code}')
+    async def qr_tag_redirect(tag_code: str) -> None:
+        """Redirect /qr/tag/{code} (URL on physical tags) to /qr/{code}."""
+        ui.navigate.to(f'/qr/{tag_code}')
+
     @ui.page('/qr/{tag_id}')
     async def public_profile(request: Request, tag_id: str) -> None:
         try_restore_session(request)
@@ -18,12 +24,14 @@ def init_qr_profile_page() -> None:
 
         with Session(engine) as session:
             pet = None
+            tag_code = None
 
             tag = session.exec(
                 select(PetTag).where(PetTag.tag_code == tag_id)
             ).first()
             if tag and tag.status == "ACTIVE":
                 pet = tag.pet
+                tag_code = tag.tag_code
             else:
                 try:
                     pet_uuid = uuid.UUID(tag_id)
@@ -37,67 +45,73 @@ def init_qr_profile_page() -> None:
                 with ui.element('main').classes('w-full max-w-4xl mx-auto px-6 py-12'):
                     with ui.column().classes('w-full items-center p-16'):
                         ui.icon('search_off').style(
-                            'font-size: 64px; color: #a03a21; opacity: 0.5;'
+                            'font-size: 64px; color: var(--pl-primary); opacity: 0.5;'
                         )
-                        ui.label('Tag Not Found').style(
-                            "font-family: 'Plus Jakarta Sans'; font-size: 32px; "
-                            "font-weight: 600; color: #171c21; margin-top: 1rem;"
+                        ui.label('Tag Not Found').classes('pl-heading-2xl').style(
+                            'margin-top: 1rem;'
                         )
                         ui.label(
                             'This tag is invalid, deactivated, or not linked to a pet.'
-                        ).style('color: #57423d; margin-top: 0.5rem;')
+                        ).classes('pl-body-base').style('margin-top: 0.5rem;')
                         ui.button(
                             'Search by Chip ID', icon='search',
                             on_click=lambda: ui.navigate.to('/'),
                         ).classes('mt-6').style(
-                            'background: #a03a21; color: white; font-weight: 600; '
+                            'background: var(--pl-primary); color: white; font-weight: 600; '
                             'padding: 10px 24px; border-radius: 8px;'
                         ).props('no-caps')
                 nav_footer()
                 return
 
-            event = LedgerEvent(
-                pet_id=pet.id, event_type="EMERGENCY_SCAN",
-                description="Public QR/NFC scan detected",
-            )
-            session.add(event)
-            session.commit()
-
-            if pet.owner and pet.owner.email:
-                await email_service.notify_owner_of_scan(
-                    pet.owner.email, pet.breed or "Pet"
-                )
+            # Inject geolocation script — submits scan with location to API
+            _inject_geolocation_scan(tag_code or tag_id)
 
             with ui.element('main').classes('w-full max-w-4xl mx-auto px-6 py-12'):
                 # Emergency alert banner
                 with ui.row().classes(
                     'w-full items-center gap-4 p-5 rounded-xl mb-8'
                 ).style(
-                    'background: #fff7ed; border: 1px solid rgba(251,191,36,0.2);'
+                    'background: var(--pl-surface-warning); border: 1px solid rgba(251,191,36,0.2);'
                 ):
                     ui.icon('notification_important').style(
-                        'font-size: 32px; color: #9a3412;'
+                        'font-size: 32px; color: var(--pl-accent);'
                     )
                     with ui.column().classes('gap-1'):
-                        ui.label('This Pet is Registered on PawsLedger').style(
-                            "font-family: 'Plus Jakarta Sans'; font-size: 20px; "
-                            "font-weight: 600; color: #9a3412;"
-                        )
+                        ui.label('This Pet is Registered on PawsLedger').classes(
+                            'pl-heading-lg'
+                        ).style('color: var(--pl-accent);')
                         ui.label(
                             'The owner has been notified of this scan. '
                             'Use the form below to send them a message.'
-                        ).style('font-size: 14px; color: #57423d;')
+                        ).classes('pl-body-sm')
+
+                # Location status indicator (updated by JS)
+                with ui.row().classes(
+                    'w-full items-center gap-3 p-4 rounded-xl mb-6'
+                ).style(
+                    'background: var(--pl-surface-info); border: 1px solid rgba(222,192,185,0.3);'
+                ).props('id="location-status-card"'):
+                    ui.icon('location_on').style(
+                        'font-size: 20px; color: #3b82f6;'
+                    ).props('id="location-icon"')
+                    with ui.column().classes('gap-0'):
+                        ui.label('Acquiring location...').style(
+                            'font-weight: 600; font-size: var(--pl-text-sm); color: var(--pl-on-surface);'
+                        ).props('id="location-label"')
+                        ui.label('Sharing your location helps reunite this pet with its owner.').style(
+                            'font-size: var(--pl-text-xs); color: var(--pl-text-hint);'
+                        ).props('id="location-sublabel"')
 
                 # Pet identification card
                 with ui.element('div').classes('w-full p-8 rounded-xl mb-6').style(
-                    'background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.05); '
-                    'border-left: 4px solid #a03a21;'
+                    'background: var(--pl-surface); box-shadow: var(--pl-shadow-md); '
+                    'border-left: 4px solid var(--pl-primary);'
                 ):
                     with ui.row().classes('gap-8 items-center'):
                         species = pet.pet_species or 'DOG'
                         icon_name = 'pets' if species == 'DOG' else 'emoji_nature'
-                        bg = '#ffdad2' if species == 'DOG' else '#ffdea9'
-                        fg = '#a03a21' if species == 'DOG' else '#7d5800'
+                        bg = 'var(--pl-primary-light)' if species == 'DOG' else '#ffdea9'
+                        fg = 'var(--pl-primary)' if species == 'DOG' else 'var(--pl-secondary)'
                         with ui.element('div').classes(
                             'flex items-center justify-center rounded-full flex-shrink-0'
                         ).style(
@@ -108,9 +122,8 @@ def init_qr_profile_page() -> None:
 
                         with ui.column().classes('gap-2'):
                             with ui.row().classes('items-center gap-3'):
-                                ui.label(f'{pet.pet_species}').style(
-                                    "font-family: 'Plus Jakarta Sans'; font-size: 28px; "
-                                    "font-weight: 700; color: #171c21;"
+                                ui.label(f'{pet.pet_species}').classes(
+                                    'pl-heading-2xl'
                                 )
                                 ui.label('Registered').style(
                                     'padding: 4px 12px; background: #dcfce7; color: #166534; '
@@ -118,25 +131,24 @@ def init_qr_profile_page() -> None:
                                 )
                             ui.label(
                                 f'Breed: {pet.breed or "Unknown"}'
-                            ).style('font-size: 16px; color: #57423d;')
-                            ui.label(f'Chip ID: {pet.chip_id}').style(
-                                'font-family: monospace; font-size: 14px; color: #8a716c;'
-                            )
+                            ).style('font-size: 16px; color: var(--pl-on-surface-variant);')
+                            ui.label(f'Chip ID: {pet.chip_id}').classes(
+                                'pl-body-sm'
+                            ).style('font-family: monospace;')
                             if pet.manufacturer:
                                 ui.label(
                                     f'Manufacturer: {pet.manufacturer}'
-                                ).style('font-size: 13px; color: #8a716c;')
+                                ).style('font-size: 13px; color: var(--pl-text-hint);')
 
                 # Medical info
                 if pet.vaccinations or pet.medical_conditions:
                     with ui.element('div').classes('w-full p-8 rounded-xl mb-6').style(
-                        'background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.05); '
+                        'background: var(--pl-surface); box-shadow: var(--pl-shadow-md); '
                         'border-left: 4px solid #3b82f6;'
                     ):
-                        ui.label('Medical Summary').style(
-                            "font-family: 'Plus Jakarta Sans'; font-size: 20px; "
-                            "font-weight: 600; color: #171c21; margin-bottom: 1rem;"
-                        )
+                        ui.label('Medical Summary').classes(
+                            'pl-heading-lg'
+                        ).style('margin-bottom: 1rem;')
 
                         if pet.medical_conditions:
                             with ui.row().classes(
@@ -170,22 +182,89 @@ def init_qr_profile_page() -> None:
 
                 # Nudge form
                 with ui.element('div').classes('w-full p-8 rounded-xl').style(
-                    'background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.05); '
-                    'border-left: 4px solid #7d5800;'
+                    'background: var(--pl-surface); box-shadow: var(--pl-shadow-md); '
+                    'border-left: 4px solid var(--pl-secondary);'
                 ):
-                    ui.label('Contact the Owner').style(
-                        "font-family: 'Plus Jakarta Sans'; font-size: 20px; "
-                        "font-weight: 600; color: #171c21; margin-bottom: 1rem;"
-                    )
+                    ui.label('Contact the Owner').classes(
+                        'pl-heading-lg'
+                    ).style('margin-bottom: 1rem;')
                     _render_nudge_form(pet)
 
                 # Disclaimer
                 with ui.row().classes(
                     'w-full items-center gap-2 mt-8 pt-6'
                 ).style('border-top: 1px solid #e7e5e4;'):
-                    ui.icon('info').style('font-size: 16px; color: #8a716c;')
+                    ui.icon('info').style('font-size: 16px; color: var(--pl-text-hint);')
                     ui.label(
                         'Information on this page is provided for emergency recovery only.'
-                    ).style('font-size: 12px; color: #8a716c;')
+                    ).classes('pl-body-xs')
 
         nav_footer()
+
+
+def _inject_geolocation_scan(tag_code: str):
+    """Inject JavaScript to request browser geolocation and submit scan to API."""
+    import json
+    safe_tag = json.dumps(tag_code)
+    ui.run_javascript(f'''
+        (function() {{
+            var tagCode = {safe_tag};
+            var label = document.getElementById("location-label");
+            var sublabel = document.getElementById("location-sublabel");
+            var icon = document.getElementById("location-icon");
+            var card = document.getElementById("location-status-card");
+
+            function sendScan(lat, lon, accuracy) {{
+                var body = {{scan_method: "QR"}};
+                if (lat !== null) {{
+                    body.latitude = lat;
+                    body.longitude = lon;
+                    body.accuracy_meters = accuracy;
+                }}
+                fetch("/api/v1/scan/" + encodeURIComponent(tagCode), {{
+                    method: "POST",
+                    headers: {{"Content-Type": "application/json"}},
+                    body: JSON.stringify(body),
+                }}).then(function(resp) {{
+                    return resp.json();
+                }}).then(function(data) {{
+                    if (data.city || data.country) {{
+                        var loc = [data.city, data.country].filter(Boolean).join(", ");
+                        if (label) label.textContent = "Location shared: " + loc;
+                        if (sublabel) sublabel.textContent = "The owner can see where their pet was scanned.";
+                        if (icon) icon.textContent = "check_circle";
+                        if (icon) icon.style.color = "#16a34a";
+                    }} else if (data.location_recorded) {{
+                        if (label) label.textContent = "Location shared";
+                        if (sublabel) sublabel.textContent = "Coordinates recorded. The owner has been notified.";
+                        if (icon) icon.textContent = "check_circle";
+                        if (icon) icon.style.color = "#16a34a";
+                    }}
+                }}).catch(function() {{
+                    // Silent fail — scan without location is still logged server-side
+                }});
+            }}
+
+            if (navigator.geolocation) {{
+                navigator.geolocation.getCurrentPosition(
+                    function(pos) {{
+                        sendScan(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+                    }},
+                    function(err) {{
+                        // User denied or unavailable — send scan without location
+                        if (label) label.textContent = "Location unavailable";
+                        if (sublabel) sublabel.textContent = "Enable location services to help reunite this pet.";
+                        if (icon) icon.textContent = "location_off";
+                        if (icon) icon.style.color = "#8a716c";
+                        sendScan(null, null, null);
+                    }},
+                    {{enableHighAccuracy: true, timeout: 10000, maximumAge: 60000}}
+                );
+            }} else {{
+                if (label) label.textContent = "Location not supported";
+                if (sublabel) sublabel.textContent = "Your browser does not support geolocation.";
+                if (icon) icon.textContent = "location_off";
+                sendScan(null, null, null);
+            }}
+        }})();
+    ''')

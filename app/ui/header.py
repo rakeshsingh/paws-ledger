@@ -1,6 +1,12 @@
 from nicegui import ui, app
 
 
+def _logout():
+    """Clear session storage and redirect to server-side logout to delete HttpOnly cookie."""
+    app.storage.user.clear()
+    ui.navigate.to('/api/v1/auth/logout')
+
+
 def nav_header():
     ui.add_css('''
     .desktop-nav { display: flex !important; }
@@ -13,7 +19,7 @@ def nav_header():
 
     with ui.header().classes(
         'bg-stone-50/80 backdrop-blur-md border-b border-stone-200 shadow-sm px-6 md:px-12 py-4'
-    ).style("font-family: 'Plus Jakarta Sans', sans-serif;"):
+    ).style("font-family: var(--pl-font);"):
         with ui.row().classes('w-full max-w-7xl mx-auto justify-between items-center flex-nowrap'):
             # Brand (left)
             with ui.link('', '/').classes('no-underline shrink-0'):
@@ -24,6 +30,7 @@ def nav_header():
                 link_classes = 'text-stone-600 font-medium no-underline'
 
                 ui.link('Home', '/').classes(link_classes)
+                ui.link('Found a Pet?', '/lost').classes(link_classes)
                 ui.link('Dashboard', '/dashboard').classes(link_classes)
                 ui.link('Support', '/faq').classes(link_classes)
 
@@ -38,13 +45,13 @@ def nav_header():
                             with ui.element('div').classes(
                                 'flex items-center justify-center rounded-full'
                             ).style(
-                                'width: 32px; height: 32px; background: #ffdad2;'
+                                'width: 32px; height: 32px; background: var(--pl-primary-light);'
                             ):
                                 ui.icon('person').style(
-                                    'font-size: 18px; color: #a03a21;'
+                                    'font-size: 18px; color: var(--pl-primary);'
                                 )
                             ui.label(first_name).style(
-                                'font-weight: 600; font-size: 14px; color: #171c21;'
+                                'font-weight: 600; font-size: 14px; color: var(--pl-on-surface);'
                             )
 
                         with ui.menu():
@@ -59,15 +66,13 @@ def nav_header():
                             ui.separator()
                             ui.menu_item(
                                 'Logout',
-                                on_click=lambda: (
-                                    app.storage.user.clear(), ui.navigate.to('/')
-                                ),
+                                on_click=_logout,
                             )
                 else:
                     ui.button(
                         'Login', on_click=lambda: ui.navigate.to('/login'),
                     ).style(
-                        'background: #a03a21; color: white; font-weight: 600; '
+                        'background: var(--pl-primary); color: white; font-weight: 600; '
                         'padding: 8px 24px; border-radius: 8px;'
                     ).props('no-caps')
 
@@ -79,6 +84,10 @@ def nav_header():
                     ui.menu_item(
                         'Home',
                         on_click=lambda: ui.navigate.to('/'),
+                    )
+                    ui.menu_item(
+                        'Found a Pet?',
+                        on_click=lambda: ui.navigate.to('/lost'),
                     )
                     ui.menu_item(
                         'Dashboard',
@@ -101,9 +110,7 @@ def nav_header():
                         )
                         ui.menu_item(
                             'Logout',
-                            on_click=lambda: (
-                                app.storage.user.clear(), ui.navigate.to('/')
-                            ),
+                            on_click=_logout,
                         )
                     else:
                         ui.menu_item(

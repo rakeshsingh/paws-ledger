@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import AsyncMock
 from uuid import uuid4
-from datetime import datetime
+from datetime import datetime, UTC
 from app.models import User, Pet, PetTag, LedgerEvent
 from app.api.v1.routes import serializer
 from sqlmodel import select
@@ -120,7 +120,7 @@ class TestTagManagement:
 
     def test_reactivate_tag(self, authenticated_client, test_pet, test_tag, session):
         test_tag.status = "DEACTIVATED"
-        test_tag.deactivated_at = datetime.utcnow()
+        test_tag.deactivated_at = datetime.now(UTC)
         session.add(test_tag)
         session.commit()
 

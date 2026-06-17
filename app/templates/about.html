@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="text-align: center; margin-bottom: 3rem;">
+    <h1 style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 2.5rem; font-weight: 700; color: #171c21;">About PawsLedger</h1>
+    <p style="font-size: 1.125rem; color: #57423d; max-width: 640px; margin: 0.5rem auto;">
+        A universal microchip registry and recovery platform — the single source of truth for pet identification.
+    </p>
+</div>
+
+<div class="seo-grid">
+    <div class="seo-card">
+        <h2>Decoupled Identity</h2>
+        <p>Pet records separated from proprietary manufacturer databases. Your data belongs to you, not a chip vendor.</p>
+    </div>
+    <div class="seo-card">
+        <h2>Trusted Transfer</h2>
+        <p>Secure ownership changes with full audit trail. Every handoff is cryptographically recorded.</p>
+    </div>
+    <div class="seo-card">
+        <h2>Seamless Access</h2>
+        <p>Time-bound access for vets, sitters, and caregivers. Share records without sharing your identity.</p>
+    </div>
+</div>
+
+<div class="seo-section">
+    <h2>How It Works</h2>
+    <div class="seo-card">
+        <h3>1. Register Your Pet</h3>
+        <p>Add your pet with their 15-digit microchip number, breed, and care details. Link physical NFC or QR tags for instant access.</p>
+        <h3>2. Build the Ledger</h3>
+        <p>Upload vaccination records, set medical alerts, and generate SHA-256 sealed PDF exports for official use.</p>
+        <h3>3. Stay Connected</h3>
+        <p>If your pet is found, finders search the chip or scan the tag. We facilitate safe, anonymous contact through our secure relay.</p>
+    </div>
+</div>
+
+<div class="seo-section">
+    <h2>Industry Standards</h2>
+    <p>PawsLedger integrates with the AAHA Universal Pet Microchip Lookup network and supports ISO 11784/11785 standards for 134.2 kHz FDX-B transponders. All vaccination exports follow NASPHV Form 51 requirements.</p>
+</div>
+{% endblock %}
+
+{% block structured_data %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "AboutPage",
+  "name": "About PawsLedger",
+  "description": "PawsLedger is a universal microchip registry and recovery platform for pet identification, vaccination records, and NFC/QR tag-based recovery.",
+  "url": "https://www.pawsledger.com/about",
+  "mainEntity": {
+    "@type": "Organization",
+    "name": "PawsLedger",
+    "url": "https://www.pawsledger.com"
+  }
+}
+</script>
+{% endblock %}

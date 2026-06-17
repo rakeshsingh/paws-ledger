@@ -14,11 +14,15 @@ GOOGLE_G_SVG = '''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" wi
 
 
 def init_login_pages() -> None:
-    @ui.page('/login')
+    @ui.page('/login', title='Login — PawsLedger Pet Microchip Registry')
     async def login_page(request: Request) -> None:
         if app.storage.user.get('email'):
             ui.navigate.to('/dashboard')
             return
+        ui.add_head_html(
+            '<meta name="description" content="Sign in to PawsLedger to manage your pet\'s microchip registration, vaccination records, NFC/QR tags, and recovery settings.">\n'
+            '<link rel="canonical" href="https://www.pawsledger.com/login">\n'
+        )
         nav_header()
 
         with ui.element('main').classes(
@@ -39,9 +43,8 @@ def init_login_pages() -> None:
                         'width: 64px; height: 64px; background: #ffdad2;'
                     ):
                         ui.icon('pets').style('font-size: 32px; color: #a03a21;')
-                    ui.label('Welcome to PawsLedger').style(
-                        "font-family: 'Plus Jakarta Sans'; font-size: 28px; "
-                        "font-weight: 700; color: #171c21; text-align: center;"
+                    ui.label('Welcome to PawsLedger').classes('pl-heading-2xl').style(
+                        'text-align: center;'
                     )
                     ui.label(
                         'Sign in to manage your pets, vaccinations, and recovery tags.'

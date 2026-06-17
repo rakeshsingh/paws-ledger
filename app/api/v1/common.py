@@ -1,5 +1,6 @@
 """Shared service instances and utilities used across API route modules."""
 
+import html
 import os
 import re
 import sys
@@ -15,6 +16,7 @@ from ...services.integrations import AAHAClient, GoogleAuthService, EmailService
 # - ISO 11784/11785: exactly 15 digits (e.g. 985000123456789)
 # - Non-ISO (125 kHz / 128 kHz): 9 or 10 alphanumeric characters (e.g. 0A0757738, 070285035)
 CHIP_ID_PATTERN = re.compile(r'^[A-Za-z0-9]{9,15}$')
+_HTML_TAG_RE = re.compile(r'<[^>]+>')
 
 
 def validate_chip_id(chip_id: str) -> str:
@@ -23,6 +25,18 @@ def validate_chip_id(chip_id: str) -> str:
     if not CHIP_ID_PATTERN.match(chip_id):
         raise HTTPException(status_code=400, detail="Invalid microchip ID format")
     return chip_id
+
+
+def sanitize_text(text: str) -> str:
+    """Strip HTML tags and escape remaining special characters.
+
+    Defense-in-depth: prevents stored XSS if user content is ever
+    rendered in raw HTML contexts (emails, PDFs, future templates).
+    """
+    if not text:
+        return text
+    text = _HTML_TAG_RE.sub('', text)
+    return html.escape(text)
 
 aaha_client = AAHAClient()
 google_auth = GoogleAuthService()

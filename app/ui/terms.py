@@ -1,28 +1,23 @@
 from nicegui import ui
-from .header import nav_header
-from .footer import nav_footer
+from .layout import page_shell
 
 
 def init_terms_page() -> None:
     @ui.page('/terms')
     async def terms_page() -> None:
-        nav_header()
-
-        with ui.element('main').classes('w-full max-w-4xl mx-auto px-6 py-16'):
+        with page_shell():
             with ui.column().classes('w-full items-center mb-12'):
-                ui.label('Terms of Service').style(
-                    "font-family: 'Plus Jakarta Sans'; font-size: 40px; "
-                    "font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; "
-                    "color: #171c21; text-align: center;"
+                ui.label('Terms of Service').classes('pl-heading-3xl').style(
+                    'text-align: center;'
                 )
                 ui.label(
                     'Please read these terms carefully before using PawsLedger.'
-                ).style(
-                    'font-size: 18px; color: #57423d; text-align: center; '
+                ).classes('pl-body-base').style(
+                    'font-size: var(--pl-text-lg); text-align: center; '
                     'margin-top: 0.5rem; max-width: 600px;'
                 )
-                ui.label('Last updated: May 17, 2026').style(
-                    'font-size: 14px; color: #8a716c; margin-top: 0.5rem;'
+                ui.label('Last updated: May 17, 2026').classes('pl-body-xs').style(
+                    'margin-top: 0.5rem;'
                 )
 
             with ui.column().classes('w-full gap-10'):
@@ -143,17 +138,10 @@ def init_terms_page() -> None:
                     'our Contact page at pawsledger.com/contact.',
                 )
 
-        nav_footer()
-
 
 def _section(title: str, icon: str, text: str) -> None:
     with ui.column().classes('w-full'):
         with ui.row().classes('items-center gap-3 mb-3'):
-            ui.icon(icon).style('font-size: 24px; color: #a03a21;')
-            ui.label(title).style(
-                "font-family: 'Plus Jakarta Sans'; font-size: 24px; "
-                "font-weight: 600; color: #171c21;"
-            )
-        ui.label(text).classes('ml-9').style(
-            'color: #57423d; font-size: 15px; line-height: 1.6;'
-        )
+            ui.icon(icon).style('font-size: 24px; color: var(--pl-primary);')
+            ui.label(title).classes('pl-heading-xl')
+        ui.label(text).classes('ml-9 pl-body-base')

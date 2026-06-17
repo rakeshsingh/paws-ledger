@@ -116,6 +116,14 @@ async def auth_callback(request: Request, session: Session = Depends(get_session
     return response
 
 
+@router.get("/auth/logout")
+async def auth_logout(request: Request):
+    """Clear the HttpOnly auth cookie and redirect to home."""
+    response = RedirectResponse(url="/")
+    response.delete_cookie("paws_user_id", path="/", samesite="lax")
+    return response
+
+
 @router.get("/me")
 async def get_me(request: Request, session: Session = Depends(get_session)):
     raw_cookie = request.cookies.get("paws_user_id")

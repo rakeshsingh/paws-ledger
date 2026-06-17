@@ -1,6 +1,5 @@
 from nicegui import ui
-from .header import nav_header
-from .footer import nav_footer
+from .layout import page_shell
 
 
 # FAQ data organized by category
@@ -29,7 +28,7 @@ FAQ_SECTIONS = [
             ),
             (
                 'How much does it cost to register my pet?',
-                'PawsLedger offers a Forever Free tier that includes public identity lookup, emergency '
+                'PawsLedger offers a Free tier that includes public identity lookup, emergency '
                 'medical alerts, and basic ownership features. Premium tiers (Verified and Guardian) '
                 'offer additional features like vaccination storage, sealed PDFs, and AI photo-matching.'
             ),
@@ -196,21 +195,17 @@ FAQ_SECTIONS = [
 def init_faq_page() -> None:
     @ui.page('/faq')
     async def faq_page() -> None:
-        nav_header()
-
-        with ui.element('main').classes('w-full max-w-4xl mx-auto px-6 py-16'):
+        with page_shell():
             # Header
             with ui.column().classes('w-full items-center mb-12'):
-                ui.label('Frequently Asked Questions').style(
-                    "font-family: 'Plus Jakarta Sans'; font-size: 40px; "
-                    "font-weight: 700; line-height: 1.2; letter-spacing: -0.02em; "
-                    "color: #171c21; text-align: center;"
+                ui.label('Frequently Asked Questions').classes('pl-heading-3xl').style(
+                    'text-align: center;'
                 )
                 ui.label(
                     'Everything you need to know about microchipping, '
                     'pet registration, and PawsLedger.'
-                ).style(
-                    'font-size: 18px; color: #57423d; text-align: center; '
+                ).classes('pl-body-base').style(
+                    'font-size: var(--pl-text-lg); text-align: center; '
                     'margin-top: 0.5rem; max-width: 600px;'
                 )
 
@@ -220,36 +215,30 @@ def init_faq_page() -> None:
                     # Section header
                     with ui.row().classes('items-center gap-3 mb-4'):
                         ui.icon(section['icon']).style(
-                            'font-size: 24px; color: #a03a21;'
+                            'font-size: 24px; color: var(--pl-primary);'
                         )
-                        ui.label(section['title']).style(
-                            "font-family: 'Plus Jakarta Sans'; font-size: 24px; "
-                            "font-weight: 600; color: #171c21;"
-                        )
+                        ui.label(section['title']).classes('pl-heading-xl')
 
                     # Questions
                     for question, answer in section['items']:
                         with ui.expansion(question).classes('w-full').props(
                             'dense header-class="text-weight-medium"'
                         ):
-                            ui.label(answer).style(
-                                'color: #57423d; font-size: 15px; '
-                                'line-height: 1.6; padding: 8px 0;'
+                            ui.label(answer).classes('pl-body-base').style(
+                                'padding: 8px 0;'
                             )
 
             # Source attribution
             with ui.row().classes('w-full items-center gap-2 mt-8 pt-8').style(
                 'border-top: 1px solid #eaeef5;'
             ):
-                ui.icon('info').style('font-size: 16px; color: #8a716c;')
+                ui.icon('info').style('font-size: 16px; color: var(--pl-text-hint);')
                 ui.html(
-                    '<span style="font-size: 12px; color: #8a716c;">'
+                    '<span style="font-size: 12px; color: var(--pl-text-hint);">'
                     'Content was rephrased for compliance with licensing restrictions. '
                     'Microchipping information adapted from industry guidelines by '
                     '<a href="https://www.freepetchipregistry.com/faqs/" '
-                    'style="color: #a03a21; text-decoration: underline;" '
+                    'style="color: var(--pl-primary); text-decoration: underline;" '
                     'target="_blank">FreePetChipRegistry</a>, AAHA, and AVMA recommendations.'
                     '</span>'
                 )
-
-        nav_footer()

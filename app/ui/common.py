@@ -1,4 +1,6 @@
+import html as _html
 import os
+import re as _re
 from itsdangerous import URLSafeSerializer
 from nicegui import app
 from sqlmodel import Session
@@ -7,6 +9,15 @@ from uuid import UUID
 from ..database import engine
 from ..models import User
 from ..services.integrations import DogAPIClient, GoogleAuthService, EmailService, HashService, PDFService
+
+_HTML_TAG_RE = _re.compile(r'<[^>]+>')
+
+
+def sanitize(text: str) -> str:
+    """Strip HTML tags and escape special chars for safe storage."""
+    if not text:
+        return text
+    return _html.escape(_HTML_TAG_RE.sub('', text))
 
 dog_client = DogAPIClient()
 google_auth = GoogleAuthService()
@@ -17,8 +28,8 @@ pdf_service = PDFService()
 # Species display constants — shared across UI modules
 SPECIES_ICONS = {'DOG': 'pets', 'CAT': 'emoji_nature'}
 SPECIES_ICON_DEFAULT = 'pets'
-SPECIES_BG = {'DOG': '#ffdad2', 'CAT': '#ffdea9'}
-SPECIES_BG_DEFAULT = '#eaeef5'
+SPECIES_BG = {'DOG': '#ffdad2', 'CAT': '#fff7ed'}
+SPECIES_BG_DEFAULT = '#f2f5f4'
 SPECIES_FG = {'DOG': '#a03a21', 'CAT': '#7d5800'}
 SPECIES_FG_DEFAULT = '#57423d'
 
