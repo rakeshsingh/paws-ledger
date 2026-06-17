@@ -85,6 +85,15 @@ class TestAuthLogin:
 
     @pytest.mark.asyncio
     async def test_login_no_500_error(self, client, mocker):
+        from app.services.integrations import oauth
+        if not hasattr(oauth, 'google') or oauth.google is None:
+            oauth.register(
+                name='google',
+                client_id='fake-client-id',
+                client_secret='fake-client-secret',
+                server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+                client_kwargs={'scope': 'openid profile email'},
+            )
         mock_response = RedirectResponse(url="https://accounts.google.com/o/oauth2/v2/auth")
         mocker.patch("app.services.integrations.oauth.google.authorize_redirect", return_value=mock_response)
         mocker.patch("app.api.v1.auth.google_auth.client_id", "fake-client-id")
