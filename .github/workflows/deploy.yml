@@ -35,9 +35,32 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd ~/paws-ledger
-            git pull origin main
-            docker compose up --build -d
-            docker compose exec app python migrate.py
+            # Navigate to the app directory (Gunicorn/systemd app is installed at /home/paws/paws-ledger)
+            cd /home/paws/paws-ledger || exit 1
+            
+            # Ensure it is initialized as a git repository if .git is missing
+            if [ ! -d .git ]; then
+              echo "Initializing git repository..."
+              git init
+              git remote add origin https://github.com/rakeshsingh/paws-ledger.git
+            fi
+            
+            # Fetch and reset to the latest main branch
+            git fetch origin main
+            git reset --hard origin/main
+            
+            # Ensure correct permissions so the 'paws' user owns the files
+            chown -R paws:paws /home/paws/paws-ledger
+            
+            # Install python dependencies in the virtual environment
+            sudo -u paws .venv/bin/pip install -r requirements.txt
+            
+            # Run database migrations
+            sudo -u paws .venv/bin/python migrate.py
+            
+            # Restart the systemd Gunicorn service
+            sudo systemctl restart pawsledger
+            
+            # Verify the service is healthy
             sleep 5
             curl -sf http://localhost:8080/health || (echo "Health check failed" && exit 1)
