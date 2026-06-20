@@ -134,6 +134,38 @@ class TestCheckout:
         resp = client.post("/api/v1/subscription/checkout", json={"tier": "verified"})
         assert resp.status_code == 401
 
+    @patch("app.api.v1.subscription.StripeService")
+    def test_checkout_with_coupon(self, mock_stripe, authenticated_client):
+        mock_stripe.create_customer.return_value = "cus_coupon123"
+        mock_stripe.create_checkout_session.return_value = "https://checkout.stripe.com/coupon"
+
+        resp = authenticated_client.post(
+            "/api/v1/subscription/checkout",
+            json={"tier": "verified", "coupon": "SUMMER50"},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["checkout_url"] == "https://checkout.stripe.com/coupon"
+        mock_stripe.create_checkout_session.assert_called_once()
+        kwargs = mock_stripe.create_checkout_session.call_args[1]
+        assert kwargs["coupon"] == "SUMMER50"
+        assert kwargs["allow_promotion_codes"] is None
+
+    @patch("app.api.v1.subscription.StripeService")
+    def test_checkout_disallow_promotion_codes(self, mock_stripe, authenticated_client):
+        mock_stripe.create_customer.return_value = "cus_promo123"
+        mock_stripe.create_checkout_session.return_value = "https://checkout.stripe.com/nopromo"
+
+        resp = authenticated_client.post(
+            "/api/v1/subscription/checkout",
+            json={"tier": "verified", "allow_promotion_codes": False},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["checkout_url"] == "https://checkout.stripe.com/nopromo"
+        mock_stripe.create_checkout_session.assert_called_once()
+        kwargs = mock_stripe.create_checkout_session.call_args[1]
+        assert kwargs["coupon"] is None
+        assert kwargs["allow_promotion_codes"] is False
+
 
 # ─────────────────────────────────────────────────────────────
 # Portal

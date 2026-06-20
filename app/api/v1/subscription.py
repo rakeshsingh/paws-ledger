@@ -4,6 +4,7 @@ import os
 import logging
 from datetime import datetime, timezone
 from uuid import UUID
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
 from sqlmodel import Session, select
@@ -19,6 +20,8 @@ router = APIRouter()
 class CheckoutRequest(BaseModel):
     tier: str  # "verified" or "guardian"
     billing_period: str = "monthly"  # "monthly" or "yearly"
+    coupon: Optional[str] = None
+    allow_promotion_codes: Optional[bool] = None
 
 
 def _get_current_user(request: Request, session: Session = Depends(get_session)) -> User:
@@ -103,6 +106,8 @@ async def create_checkout(
         billing_period=payload.billing_period,
         success_url=f"{base_url}/subscription/success?tier={payload.tier}&session_id={{CHECKOUT_SESSION_ID}}",
         cancel_url=f"{base_url}/pricing",
+        coupon=payload.coupon,
+        allow_promotion_codes=payload.allow_promotion_codes,
     )
 
     return {"checkout_url": checkout_url}

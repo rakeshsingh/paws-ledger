@@ -54,20 +54,29 @@ class StripeService:
         success_url: str,
         cancel_url: str,
         billing_period: str = "monthly",
+        coupon: Optional[str] = None,
+        allow_promotion_codes: Optional[bool] = None,
     ) -> str:
         """Create a Stripe Checkout session and return the URL."""
         _ensure_stripe_configured()
         price_id = _get_price_id(tier, billing_period)
 
-        session = stripe.checkout.Session.create(
-            customer=customer_id,
-            payment_method_types=["card"],
-            line_items=[{"price": price_id, "quantity": 1}],
-            mode="subscription",
-            success_url=success_url,
-            cancel_url=cancel_url,
-            metadata={"tier": tier},
-        )
+        kwargs = {
+            "customer": customer_id,
+            "payment_method_types": ["card"],
+            "line_items": [{"price": price_id, "quantity": 1}],
+            "mode": "subscription",
+            "success_url": success_url,
+            "cancel_url": cancel_url,
+            "metadata": {"tier": tier},
+        }
+
+        if coupon:
+            kwargs["discounts"] = [{"coupon": coupon}]
+        elif allow_promotion_codes is not False:
+            kwargs["allow_promotion_codes"] = True
+
+        session = stripe.checkout.Session.create(**kwargs)
         return session.url
 
     @staticmethod

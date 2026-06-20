@@ -31,7 +31,7 @@ def nav_header():
 
                 ui.link('Home', '/').classes(link_classes)
                 ui.link('Found a Pet?', '/lost').classes(link_classes)
-                ui.link('Dashboard', '/dashboard').classes(link_classes)
+                ui.link('Pet Parents', '/dashboard').classes(link_classes)
                 ui.link('Support', '/faq').classes(link_classes)
 
                 if app.storage.user.get('email'):
@@ -60,7 +60,7 @@ def nav_header():
                                 on_click=lambda: ui.navigate.to('/owner/profile'),
                             )
                             ui.menu_item(
-                                'Dashboard',
+                                'Pet Parents',
                                 on_click=lambda: ui.navigate.to('/dashboard'),
                             )
                             ui.separator()
@@ -90,7 +90,7 @@ def nav_header():
                         on_click=lambda: ui.navigate.to('/lost'),
                     )
                     ui.menu_item(
-                        'Dashboard',
+                        'Pet Parents',
                         on_click=lambda: ui.navigate.to('/dashboard'),
                     )
                     ui.menu_item(
